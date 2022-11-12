@@ -9,10 +9,10 @@ export ANSIBLE_CONFIG="$HOME/.ansible/ansible.cfg"
 alias disk-usage="du -h --max-depth 1"
 alias tmux-new="tmux new -s "
 alias tmux-reatch="tmux attach -t "
-alias pass-gen="< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c" # $1 - number of bytes
+# alias pass-gen="< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c" # $1 - number of bytes
 
 # Python aliases
-alias pip-upgrade="poetry update"
+alias pip-install="pip install --upgrade --no-cache pip wheel setuptools "
 alias python-venv="python3 -m venv venv && source ./venv/bin/activate"
 alias python-https-server="python3 ~/dev/HTTPSPythonServer/server-start.py"
 alias dj-migrate="python manage.py makemigrations && python manage.py migrate"

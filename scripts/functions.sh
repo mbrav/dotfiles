@@ -23,21 +23,25 @@ function yes_no_prompt() {
 
 # Check for passed url
 function check_url() {
-    # 0 - does not exists
-    # 1 - exists
-    if curl --output /dev/null --silent --head --fail "${1}"; then
-        return 0
+    # 0 - exists
+    # 1 - does not
+    if curl --output /dev/null --silent --head --fail "$1"; then
+        echo 0
     else
-        return 1
+        echo 1
     fi
 }
 
 function docker-compose-install() {
+    # $1 - Docker compsoe version, otherwise default
     [[ -n $1 ]] && local docker_v=$1 || local docker_v=2.12.2
-    local docker_url="https://github.com/docker/compose/releases/download/v${docker_v}/docker-compose-$(uname -s)-$(uname -m)"
-    check_url $docker_url
+    local docker_url="https://github.com/docker/compose/releases/download/v${docker_v}/docker-compose-$(uname -s)-$(uname -m)-sdfsd"
+    [[ $(check_url "$docker_url") -ne 0 ]] && error_msg "Bad url" 6
+    success_msg "Valid url: $docker_url"
     sudo curl -L $docker_url -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
+    success_msg "gocker compose installed"
+    docker-compose --version
 }
 
 # Replace text and show interactive
@@ -69,6 +73,7 @@ function dock-save() {
     docker save $1 | gzip -c > ~/docker-images/$2.tar.gz
 }
 
+# Auto completion for docker-save
 function _dock-save_completions() {
     [ "${#COMP_WORDS[@]}" != "2" ] && return || \
         COMPREPLY=($(compgen -W "$(docker images --format "{{.Repository}}:{{.Tag}}")" "${COMP_WORDS[1]}"))
@@ -80,7 +85,7 @@ complete -F _dock-save_completions dock-save
 function do-interval() {
     # $1 - command
     # $2 - interval
-    [[ $# -ne 3 ]] && error_msg "do-interval accepts 2 arguments, not $#" 22
+    [[ $# -ne 2 ]] && error_msg "do-interval accepts 2 arguments, not $#" 22
     watch -n $1 -d=cumulative $2
 }
 

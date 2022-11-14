@@ -10,7 +10,6 @@ set relativenumber
 set history=1000
 set noswapfile
 
-
-call plug#begin()
-Plug 'wakatime/vim-wakatime'
-call plug#end()
+if filereadable(expand("~/.vimrc.plug"))
+	source ~/.vimrc.plug
+endif

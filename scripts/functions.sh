@@ -35,7 +35,7 @@ function check_url() {
 function docker-compose-install() {
     # $1 - Docker compsoe version, otherwise default
     [[ -n $1 ]] && local docker_v=$1 || local docker_v=2.12.2
-    local docker_url="https://github.com/docker/compose/releases/download/v${docker_v}/docker-compose-$(uname -s)-$(uname -m)-sdfsd"
+    local docker_url="https://github.com/docker/compose/releases/download/v${docker_v}/docker-compose-$(uname -s)-$(uname -m)"
     [[ $(check_url "$docker_url") -ne 0 ]] && error_msg "Bad url" 6
     success_msg "Valid url: $docker_url"
     sudo curl -L $docker_url -o /usr/local/bin/docker-compose

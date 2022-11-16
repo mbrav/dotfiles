@@ -81,12 +81,15 @@ function _dock-save_completions() {
 
 complete -F _dock-save_completions dock-save
 
+
 # Interval command
 function do-interval() {
-    # $1 - command
-    # $2 - interval
-    [[ $# -ne 2 ]] && error_msg "do-interval accepts 2 arguments, not $#" 22
-    watch -n $1 -d=cumulative $2
+    # do-interval 1
+    # $1 - interval in seconds 
+    # $2-n - command and any number of arguments to execute
+    [[ $# -lt 2 ]] && error_msg "do-interval accepts no less than 2 arguments, passed $#" 22
+    [[ $1 == ?(-)+([[:digit:]]) ]] || error_msg "$1 is not a number" 22
+    watch -n $1 -d=cumulative ${@:2}
 }
 
 # Max 7z compression

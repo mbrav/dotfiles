@@ -10,14 +10,19 @@ info_msg "Scripts installer"
 read -p "${GREEN}Enter path (default ${dir}): ${YELLOW}" new_dir
 [[ -n $new_dir ]] && dir=$(realpath -m $new_dir)
 
-[[ -d $dir ]] && info_msg "Will overwrite files in $dir" || mkdir -pv $dir
+[[ -d $dir ]] && info_msg "Will overwrite files in ${dir} ${YELLOW}" || mkdir -pv $dir
 cp -vf $script_dir/scripts/* $dir
 
-info_msg "Appending files to bash"
-echo "# Script install" >> ~/.bashrc
-for file in $dir*; do 
-    echo ". $file" >> ~/.bashrc
-    success_msg "Sourced $file"
-done
+if [[ ! -f ~/.bashrc ]] || ! grep -q "${script_id}" ~/.bashrc; then
+    info_msg "Appending file sourcing to bash"
+    echo "# ${script_id} BEGIN" >> ~/.bashrc
+    for file in $dir*; do 
+        echo ". $file" >> ~/.bashrc
+        success_msg "Sourced $file"
+    done
+    echo "# ${script_id} END" >> ~/.bashrc
+else
+    warning_msg "Files sourced already in .bashrc"
+fi
 
 success_msg "Install successful! Reload shell."

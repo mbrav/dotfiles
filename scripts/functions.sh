@@ -1,5 +1,27 @@
 #!/bin/bash
 
+mbrav_scripts_v="0.1.0"
+script_id="mbrav/configs v${mbrav_scripts_v}"
+
+# If not running interactively, don't do anything
+[[ $- != *i* ]] && return
+
+# Load starship prompt if starship is installed
+if  [ -x /usr/bin/starship ]; then
+    __main() {
+        local major="${BASH_VERSINFO[0]}"
+        local minor="${BASH_VERSINFO[1]}"
+
+        if ((major > 4)) || { ((major == 4)) && ((minor >= 1)); }; then
+            source <("/usr/bin/starship" init bash --print-full-init)
+        else
+            source /dev/stdin <<<"$("/usr/bin/starship" init bash --print-full-init)"
+        fi
+    }
+    __main
+    unset -f __main
+fi
+
 function check_sudo () {
     [[ $(whoami) != root ]] && error_msg "Please run script as root or sudo" 13
     warning_msg "Note: to run sudo and preserve passed env variables run with 'sudo -E'"
@@ -128,3 +150,14 @@ function git-cred() {
     echo "Key:   $(git config user.signingkey)"
 }
 
+# Attach to tmux session on shell login
+function start_tmux() {
+    if type tmux &> /dev/null; then
+        #if not inside a tmux session, and if no session is started, start a new session
+        if [[ -z "$TMUX" && -z $TERMINAL_CONTEXT ]]; then
+            (tmux -2 attach || tmux -2 new-session)
+        fi
+    fi
+}
+
+start_tmux

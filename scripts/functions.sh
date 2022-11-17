@@ -1,26 +1,29 @@
 #!/bin/bash
 
-mbrav_scripts_v="0.1.0"
+mbrav_scripts_v="0.1.1"
 script_id="mbrav/configs v${mbrav_scripts_v}"
 
-# If not running interactively, don't do anything
-[[ $- != *i* ]] && return
-
 # Load starship prompt if starship is installed
-if  [ -x /usr/bin/starship ]; then
-    __main() {
-        local major="${BASH_VERSINFO[0]}"
-        local minor="${BASH_VERSINFO[1]}"
+function load_starship () {
+    if [ -x "$(command -v starship)" ]; then
+        __main() {
+            local major="${BASH_VERSINFO[0]}"
+            local minor="${BASH_VERSINFO[1]}"
 
-        if ((major > 4)) || { ((major == 4)) && ((minor >= 1)); }; then
-            source <("/usr/bin/starship" init bash --print-full-init)
-        else
-            source /dev/stdin <<<"$("/usr/bin/starship" init bash --print-full-init)"
-        fi
-    }
-    __main
-    unset -f __main
-fi
+            if ((major > 4)) || { ((major == 4)) && ((minor >= 1)); }; then
+                source <(starship init bash --print-full-init)
+            else
+                source /dev/stdin <<<"$(starship init bash --print-full-init)"
+            fi
+        }
+        __main
+        unset -f __main
+    fi
+}
+
+# If not running interactively, don't do anything
+# [[ $- = *i* ]] && load_starship || return
+# load_starship
 
 function check_sudo () {
     [[ $(whoami) != root ]] && error_msg "Please run script as root or sudo" 13
@@ -30,15 +33,16 @@ function check_sudo () {
 # Yes no prompt
 function yes_no_prompt() {
     # $1 - Space separated string for prompt
-    # Returns
-    # 1 - yes
-    # 0 - no
-    while true; do
+    # Sets $Y_N to:
+    # 0 - yes
+    # 1 - no
+    local yes_no_finish=1
+    while [ $yes_no_finish -ne 0 ]; do
         read -p "${GREEN}${BOLD}${1} ${YELLOW}${BOLD}y/n${CLEAR}:" Y_N
         case $Y_N in
-            y|Y) return 1 ;;
-            n|N) return 0 ;;
-            *) exit 1 ;;
+            y|Y|yes) yes_no_finish=0 && Y_N=0 ;;
+            n|N|no) yes_no_finish=0 && Y_N=1 ;;
+            *) echo "${RED}${BOLD}[X] ${Y_N} is not a yes/no option!" ;;
         esac
     done
 }
@@ -160,4 +164,4 @@ function start_tmux() {
     fi
 }
 
-start_tmux
+# start_tmux

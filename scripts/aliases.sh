@@ -13,6 +13,9 @@ alias tmux-new='tmux -2 new -s '
 alias tmux-reatch='tmux -2 attach -t '
 # alias pass-gen='< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c' # $1 - number of bytes
 
+# Folder aliases
+alias dev="cd ~/dev"
+
 # Python aliases
 alias pip-install='pip install --upgrade --no-cache pip wheel setuptools '
 alias python-venv='python3 -m venv venv && source ./venv/bin/activate'

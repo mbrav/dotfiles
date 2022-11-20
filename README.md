@@ -4,3 +4,11 @@
 # configs
 
 Scripts and dot files
+
+## Installation
+
+To launch an interactive installation, do:
+
+```bash
+./install.sh
+```

@@ -25,13 +25,17 @@ function install_scripts() {
     fi
 }
 
+function install_dotfiles() {
+    cp -vfr $script_dir/dot_files/. ~/
+}
+
 echo -e "${GREEN}${BOLD}${script_id} installer"
+
+yes_no_prompt "${GREEN}Install Dot files? ${YELLOW}"
+[[ $Y_N -eq 0 ]] && install_dotfiles
 
 yes_no_prompt "${GREEN}Install scripts? ${YELLOW}"
 [[ $Y_N -eq 0 ]] && install_scripts
-
-yes_no_prompt "${GREEN}Install Dot files? ${YELLOW}"
-[[ $Y_N -eq 0 ]] && cp -vfr $script_dir/dot_files/. ~/
 
 yes_no_prompt "${GREEN}Turn on automatic tmux login for shell? ${YELLOW}"
 [[ $Y_N -eq 0 ]] && replace-vars "# start_tmux" "start_tmux" ~/.scripts/functions.sh || info_msg "Tmux will not be started on shell login"

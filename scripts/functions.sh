@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mbrav_scripts_v="0.1.2"
+mbrav_scripts_v="0.1.3"
 script_id="mbrav/configs v${mbrav_scripts_v}"
 
 # Load starship prompt if starship is installed

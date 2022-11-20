@@ -1,7 +1,8 @@
 # MY ALIASES BEGIN
-export EDITOR='vim'
-export VISUAL='vim'
+export EDITOR='nvim'
+export VISUAL='nvim'
 alias vi='vim'
+alias vim='nvim'
 
 export ANSIBLE_CONFIG='$HOME/.ansible/ansible.cfg'
 

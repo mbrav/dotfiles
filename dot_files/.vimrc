@@ -11,11 +11,6 @@ set relativenumber
 set history=10000
 set noswapfile
 
-" Autoclose brakets
-inoremap {<CR> {<CR>}<Esc>ko<tab>
-inoremap [<CR> [<CR>]<Esc>ko<tab>
-inoremap (<CR> (<CR>)<Esc>ko<tab>
-
 if filereadable(expand("~/.vimrc.plug"))
 	source ~/.vimrc.plug
 endif

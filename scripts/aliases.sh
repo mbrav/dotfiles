@@ -49,6 +49,9 @@ alias gaa='git add -A && git commit --amend'
 alias gf='git push --force'
 alias gfa='git commit --amend && git push --force'
 
+# Python utils
+alias pip-req-txt-to-toml="echo 'Adding requirements.txt to pyprpoject.toml' && cat requirements.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add"
+
 ## Useful aliases
 # Replace ls with exa
 [ -x "$(command -v exa)" ] && \

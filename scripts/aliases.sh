@@ -23,6 +23,10 @@ alias python-venv='python3 -m venv venv && source ./venv/bin/activate'
 alias python-https-server='python3 ~/dev/HTTPSPythonServer/server-start.py'
 alias dj-migrate='python manage.py makemigrations && python manage.py migrate'
 
+# Rust aliases
+alias clpy='cargo clippy -- -W clippy::pedantic -W clippy::nursery -W clippy::unwrap_used'
+alias clpy-fix='cargo clippy --fix --allow-dirty -- -W clippy::pedantic -W clippy::nursery -W clippy::unwrap_used'
+
 # Docker aliases
 alias doup='sudo systemctl start docker.service'
 alias dodown='sudo systemctl stop docker.service'

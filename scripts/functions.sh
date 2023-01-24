@@ -108,6 +108,23 @@ function _dock-save_completions() {
 complete -F _dock-save_completions dock-save
 
 
+# Nmap scanner and report generation
+function nmap-gen() {
+    # $1 - IP range
+    # $2 - report name
+
+    [ -x "$(command -v nmap)" ] || error_msg "nmap not installed!" 1
+    [ -x "$(command -v xsltproc)" ] || error_msg "xsltproc not installed!" 1
+
+    [[ -n $1 ]] && local ip_range=$1 || local ip_range="192.168.1.0/24"
+    [[ -n $2 ]] && local scan_name=$2 || local scan_name=nmap_scan
+
+    info_msg "IP range: $ip_range"
+    info_msg "Scan name: $scan_name"
+
+    nmap -sTV -A -oX $scan_name.xml $ip_range && xsltproc $scan_name.xml -o $scan_name.html && rm $scan_name.xml
+}
+
 # Interval command
 function do-interval() {
     # do-interval 1

@@ -107,7 +107,6 @@ function _dock-save_completions() {
 
 complete -F _dock-save_completions dock-save
 
-
 # Nmap scanner and report generation
 function nmap-gen() {
     # $1 - IP range
@@ -122,7 +121,7 @@ function nmap-gen() {
     info_msg "IP range: $ip_range"
     info_msg "Scan name: $scan_name"
 
-    nmap -sTV -A -oX $scan_name.xml $ip_range && xsltproc $scan_name.xml -o $scan_name.html && rm $scan_name.xml
+    nmap -sTV -A -oX $scan_name.xml --webxml $ip_range && xsltproc $scan_name.xml -o $scan_name.html && rm $scan_name.xml
 }
 
 # Interval command
@@ -151,7 +150,6 @@ function 7z-max() {
     fi
     7z a -m0=lzma2 -mx $1.7z $FOLDER_NAME
 }
-
 
 # Clean non ascii chars from a file
 function ascii-clean() {

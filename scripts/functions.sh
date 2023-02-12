@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mbrav_scripts_v="0.1.3"
+mbrav_scripts_v="0.1.4"
 script_id="mbrav/configs v${mbrav_scripts_v}"
 
 # Load starship prompt if starship is installed
@@ -172,11 +172,17 @@ function git-cred() {
 # Attach to tmux session on shell login
 function start_tmux() {
     if type tmux &> /dev/null; then
+        # Check if term is inside an IDE or other environments
+        # If so, do not enter a tmux session
+        [[ -n "$TERM_PROGRAM" && "$TERM_PROGRAM" = @(vscode|my_ide_name) ]] && local no_tmux=true
+        # Check if inside a SSH session
+        [[ -n "$SSH_CONNECTION" || -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && local no_tmux=true
+
         #if not inside a tmux session, and if no session is started, start a new session
-        if [[ -z "$TMUX" && -z $TERMINAL_CONTEXT ]]; then
+        if [[ -z "$TMUX" && -z $TERMINAL_CONTEXT && -z "$no_tmux" ]]; then
             (tmux -2 attach || tmux -2 new-session)
         fi
     fi
 }
 
-# start_tmux
+start_tmux

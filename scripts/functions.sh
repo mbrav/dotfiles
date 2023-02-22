@@ -3,8 +3,8 @@
 mbrav_scripts_v="0.1.4"
 script_id="mbrav/configs v${mbrav_scripts_v}"
 
-# Load starship prompt if starship is installed
 function load_starship () {
+    # Load starship prompt if starship is installed
     if [ -x "$(command -v starship)" ]; then
         __main() {
             local major="${BASH_VERSINFO[0]}"
@@ -21,17 +21,13 @@ function load_starship () {
     fi
 }
 
-# If not running interactively, don't do anything
-# [[ $- = *i* ]] && load_starship || return
-# load_starship
-
 function check_sudo () {
     [[ $(whoami) != root ]] && error_msg "Please run script as root or sudo" 13
     warning_msg "Note: to run sudo and preserve passed env variables run with 'sudo -E'"
 }
 
-# Yes no prompt
 function yes_no_prompt() {
+    # Yes no prompt
     # $1 - Space separated string for prompt
     # Sets $Y_N to:
     # 0 - yes
@@ -47,8 +43,8 @@ function yes_no_prompt() {
     done
 }
 
-# Check for passed url
 function check_url() {
+    # Check for passed url
     # 0 - exists
     # 1 - does not
     if curl --output /dev/null --silent --head --fail "$1"; then
@@ -70,8 +66,8 @@ function docker-compose-install() {
     docker-compose --version
 }
 
-# Replace text and show interactive
 function replace-vars() {
+    # Replace text and show interactive
     # $1 - string to find
     # $2 - string to change to
     # $3 - File path
@@ -88,8 +84,8 @@ function replace-vars() {
     unset grep_command
 }
 
-# Save docker images
 function dock-save() {
+    # Save docker images
     if [[ $# -lt 1 || $# -gt 2 ]]; then
         echo -e $RED"Must provide 2 arguments, docker image name and tar output file name (no exension)"$CLEAR
         exit 1
@@ -99,16 +95,16 @@ function dock-save() {
     docker save $1 | gzip -c > ~/docker-images/$2.tar.gz
 }
 
-# Auto completion for docker-save
 function _dock-save_completions() {
+    # Auto completion for docker-save
     [ "${#COMP_WORDS[@]}" != "2" ] && return || \
         COMPREPLY=($(compgen -W "$(docker images --format "{{.Repository}}:{{.Tag}}")" "${COMP_WORDS[1]}"))
 }
 
 complete -F _dock-save_completions dock-save
 
-# Nmap scanner and report generation
 function nmap-gen() {
+    # Nmap scanner and report generation
     # $1 - IP range
     # $2 - report name
 
@@ -134,8 +130,8 @@ function do-interval() {
     watch -n $1 -d=cumulative ${@:2}
 }
 
-# Max 7z compression
 function 7z-max() {
+    # Max 7z compression
     echo -e $GREEN$BOLD"7z max compression using lzma2"$CLEAR
     echo -e $YELLOW$BOLD"arg1$CLEAR - archive name without extension"
     echo -e $YELLOW$BOLD"arg2$CLEAR - folder name (optional)"

@@ -173,31 +173,32 @@ function start_tmux() {
         return
     fi
 
-    if [[ -n "$SSH_CONNECTION" || -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
-        # Check if inside a SSH session
-        # If so, do not enter a tmux session and exit function
-        echo "🛑 Inside SSH session, not starting tmux session"
-        return
-    fi
-
     if [ -n "$TMUX" ]; then
         # Check if already inside tmux
         # if so, exit function
         return
     fi
 
-    # Attach to tmux session on shell login if tmux is installed
     # Set default session name to "main"
     tmux_session_name="🐺main"
 
     if [[ -n "$TERM_PROGRAM" && "$TERM_PROGRAM" = @(vscode|my_ide_name) ]]; then
         # Check if term is inside an IDE or other environments
-        folder="$(pwd)"
-        folder_name="$(basename $folder)"
-        tmux_session_name="🖥️$folder_name"
+        project_folder="$(pwd)"
+        project_folder_name="$(basename $project_folder)"
+        tmux_session_name="🖥️$project_folder_name"
     fi
 
-    if [ -n "$(tmux ls | grep $tmux_session_name)" ]; then
+    if [[ -n "$SSH_CONNECTION" || -n "$SSH_CLIENT" || -n "$SSH_TTY" || -n "$project_folder" ]]; then
+        # Check if inside a SSH session
+        # And if not inside a term program in cases where VScode Server is used
+        # If so, do not enter a tmux session and exit function
+        echo "🛑 Inside SSH session, not starting tmux session"
+        return
+    fi
+
+    # Attach to existing or create a new tmux session
+    if [ -n "$(tmux ls | grep "$tmux_session_name")" ]; then
         echo "🚪 Tmux session '$tmux_session_name' exists, entering"
     else
         echo "🪄 Tmux session '$tmux_session_name' does not exist, creating"

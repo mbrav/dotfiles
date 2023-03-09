@@ -165,20 +165,44 @@ function git-cred() {
     echo "Key:   $(git config user.signingkey)"
 }
 
-# Attach to tmux session on shell login
 function start_tmux() {
-    if type tmux &> /dev/null; then
-        # Check if term is inside an IDE or other environments
-        # If so, do not enter a tmux session
-        [[ -n "$TERM_PROGRAM" && "$TERM_PROGRAM" = @(vscode|my_ide_name) ]] && local no_tmux=true
-        # Check if inside a SSH session
-        [[ -n "$SSH_CONNECTION" || -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && local no_tmux=true
-
-        #if not inside a tmux session, and if no session is started, start a new session
-        if [[ -z "$TMUX" && -z $TERMINAL_CONTEXT && -z "$no_tmux" ]]; then
-            (tmux -2 attach || tmux -2 new-session)
-        fi
+    if ! command -v tmux &> /dev/null; then
+        # Check if tmux is installed
+        # if not, exit function
+        echo "🛑 Tmux not installed, not starting tmux session"
+        return
     fi
+
+    if [[ -n "$SSH_CONNECTION" || -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
+        # Check if inside a SSH session
+        # If so, do not enter a tmux session and exit function
+        echo "🛑 Inside SSH session, not starting tmux session"
+        return
+    fi
+
+    if [ -n "$TMUX" ]; then
+        # Check if already inside tmux
+        # if so, exit function
+        return
+    fi
+
+    # Attach to tmux session on shell login if tmux is installed
+    # Set default session name to "main"
+    tmux_session_name="🐺main"
+
+    if [[ -n "$TERM_PROGRAM" && "$TERM_PROGRAM" = @(vscode|my_ide_name) ]]; then
+        # Check if term is inside an IDE or other environments
+        folder="$(pwd)"
+        folder_name="$(basename $folder)"
+        tmux_session_name="🖥️$folder_name"
+    fi
+
+    if [ -n "$(tmux ls | grep $tmux_session_name)" ]; then
+        echo "🚪 Tmux session '$tmux_session_name' exists, entering"
+    else
+        echo "🪄 Tmux session '$tmux_session_name' does not exist, creating"
+    fi
+    tmux -2 attach -t "$tmux_session_name" || tmux -2 new-session -s "$tmux_session_name"
 }
 
 start_tmux

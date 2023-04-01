@@ -1,8 +1,8 @@
 #!/bin/bash
-
+mbrav_scripts_v="0.1.5"
+script_id="mbrav/dot_files v${mbrav_scripts_v}"
 script_dir=$(dirname "$(realpath $0)")
 dir="$HOME/.scripts/"
-. $script_dir/scripts/colors.sh
 . $script_dir/scripts/functions.sh
 
 function install_scripts() {

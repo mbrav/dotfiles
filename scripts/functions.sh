@@ -1,7 +1,89 @@
 #!/bin/bash
 
-mbrav_scripts_v="0.1.4"
-script_id="mbrav/configs v${mbrav_scripts_v}"
+# COLORS
+ncolors=$(command -v tput > /dev/null && tput colors) # supports color
+if [[ -n $ncolors && -z $NO_COLOR ]]; then
+    TERMCOLS=$(tput cols)
+    CLEAR="$(tput sgr0)"
+
+    # 4 bit colors
+    if test $ncolors -ge 8; then
+        # Normal
+        BLACK="$(tput setaf 0)"
+        RED="$(tput setaf 1)"
+        GREEN="$(tput setaf 2)"
+        YELLOW="$(tput setaf 3)"
+        BLUE="$(tput setaf 4)"
+        MAGENTA="$(tput setaf 5)"
+        CYAN="$(tput setaf 6)"
+        GREY="$(tput setaf 7)"
+    fi
+
+    # >4 bit colors
+    if test $ncolors -gt 8; then
+        # High intensity
+        BLACK_I="$(tput setaf 8)"
+        RED_I="$(tput setaf 9)"
+        GREEN_I="$(tput setaf 10)"
+        YELLOW_I="$(tput setaf 11)"
+        BLUE_I="$(tput setaf 12)"
+        MAGENTA_I="$(tput setaf 13)"
+        CYAN_I="$(tput setaf 14)"
+        WHITE="$(tput setaf 15)"
+    else
+        BLACK_I=$BLACK
+        RED_I=$RED
+        GREEN_I=$GREEN
+        YELLOW_I=$YELLOW
+        BLUE_I=$BLUE
+        MAGENTA_I=$MAGENTA
+        CYAN_I=$CYAN
+        WHITE=$GREY
+    fi
+
+    # Styles
+    UNDERLINE="$(tput smul)"
+    STANDOUT="$(tput smso)"
+    BOLD="$(tput bold)"
+fi
+
+COLORS=("$BLACK" "$RED" "$GREEN" "$YELLOW" "$BLUE" "$MAGENTA" "$CYAN" "$GREY" "$BLACK_I" "$BLACK_I" "$RED_I" "$GREEN_I" "$YELLOW_I" "$BLUE_I" "$MAGENTA_I" "$CYAN_I" "$WHITE")
+STYLES=("$UNDERLINE" "$BOLD")
+
+function r_color () {
+    # Set a random color
+    echo -e -n "${COLORS[RANDOM%${#COLORS[@]}]}"
+}
+
+function r_color_st () {
+    # Set a random color with style
+    echo -e -n "${COLORS[RANDOM%${#COLORS[@]}]}${STYLES[RANDOM%${#STYLES[@]}]}"
+}
+
+function error_msg() {
+    # Error message
+    # $1            - Message string argument
+    # $2 (optional) - exit code
+    echo -e "${RED}${BOLD}[X] ${1}${CLEAR}"
+    [[ -n $2 ]] && exit $2
+}
+
+function warning_msg() {
+    echo -e "${YELLOW}${BOLD}[!] ${*}${CLEAR}"
+}
+
+function success_msg() {
+    echo -e "${GREEN}${BOLD}[✓] ${*}${CLEAR}"
+}
+
+function info_msg() {
+    echo -e "${CYAN}[i] ${*}${CLEAR}"
+}
+
+# echo -e -n "$(r_color_st)L$(r_color)O$(r_color)A$(r_color_st)D$(r_color)E$(r_color_st)D$CLEAR "
+# echo -e -n "$(r_color_st)T$(r_color)E$(r_color)R$(r_color_st)M$(r_color)I$(r_color_st)N$(r_color)A$(r_color_st)L$CLEAR "
+# echo -e "$(r_color_st)C$(r_color)O$(r_color)L$(r_color_st)O$(r_color)R$(r_color_st)S$CLEAR "
+
 
 function load_starship () {
     # Load starship prompt if starship is installed
@@ -164,6 +246,27 @@ function git-cred() {
     echo "Email: $(git config user.email)"
     echo "Key:   $(git config user.signingkey)"
 }
+
+# wakatime for bash
+#
+# include this file in your "~/.bashrc" file with this command:
+#   . path/to/bash-wakatime.sh
+#
+# or this command:
+#   source path/to/bash-wakatime.sh
+#
+# Don't forget to create and configure your "~/.wakatime.cfg" file.
+
+# hook function to send wakatime a tick
+pre_prompt_command() {
+    version="1.0.0"
+    entity=$(echo $(fc -ln -0) | cut -d ' ' -f1)
+    [ -z "$entity" ] && return # $entity is empty or only whitespace
+    $(git rev-parse --is-inside-work-tree 2> /dev/null) && local project="$(basename $(git rev-parse --show-toplevel))" || local project="Terminal"
+    (~/.wakatime/wakatime-cli --write --plugin "bash-wakatime/$version" --entity-type app --project "$project" --entity "$entity" 2>&1 > /dev/null &)
+}
+
+PROMPT_COMMAND="pre_prompt_command; $PROMPT_COMMAND"
 
 function start_tmux() {
     if ! command -v tmux &> /dev/null; then

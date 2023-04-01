@@ -1,8 +1,5 @@
 #!/usr/local/bin/fish
 
-set mbrav_scripts_v "0.1.4"
-set script_id "mbrav/configs v$mbrav_scripts_v"
-
 function load_starship
     if type -q starship
         starship init fish | source

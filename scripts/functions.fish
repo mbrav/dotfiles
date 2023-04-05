@@ -19,8 +19,8 @@ function start_tmux
         return
     end
 
-    if test -n "$TMUX"
-        # Check if already inside tmux
+    if test -n "$TMUX"; or test -n "$DOLPHIN_TERM"
+        # Check if already inside tmux or custom variable
         # if so, exit function
         return
     end

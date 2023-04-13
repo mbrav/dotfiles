@@ -8,14 +8,26 @@ export ANSIBLE_CONFIG='$HOME/.ansible/ansible.cfg'
 
 ## MY ALIASES
 alias d-u='du -h --max-depth 1'
-# Force tmux color 
+# Force tmux color
 alias tmux='tmux -2'
 alias tmux-new='tmux -2 new -s '
 alias tmux-reatch='tmux -2 attach -t '
-# alias pass-gen='< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c' # $1 - number of bytes
+# alias tmux-reatch="tmux -2 attach -t $(tmux ls | awk '{print $1}' | sed 's/://g' | fzf)"
 
-# Folder aliases
-alias dev="cd ~/dev"
+# Fuzzy Finder scripts
+# Fuzzy find dev directory type, then projects
+alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf)'
+# Fuzzy find dev directory all
+alias deva='cd $(find ~/dev/* -type d | fzf)'
+# Config folder fuzzy find
+alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf)'
+# Config folder fuzzy find all
+alias confa='cd $(find ~/.config/* -type d | fzf)'
+# Process killer
+alias pkl='ps aux | fzf | awk "{print $2}" | xargs kill'
+
+# Pass gen
+# alias pass-gen='< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c' # $1 - number of bytes
 
 # Python aliases
 alias pip-install='pip install --upgrade --no-cache pip wheel setuptools '

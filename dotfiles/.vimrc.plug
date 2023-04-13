@@ -1,6 +1,0 @@
-call plug#begin()
-	Plug 'wakatime/vim-wakatime'
-	Plug 'valloric/youcompleteme'
-	Plug 'ptzz/lf.vim'
-	Plug 'voldikss/vim-floaterm'
-call plug#end()

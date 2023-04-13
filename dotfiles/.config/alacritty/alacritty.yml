@@ -1,0 +1,223 @@
+# Garuda Linux configuration for Alacritty
+env:
+  TERM: xterm-256color
+
+window:
+  dimensions:
+    columns: 120
+    lines: 34
+  padding:
+    x: 0
+    y: 0
+  dynamic_padding: true
+  decorations: full
+  decorations_theme_variant: Dark
+  title: Alacritty
+  opacity: 0.9
+  class:
+    instance: Alacritty
+    general: Alacritty
+
+scrolling:
+  history: 100000
+  multiplier: 3
+
+font:
+  size: 11
+  normal:
+    family: FiraCode Nerd Font Mono
+  bold:
+    family: FiraCode Nerd Font Mono
+  italic:
+    family: FiraCode Nerd Font Mono
+  bold_italic:
+    family: FiraCode Nerd Font Mono
+    size: 11.0
+
+draw_bold_text_with_bright_colors: true
+
+save_to_clipboard: true
+
+window.dynamic_title: true
+
+cursor:
+  style: Underline
+  blinking: Always
+  blink-interval: 750
+
+live_config_reload: true
+
+shell:
+  program: /usr/bin/fish
+  args:
+    - --login
+
+mouse:
+  hide_when_typing: true
+
+key_bindings:
+  # (Windows, Linux, and BSD only)
+  - { key: V, mods: Control|Shift, action: Paste }
+  - { key: C, mods: Control|Shift, action: Copy }
+  - { key: N,  mods: Command, action: SpawnNewInstance }
+  - { key: Insert, mods: Shift, action: PasteSelection }
+  - { key: Key0, mods: Control, action: ResetFontSize }
+  - { key: Equals, mods: Control, action: IncreaseFontSize }
+  - { key: Plus, mods: Control, action: IncreaseFontSize }
+  - { key: Minus, mods: Control, action: DecreaseFontSize }
+  - { key: Minus, mods: Control, action: DecreaseFontSize }
+
+schemes:
+  # Tokyo Night theme, based on both:
+  #   https://github.com/ghifarit53/tokyonight-vim
+  #   https://github.com/enkia/tokyo-night-vscode-theme
+  tokyo-night: &tokyo-night # Default colors
+    primary:
+      background: "#1a1b26"
+      foreground: "#a9b1d6"
+
+    # Normal colors
+    normal:
+      black: "#32344a"
+      red: "#f7768e"
+      green: "#9ece6a"
+      yellow: "#e0af68"
+      blue: "#7aa2f7"
+      magenta: "#ad8ee6"
+      cyan: "#449dab"
+      white: "#787c99"
+
+    # Bright colors
+    bright:
+      black: "#444b6a"
+      red: "#ff7a93"
+      green: "#b9f27c"
+      yellow: "#ff9e64"
+      blue: "#7da6ff"
+      magenta: "#bb9af7"
+      cyan: "#0db9d7"
+      white: "#acb0d0"
+
+  tokyo-night-storm: &tokyo-night-storm # Default colors
+    primary:
+      background: "#24283b"
+      foreground: "#a9b1d6"
+
+    # Normal colors
+    normal:
+      black: "#32344a"
+      red: "#f7768e"
+      green: "#9ece6a"
+      yellow: "#e0af68"
+      blue: "#7aa2f7"
+      magenta: "#ad8ee6"
+      cyan: "#449dab"
+      white: "#9699a8"
+
+    # Bright colors
+    bright:
+      black: "#444b6a"
+      red: "#ff7a93"
+      green: "#b9f27c"
+      yellow: "#ff9e64"
+      blue: "#7da6ff"
+      magenta: "#bb9af7"
+      cyan: "#0db9d7"
+      white: "#acb0d0"
+
+  monokai-pro: &monokai-pro # Default colors
+    primary:
+      background: "#2D2A2E"
+      foreground: "#fff1f3"
+
+    # Normal colors
+    normal:
+      black: "#2c2525"
+      red: "#fd6883"
+      green: "#adda78"
+      yellow: "#f9cc6c"
+      blue: "#f38d70"
+      magenta: "#a8a9eb"
+      cyan: "#85dacc"
+      white: "#fff1f3"
+
+    # Bright colors
+    bright:
+      black: "#72696a"
+      red: "#fd6883"
+      green: "#adda78"
+      yellow: "#f9cc6c"
+      blue: "#f38d70"
+      magenta: "#a8a9eb"
+      cyan: "#85dacc"
+      white: "#fff1f3"
+
+# github Alacritty Colors
+github-dark: &github-dark
+  primary:
+    background: "0x0d1117"
+    foreground: "0xb3b1ad"
+
+  # Normal colors
+  normal:
+    black: "0x484f58"
+    red: "0xff7b72"
+    green: "0x3fb950"
+    yellow: "0xd29922"
+    blue: "0x58a6ff"
+    magenta: "0xbc8cff"
+    cyan: "0x39c5cf"
+    white: "0xb1bac4"
+
+  # Bright colors
+  bright:
+    black: "0x6e7681"
+    red: "0xffa198"
+    green: "0x56d364"
+    yellow: "0xe3b341"
+    blue: "0x79c0ff"
+    magenta: "0xd2a8ff"
+    cyan: "0x56d4dd"
+    white: "0xf0f6fc"
+
+  indexed_colors:
+    - { index: 16, color: "0xd18616" }
+    - { index: 17, color: "0xffa198" }
+
+# github Alacritty Colors
+github-dimmed: &github-dimmed # Default colors
+  primary:
+    background: "0x22272e"
+    foreground: "0x768390"
+
+  # Normal colors
+  normal:
+    black: "0x545d68"
+    red: "0xf47067"
+    green: "0x57ab5a"
+    yellow: "0xc69026"
+    blue: "0x539bf5"
+    magenta: "0xb083f0"
+    cyan: "0x39c5cf"
+    white: "0x909dab"
+
+  # Bright colors
+  bright:
+    black: "0x636e7b"
+    red: "0xff938a"
+    green: "0x6bc46d"
+    yellow: "0xdaaa3f"
+    blue: "0x6cb6ff"
+    magenta: "0xdcbdfb"
+    cyan: "0x56d4dd"
+    white: "0xcdd9e5"
+
+  indexed_colors:
+    - { index: 16, color: "0xd18616" }
+    - { index: 17, color: "0xff938a" }
+
+# colors: *tokyo-night
+# colors: *tokyo-night-storm
+# colors: *monokai-pro
+# colors: *github-dark
+colors: *github-dimmed

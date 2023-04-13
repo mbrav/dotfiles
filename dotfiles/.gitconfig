@@ -1,0 +1,8 @@
+[user]
+	signingkey = 5E77D86B261A4D94E47957EF6EC2645AED61DB91
+	email = mbrav@protonmail.com
+	name = mbrav
+[commit]
+	gpgsign = true
+[core]
+	editor = nvim

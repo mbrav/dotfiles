@@ -5,6 +5,8 @@
 
 Scripts and dot files
 
+![](./screenshot.png)
+
 ## Installation
 
 To launch an interactive installation, do:

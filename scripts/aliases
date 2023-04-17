@@ -5,7 +5,10 @@ export VISUAL='nvim'
 alias vi='vim'
 alias vim='nvim'
 
+# Set Absible config folder
 export ANSIBLE_CONFIG="$HOME/.ansible/ansible.cfg"
+# Use QEMU system URI
+export LIBVIRT_DEFAULT_URI="qemu:///system"
 
 ## MY ALIASES
 alias dus='du -h --max-depth 1'
@@ -15,51 +18,62 @@ alias tmux-new='tmux -2 new -s '
 # alias tmux-reatch="tmux -2 attach -t $(tmux ls | awk '{print $1}' | sed 's/://g' | fzf)"
 
 # Fuzzy Finder scripts
+[ -x "$(command -v fzf)" ] && \
 # Fuzzy find dev directory type, then projects
-alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf)'
+alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf)' && \
 # Fuzzy find dev directory all
-alias deva='cd $(find ~/dev/* -type d | fzf)'
+alias deva='cd $(find ~/dev/* -type d | fzf)' && \
 # Config folder fuzzy find
-alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf)'
+alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf)' && \
 # Config folder fuzzy find all
-alias confa='cd $(find ~/.config/* -type d | fzf)'
+alias confa='cd $(find ~/.config/* -type d | fzf)' && \
 # Log tailer
-alias logt='tail -f $(find /var/log -type f | fzf)'
+alias logt='tail -f $(find /var/log -type f | fzf)' && \
 # Journalctl process log tailer
-alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _PID=%'
+alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _PID=%' && \
 # Process killer
 alias pkl='ps aux | fzf | awk "{print $2}" | xargs kill'
 
 # Pass gen
 # alias pass-gen='< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c' # $1 - number of bytes
 
+# SHH aliases
+# List SSH sessions
+alias sshs="sudo netstat -tnpa | grep 'ESTABLISHED.*sshd'"
+
 # Python aliases
 alias pip-install='pip install --upgrade --no-cache pip wheel setuptools '
 alias python-venv='python3 -m venv venv && source ./venv/bin/activate'
 alias python-https-server='python3 ~/dev/HTTPSPythonServer/server-start.py'
 alias dj-migrate='python manage.py makemigrations && python manage.py migrate'
+alias pip-req-txt-to-toml="echo 'Adding requirements.txt to pyprpoject.toml' && cat requirements.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add"
 
 # Rust aliases
 alias clpy='cargo clippy -- -W clippy::pedantic -W clippy::nursery -W clippy::unwrap_used'
 alias clpy-fix='cargo clippy --fix --allow-dirty -- -W clippy::pedantic -W clippy::nursery -W clippy::unwrap_used'
 
 # Docker aliases
-alias doup='sudo systemctl start docker.service'
-alias dodown='sudo systemctl stop docker.service'
-alias do-remove-all='docker ps -a -q | xargs docker rm'
-alias do-stop-all='docker ps -a -q | xargs docker stop'
-alias do-purge-all-WARNING='docker system prune --volumes --all --force'
-alias do-clean='dock-stop-all && dock-remove-all && docker image prune'
+alias dk='docker'
+alias dkup='sudo systemctl start docker.service'
+alias dkdown='sudo systemctl stop docker.service'
+alias dkstop="docker ps -a --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}' | fzf | cut -f 1 -d ' ' | xargs -I % sh -c 'docker stop %'"
+alias dkstopA='docker ps -a -q | xargs docker stop'
+alias dkrm="docker ps -a --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}' | fzf | cut -f 1 -d ' ' | xargs -I % sh -c 'docker rm %'"
+alias dkrmA='docker ps -a -q | xargs docker rm'
+alias dkrmi="docker images -a --format 'table {{.ID}}\t{{.Repository}}:{{.Tag}}\t{{.CreatedSince}}\t{{.Size}}' | fzf | cut -f 1 -d ' ' | xargs -I % sh -c 'docker rmi %'"
+alias dkrmiA='docker images -a -q | xargs docker rmi'
+alias dkvolrmA='docker system prune --volumes --all --force'
+alias dkpruneA='dkstopA && dkrmA && docker image prune'
 
 # K8s aliases
 alias k='kubectl'
 
-# Mount rclone 
+# Mount rclone
 alias rclone-crypt='rclone mount crypt:/ ~/Desktop/crypt/ --read-only --max-read-ahead=1G --acd-templink-threshold=0 --contimeout=15s --checkers=16 --bwlimit=0 --retries=3 --timeout=30s --low-level-retries=1 --transfers=8 --dir-cache-time=30m'
 alias mi-display-fix='xrandr --output HDMI-0 --mode 3440x1440 --rate 60'
 
 # Extract GPS data from image with imagemagick
-# $1 file name 
+# $1 file name
 alias image-gps='identify -format "%[EXIF:GPSLatitude],%[EXIF:GPSLongitude]\n" '
 
 # Git aliases
@@ -78,9 +92,6 @@ alias gH="seq 1 20 | fzf | xargs -I % sh -c 'git reset --hard HEAD~%'"
 # Use fuzzy finder to select a range from 1 to 20 to rebase HEAD~X
 alias gR="seq 1 20 | fzf | xargs -I % sh -c 'git rebase -i HEAD~%'"
 
-# Python utils
-alias pip-req-txt-to-toml="echo 'Adding requirements.txt to pyprpoject.toml' && cat requirements.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add"
-
 ## Useful aliases
 # Replace ls with exa
 [ -x "$(command -v exa)" ] && \
@@ -98,8 +109,8 @@ alias l.='exa -a | egrep"^\."'
 alias ip='ip -color'
 
 # Replace some more things with better alternatives
-[ -x "$(command -v pygmentize)" ] && alias cat='pygmentize -g ' 
-[ -x "$(command -v bat)" ] && alias cat='bat --style header --style snip --style changes --style header' 
+[ -x "$(command -v pygmentize)" ] && alias cat='pygmentize -g '
+[ -x "$(command -v bat)" ] && alias cat='bat --style header --style snip --style changes --style header'
 [ ! -x /usr/bin/yay ] && [ -x /usr/bin/paru ] && alias yay='paru'
 
 # Common use
@@ -132,6 +143,3 @@ alias jctl='journalctl -p 3 -xb'
 
 # Recent installed packages
 alias rip='expac --timefmt="%Y-%m-%d %T" "%l\t%n %v" | sort | tail -200 | nl'
-
-# Use QEMU system URI
-export LIBVIRT_DEFAULT_URI="qemu:///system"

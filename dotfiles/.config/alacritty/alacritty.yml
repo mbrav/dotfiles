@@ -4,8 +4,8 @@ env:
 
 window:
   dimensions:
-    columns: 120
-    lines: 34
+    columns: 180
+    lines: 48
   padding:
     x: 0
     y: 0
@@ -13,7 +13,7 @@ window:
   decorations: full
   decorations_theme_variant: Dark
   title: Alacritty
-  opacity: 0.9
+  opacity: 0.8
   class:
     instance: Alacritty
     general: Alacritty
@@ -32,7 +32,6 @@ font:
     family: FiraCode Nerd Font Mono
   bold_italic:
     family: FiraCode Nerd Font Mono
-    size: 11.0
 
 draw_bold_text_with_bright_colors: true
 
@@ -59,7 +58,7 @@ key_bindings:
   # (Windows, Linux, and BSD only)
   - { key: V, mods: Control|Shift, action: Paste }
   - { key: C, mods: Control|Shift, action: Copy }
-  - { key: N,  mods: Command, action: SpawnNewInstance }
+  - { key: N, mods: Command, action: SpawnNewInstance }
   - { key: Insert, mods: Shift, action: PasteSelection }
   - { key: Key0, mods: Control, action: ResetFontSize }
   - { key: Equals, mods: Control, action: IncreaseFontSize }
@@ -71,7 +70,9 @@ schemes:
   # Tokyo Night theme, based on both:
   #   https://github.com/ghifarit53/tokyonight-vim
   #   https://github.com/enkia/tokyo-night-vscode-theme
-  tokyo-night: &tokyo-night # Default colors
+  tokyo-night:
+    # Default colors
+    &tokyo-night
     primary:
       background: "#1a1b26"
       foreground: "#a9b1d6"
@@ -98,7 +99,9 @@ schemes:
       cyan: "#0db9d7"
       white: "#acb0d0"
 
-  tokyo-night-storm: &tokyo-night-storm # Default colors
+  tokyo-night-storm:
+    # Default colors
+    &tokyo-night-storm
     primary:
       background: "#24283b"
       foreground: "#a9b1d6"
@@ -125,7 +128,9 @@ schemes:
       cyan: "#0db9d7"
       white: "#acb0d0"
 
-  monokai-pro: &monokai-pro # Default colors
+  monokai-pro:
+    # Default colors
+    &monokai-pro
     primary:
       background: "#2D2A2E"
       foreground: "#fff1f3"
@@ -155,69 +160,72 @@ schemes:
 # github Alacritty Colors
 github-dark: &github-dark
   primary:
-    background: "0x0d1117"
-    foreground: "0xb3b1ad"
+    background: "#0d1117"
+    foreground: "#b3b1ad"
 
   # Normal colors
   normal:
-    black: "0x484f58"
-    red: "0xff7b72"
-    green: "0x3fb950"
-    yellow: "0xd29922"
-    blue: "0x58a6ff"
-    magenta: "0xbc8cff"
-    cyan: "0x39c5cf"
-    white: "0xb1bac4"
+    black: "#484f58"
+    red: "#ff7b72"
+    green: "#3fb950"
+    yellow: "#d29922"
+    blue: "#58a6ff"
+    magenta: "#bc8cff"
+    cyan: "#39c5cf"
+    white: "#b1bac4"
 
   # Bright colors
   bright:
-    black: "0x6e7681"
-    red: "0xffa198"
-    green: "0x56d364"
-    yellow: "0xe3b341"
-    blue: "0x79c0ff"
-    magenta: "0xd2a8ff"
-    cyan: "0x56d4dd"
-    white: "0xf0f6fc"
+    black: "#6e7681"
+    red: "#ffa198"
+    green: "#56d364"
+    yellow: "#e3b341"
+    blue: "#79c0ff"
+    magenta: "#d2a8ff"
+    cyan: "#56d4dd"
+    white: "#f0f6fc"
 
   indexed_colors:
-    - { index: 16, color: "0xd18616" }
-    - { index: 17, color: "0xffa198" }
+    - { index: 16, color: "#d18616" }
+    - { index: 17, color: "#ffa198" }
 
 # github Alacritty Colors
-github-dimmed: &github-dimmed # Default colors
+github-dimmed:
+  # Default colors
+  &github-dimmed
   primary:
-    background: "0x22272e"
-    foreground: "0x768390"
+    background: "#22272e"
+    foreground: "#768390"
 
   # Normal colors
   normal:
-    black: "0x545d68"
-    red: "0xf47067"
-    green: "0x57ab5a"
-    yellow: "0xc69026"
-    blue: "0x539bf5"
-    magenta: "0xb083f0"
-    cyan: "0x39c5cf"
-    white: "0x909dab"
+    black: "#22272e"
+    red: "#f47067"
+    green: "#57ab5a"
+    yellow: "#c69026"
+    blue: "#539bf5"
+    magenta: "#b083f0"
+    cyan: "#39c5cf"
+    white: "#909dab"
 
   # Bright colors
   bright:
-    black: "0x636e7b"
-    red: "0xff938a"
-    green: "0x6bc46d"
-    yellow: "0xdaaa3f"
-    blue: "0x6cb6ff"
-    magenta: "0xdcbdfb"
-    cyan: "0x56d4dd"
-    white: "0xcdd9e5"
+    black: "#22272e"
+    red: "#ff938a"
+    green: "#6bc46d"
+    yellow: "#daaa3f"
+    blue: "#6cb6ff"
+    magenta: "#dcbdfb"
+    cyan: "#56d4dd"
+    white: "#cdd9e5"
 
   indexed_colors:
-    - { index: 16, color: "0xd18616" }
-    - { index: 17, color: "0xff938a" }
+    - { index: 16, color: "#d18616" }
+    - { index: 17, color: "#ff938a" }
 
 # colors: *tokyo-night
 # colors: *tokyo-night-storm
 # colors: *monokai-pro
 # colors: *github-dark
+
 colors: *github-dimmed

@@ -32,7 +32,7 @@ alias logt='tail -f $(find /var/log -type f | fzf)' && \
 # Journalctl process log tailer
 alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _PID=%' && \
 # Process killer
-alias pkl='ps aux | fzf | awk "{print $2}" | xargs kill'
+alias pkl='ps aux | fzf --header "Please select what process to kill" | awk "{print $2}" | xargs kill'
 
 # Pass gen
 # alias pass-gen='< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c' # $1 - number of bytes
@@ -56,11 +56,11 @@ alias clpy-fix='cargo clippy --fix --allow-dirty -- -W clippy::pedantic -W clipp
 alias dk='docker'
 alias dkup='sudo systemctl start docker.service'
 alias dkdown='sudo systemctl stop docker.service'
-alias dkstop="docker ps -a --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}' | fzf | cut -f 1 -d ' ' | xargs -I % sh -c 'docker stop %'"
+alias dkstop="docker ps -a --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}' | fzf --header 'Please select which container to stop' | cut -f 1 -d ' ' | xargs -I % sh -c 'docker stop %'"
 alias dkstopA='docker ps -a -q | xargs docker stop'
-alias dkrm="docker ps -a --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}' | fzf | cut -f 1 -d ' ' | xargs -I % sh -c 'docker rm %'"
+alias dkrm="docker ps -a --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.RunningFor}}' | fzf --header 'Please select which container to remove' | cut -f 1 -d ' ' | xargs -I % sh -c 'docker rm %'"
 alias dkrmA='docker ps -a -q | xargs docker rm'
-alias dkrmi="docker images -a --format 'table {{.ID}}\t{{.Repository}}:{{.Tag}}\t{{.CreatedSince}}\t{{.Size}}' | fzf | cut -f 1 -d ' ' | xargs -I % sh -c 'docker rmi %'"
+alias dkrmi="docker images -a --format 'table {{.ID}}\t{{.Repository}}:{{.Tag}}\t{{.CreatedSince}}\t{{.Size}}' | fzf  --header 'Please select which volume to remove' | cut -f 1 -d ' ' | xargs -I % sh -c 'docker rmi %'"
 alias dkrmiA='docker images -a -q | xargs docker rmi'
 alias dkvolrmA='docker system prune --volumes --all --force'
 alias dkpruneA='dkstopA && dkrmA && docker image prune'
@@ -86,11 +86,11 @@ alias gcM='git commit --amend'
 alias gp='git push'
 alias gP='git push --force'
 # Use fuzzy finder to select a range from 1 to 20 to soft reset HEAD~X
-alias gS="seq 1 20 | fzf | xargs -I % sh -c 'git reset --soft HEAD~%'"
+alias gS="seq 1 20 | fzf --header 'HEAD~n number to soft reset' | xargs -I % sh -c 'git reset --soft HEAD~%'"
 # Use fuzzy finder to select a range from 1 to 20 to hard reset HEAD~X
-alias gH="seq 1 20 | fzf | xargs -I % sh -c 'git reset --hard HEAD~%'"
+alias gH="seq 1 20 | fzf --header 'HEAD~n number to hard reset' | xargs -I % sh -c 'git reset --hard HEAD~%'"
 # Use fuzzy finder to select a range from 1 to 20 to rebase HEAD~X
-alias gR="seq 1 20 | fzf | xargs -I % sh -c 'git rebase -i HEAD~%'"
+alias gR="seq 1 20 | fzf --header 'HEAD~n number to rebase' | xargs -I % sh -c 'git rebase -i HEAD~%'"
 
 ## Useful aliases
 # Replace ls with exa

@@ -14,11 +14,11 @@ My scripts and dot files
 Clone repo:
 
 ```bash
-git clone https://github.com/mbrav/dotfiles && cd dotfiles
+git clone https://github.com/mbrav/dotfiles
 ```
 
 Copy configs:
 
 ```bash
-cp -r .config ~/.config
+cp -r ./dotfiles/dotfiles/.*  ~/
 ```

@@ -3,7 +3,22 @@
 
 # configs (WIP)
 
-Scripts and dot files
+My scripts and dot files
 
 ![](./screenshot.png)
 
+# Installation
+
+⚠️ **Warning:** This will overwrite your configs!
+
+Clone repo:
+
+```bash
+git clone https://github.com/mbrav/dotfiles && cd dotfiles
+```
+
+Copy configs:
+
+```bash
+cp -r .config ~/.config
+```

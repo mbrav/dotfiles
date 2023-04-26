@@ -1,23 +1,12 @@
-#!/bin/bash
+#
+# ~/.bashrc
+#
 
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-# Load starship prompt if starship is installed
-if  [ -x /usr/bin/starship ]; then
-    __main() {
-        local major="${BASH_VERSINFO[0]}"
-        local minor="${BASH_VERSINFO[1]}"
-
-        if ((major > 4)) || { ((major == 4)) && ((minor >= 1)); }; then
-            source <("/usr/bin/starship" init bash --print-full-init)
-        else
-            source /dev/stdin <<<"$("/usr/bin/starship" init bash --print-full-init)"
-        fi
-    }
-    __main
-    unset -f __main
-fi
+# Load starship prompt if starship is installed:
+command -v starship >/dev/null && eval "$(starship init bash)"
 
 # Advanced command-not-found hook
 [[ -f /usr/share/doc/find-the-command/ftc.bash ]] && source /usr/share/doc/find-the-command/ftc.bash
@@ -30,15 +19,14 @@ fi
 
 # Pyenv config
 [[ -d "$HOME/.pyenv" ]] && export PYENV_ROOT="$HOME/.pyenv"
-command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
-
-# NPM config
-export PATH="$HOME/.npm-global/bin:$PATH"
+command -v pyenv >/dev/null && export PATH="$PYENV_ROOT/bin:$PATH"
+command -v pyenv >/dev/null && eval "$(pyenv init -)"
+command -v pyenv >/dev/null && eval "$(pyenv virtualenv-init -)"
 
 # Cargo config
-# [[ -d "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-source "$HOME/.cargo/env"
+[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
-
+# Init custom scripts
+[[ -f "$HOME/.config/scripts/functions.sh" ]] && source "$HOME/.config/scripts/functions.sh"
+[[ -f "$HOME/.config/scripts/aliases" ]] && source "$HOME/.config/scripts/aliases"
+[[ -f "$HOME/.config/scripts/secrets" ]] && source "$HOME/.config/scripts/secrets"

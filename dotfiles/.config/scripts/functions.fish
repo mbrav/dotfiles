@@ -19,28 +19,29 @@ function start_tmux
         return
     end
 
+    if test -n "$SSH_CONNECTION"; and test -n "$SSH_CLIENT"; and test -n "$SSH_TTY"
+        # Check if inside a SSH session
+        # If so, do not enter a tmux session and exit function
+        echo "🛑 Inside SSH session, not starting tmux session"
+        return
+    end
+
     if test -n "$TMUX"; or test -n "$DOLPHIN_TERM"
         # Check if already inside tmux or custom variable
         # if so, exit function
         return
     end
 
-    # Set default session name to "main"
+    # Attach to tmux session on shell login if tmux is installed
+    # Set default session name to a random animal icon "main"
+    # set animal_icons ("🐺" "🐯" "🦁" "🐪" "🐧" "🦩" "🦆" "🦅" "🐼" "🦏" "🦀" "🦂" "🕷️" "🦍" "🦊" "🦖" "🐊" "🐉" "🐲" "🐍" "🐋" "🐬" "🐙")
     set tmux_session_name "🐺main"
 
     if test -n "$TERM_PROGRAM"; and contains "$TERM_PROGRAM" vscode my_ide_name
         # Check if term is inside an IDE or other environments
-        set project_folder "(pwd)"
-        set project_folder_name "(basename $project_folder)"
-        set tmux_session_name "🖥️$project_folder_name"
-    end
-
-    if test -n "$SSH_CONNECTION"; and test -n "$SSH_CLIENT"; and test -n "$SSH_TTY"; and test -n "$project_folder"
-        # Check if inside a SSH session
-        # And if not inside a term program in cases where VScode Server is used
-        # If so, do not enter a tmux session and exit function
-        echo "🛑 Inside SSH session, not starting tmux session"
-        return
+        set folder "$(pwd)"
+        set folder_name "$(basename $folder)"
+        set tmux_session_name "🖥️$folder_name"
     end
 
     # Attach to existing or create a new tmux session

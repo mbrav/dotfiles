@@ -37,7 +37,9 @@ end
 
 ## Starship prompt
 if status --is-interactive
-    source ("/usr/bin/starship" init fish --print-full-init | psub)
+    if type starship >>/dev/null 2>&1
+        source (starship init fish --print-full-init | psub)
+    end
 end
 
 
@@ -167,8 +169,16 @@ source ~/.config/scripts/aliases
 source ~/.config/scripts/functions.fish
 source ~/.config/scripts/secrets
 
-set -Ux PYENV_ROOT $HOME/.pyenv
-fish_add_path $PYENV_ROOT/bin
-status --is-interactive; and pyenv init - | source
-status --is-interactive; and pyenv virtualenv-init - | source
-source $(pyenv root)/completions/pyenv.fish
+# Init pyenv if available
+if test -d ~/.pyenv
+    set -Ux PYENV_ROOT $HOME/.pyenv
+    fish_add_path $PYENV_ROOT/bin
+    status --is-interactive; and pyenv init - | source
+    status --is-interactive; and pyenv virtualenv-init - | source
+    source $(pyenv root)/completions/pyenv.fish
+end
+
+# init mcfly
+if type mcfly >>/dev/null 2>&1
+    mcfly init fish | source
+end 

@@ -1,8 +1,18 @@
 #!/bin/sh
+# Alias file that is Bash and Fish intercompatible
+
 # MY ALIASES BEGIN
-export EDITOR='nvim'
-export VISUAL='nvim'
+
+# vi < vim < nvim substituton
+export EDITOR='vi'
+export VISUAL='vi'
+[ -x "$(command -v vim)" ] && \
+export EDITOR='vim' && \
+export VISUAL='vim' && \
 alias vi='vim'
+[ -x "$(command -v nvim)" ] && \
+export EDITOR='nvim' && \
+export VISUAL='nvim' && \
 alias vim='nvim'
 
 # Set Absible config folder

@@ -36,15 +36,15 @@ end
 
 
 ## Starship prompt
-if status --is-interactive
-    if type starship >>/dev/null 2>&1
-        source (starship init fish --print-full-init | psub)
-    end
+if status --is-interactive && type -q starship
+    source (starship init fish --print-full-init | psub)
 end
 
 
 ## Advanced command-not-found hook
-source /usr/share/doc/find-the-command/ftc.fish
+if test -f /usr/share/doc/find-the-command/ftc.fish
+    source /usr/share/doc/find-the-command/ftc.fish
+end
 
 
 ## Functions
@@ -179,6 +179,6 @@ if test -d ~/.pyenv
 end
 
 # init mcfly
-if type mcfly >>/dev/null 2>&1
+if type -q mcfly
     mcfly init fish | source
 end 

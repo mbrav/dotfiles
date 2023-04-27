@@ -84,25 +84,6 @@ function info_msg() {
 # echo -e -n "$(r_color_st)T$(r_color)E$(r_color)R$(r_color_st)M$(r_color)I$(r_color_st)N$(r_color)A$(r_color_st)L$CLEAR "
 # echo -e "$(r_color_st)C$(r_color)O$(r_color)L$(r_color_st)O$(r_color)R$(r_color_st)S$CLEAR "
 
-
-function load_starship () {
-    # Load starship prompt if starship is installed
-    if [ -x "$(command -v starship)" ]; then
-        __main() {
-            local major="${BASH_VERSINFO[0]}"
-            local minor="${BASH_VERSINFO[1]}"
-
-            if ((major > 4)) || { ((major == 4)) && ((minor >= 1)); }; then
-                source <(starship init bash --print-full-init)
-            else
-                source /dev/stdin <<<"$(starship init bash --print-full-init)"
-            fi
-        }
-        __main
-        unset -f __main
-    fi
-}
-
 function check_sudo () {
     [[ $(whoami) != root ]] && error_msg "Please run script as root or sudo" 13
     warning_msg "Note: to run sudo and preserve passed env variables run with 'sudo -E'"
@@ -262,11 +243,11 @@ pre_prompt_command() {
     version="1.0.0"
     entity=$(echo $(fc -ln -0) | cut -d ' ' -f1)
     [ -z "$entity" ] && return # $entity is empty or only whitespace
-    $(git rev-parse --is-inside-work-tree 2> /dev/null) && local project="$(basename $(git rev-parse --show-toplevel))" || local project="Terminal"
-    (~/.wakatime/wakatime-cli --write --plugin "bash-wakatime/$version" --entity-type app --project "$project" --entity "$entity" 2>&1 > /dev/null &)
+    $(git rev-parse --is-inside-work-tree 2> /dev/null) && local project="$(basename $(git rev-parse --show-toplevel))" || local project="Bash"
+    (wakatime-cli --write --plugin "bash-wakatime/$version" --entity-type app --project "$project" --entity "$entity" 2>&1 > /dev/null &)
 }
 
-PROMPT_COMMAND="pre_prompt_command; $PROMPT_COMMAND"
+command -v wakatime-cli > /dev/null && PROMPT_COMMAND="pre_prompt_command; $PROMPT_COMMAND"
 
 function start_tmux() {
     if ! command -v tmux &> /dev/null; then

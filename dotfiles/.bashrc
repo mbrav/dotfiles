@@ -8,14 +8,11 @@
 # Load starship prompt if starship is installed:
 command -v starship >/dev/null && eval "$(starship init bash)"
 
+# Load Macfly history lookup plugin if installed:
+command -v mcfly >/dev/null && eval "$(mcfly init bash)"
+
 # Advanced command-not-found hook
 [[ -f /usr/share/doc/find-the-command/ftc.bash ]] && source /usr/share/doc/find-the-command/ftc.bash
-
-# # Rerun config
-# export PATH=$PATH:$HOME/bin/.rerun
-# export RERUN_MODULES=$HOME/bin/.rerun/modules
-# [ -r $HOME/bin/.rerun/etc/bash_completion.sh ] && source $HOME/bin/.rerun/etc/bash_completion.sh
-# [ -t 0 ] && export RERUN_COLOR=true
 
 # Pyenv config
 [[ -d "$HOME/.pyenv" ]] && export PYENV_ROOT="$HOME/.pyenv"

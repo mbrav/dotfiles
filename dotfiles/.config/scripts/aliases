@@ -19,6 +19,10 @@ alias vim='nvim'
 export ANSIBLE_CONFIG="$HOME/.ansible/ansible.cfg"
 # Use QEMU system URI
 export LIBVIRT_DEFAULT_URI="qemu:///system"
+# MCfly history settings
+export MCFLY_RESULTS=30
+export MCFLY_PROMPT="❯"
+export MCFLY_FUZZY=5
 
 ## MY ALIASES
 alias dus='du -h --max-depth 1'

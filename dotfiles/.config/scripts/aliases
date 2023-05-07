@@ -51,9 +51,10 @@ alias pkl='ps aux | fzf --header "Please select what process to kill" | awk "{pr
 # Pass gen
 # alias pass-gen='< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c' # $1 - number of bytes
 
-# SHH aliases
+# Sudo aliases
 # List SSH sessions
-alias sshs="sudo netstat -tnpa | grep 'ESTABLISHED.*sshd'"
+alias lsssh="sudo netstat -tnpa | grep 'ESTABLISHED.*sshd'"
+alias lsprt="sudo lsof -i -P -n"
 
 # Python aliases
 alias pip-install='pip install --upgrade --no-cache pip wheel setuptools '

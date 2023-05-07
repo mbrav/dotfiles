@@ -6,11 +6,11 @@
 # vi < vim < nvim substituton
 export EDITOR='vi'
 export VISUAL='vi'
-[ -x "$(command -v vim)" ] && \
+command -v vim >/dev/null && \
 export EDITOR='vim' && \
 export VISUAL='vim' && \
 alias vi='vim'
-[ -x "$(command -v nvim)" ] && \
+command -v nvim >/dev/null && \
 export EDITOR='nvim' && \
 export VISUAL='nvim' && \
 alias vim='nvim'
@@ -32,7 +32,7 @@ alias tmux-new='tmux -2 new -s '
 # alias tmux-reatch="tmux -2 attach -t $(tmux ls | awk '{print $1}' | sed 's/://g' | fzf)"
 
 # Fuzzy Finder scripts
-[ -x "$(command -v fzf)" ] && \
+command -v fzf >/dev/null && \
 # Fuzzy find dev directory type, then projects
 alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf)' && \
 # Fuzzy find dev directory all
@@ -109,7 +109,7 @@ alias gR="seq 1 20 | fzf --header 'HEAD~n number to rebase' | xargs -I % sh -c '
 
 ## Useful aliases
 # Replace ls with exa
-[ -x "$(command -v exa)" ] && \
+command -v exa >/dev/null && \
 # preferred listing
 alias ls='exa -al --color=always --group-directories-first --icons' && \
 # all files and dirs
@@ -124,8 +124,8 @@ alias l.='exa -a | egrep"^\."'
 alias ip='ip -color'
 
 # Replace some more things with better alternatives
-[ -x "$(command -v pygmentize)" ] && alias cat='pygmentize -g '
-[ -x "$(command -v bat)" ] && alias cat='bat --style header --style snip --style changes --style header'
+command -v pygmentize >/dev/null && alias cat='pygmentize -g '
+command -v bat >/dev/null && alias cat='bat --style header --style snip --style changes --style header'
 [ ! -x /usr/bin/yay ] && [ -x /usr/bin/paru ] && alias yay='paru'
 
 # Common use
@@ -150,7 +150,7 @@ alias please='sudo'
 alias tb='nc termbin.com 9999'
 
 # Bindings for Arch
-[ -x "$(command -v pacman)" ] && \
+command -v pacman >/dev/null && \
   alias rmpkg='sudo pacman -Rdd' && \
   # Sort installed packages according to size in MB
   alias big='expac -H M "%m\t%n" | sort -h | nl' && \

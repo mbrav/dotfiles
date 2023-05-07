@@ -116,7 +116,7 @@ if test -d ~/.pyenv
     fish_add_path $PYENV_ROOT/bin
     status --is-interactive; and pyenv init - | source
     status --is-interactive; and pyenv virtualenv-init - | source
-    source $(pyenv root)/completions/pyenv.fish
+    source (pyenv root)/completions/pyenv.fish
 end
 
 # init mcfly

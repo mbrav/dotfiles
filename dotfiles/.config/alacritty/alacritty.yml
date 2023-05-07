@@ -11,7 +11,7 @@
 window:
   dimensions:
     columns: 180
-    lines: 48
+    lines: 42
   padding:
     x: 0
     y: 0
@@ -29,7 +29,7 @@ font:
   normal:
     family: JetbrainsMonoNL
     style: Regular
-  size: 12
+  size: 11
 
 scrolling:
   history: 100000

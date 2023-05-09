@@ -21,6 +21,9 @@ nmap <Leader>r :source ~/.vimrc<cr>
 " Set regular expression engine automatically
 set regexpengine=0
 
+" Set faster update time 
+set updatetime=250
+
 " Add a bit extra margin to the left
 " set foldcolumn=1
 
@@ -340,18 +343,29 @@ endfunction
 " Load plugins if .vimrc.plug is present
 if filereadable(expand("~/.vimrc.plug"))
     source ~/.vimrc.plug
-
+    
+    " Set plugin theme
+    colorscheme nord
     " Load plugin settings
     " Intent line plugin style 
-    let g:indentLine_char = '⦙'
+    let g:indent_guides_enable_on_vim_startup = 1
+    let g:indent_guides_start_level = 2
+    let g:indent_guides_guide_size = 1
+
+    " Toggle guides
+    map <leader>gi :IndentGuidesToggle<cr>
     
-    " Float term (s = shell)
-    map <leader>ss :FloatermNew --height=0.7 --width=0.9<cr>
-    map <leader>sw :FloatermNew --wintype=normal --position=bottom<cr>
-    map <leader>sh :FloatermNew --wintype=normal --position=left<cr>
-    map <leader>sj :FloatermNew --wintype=normal --position=bottom<cr>
-    map <leader>sk :FloatermNew --wintype=normal --position=top<cr>
-    map <leader>sl :FloatermNew --wintype=normal --position=right<cr>
+    " Git changes toggle
+    map <leader>gg :GitGutterToggle<cr>
+    map <leader>gh :GitGutterLineHighlightsToggle<cr>
+    
+    " Terminal 
+    map <leader>tf :FloatermNew --height=0.7 --width=0.9<cr>
+    map <F7> :FloatermNew --height=0.7 --width=0.9<cr>
+    map <leader>ts :FloatermNew --wintype=normal --position=bottom<cr>
+    map <leader>tv :FloatermNew --wintype=normal --position=right<cr>
+    map <leader>tt :FloatermNew --height=0.7 --width=0.9 btm<cr>
+    map <leader>th :FloatermNew --height=0.7 --width=0.9 htop<cr>
     
     " Fuzzy finder with float term
     map <leader>ff :FloatermNew --height=0.6 --width=0.8 fzf<cr>

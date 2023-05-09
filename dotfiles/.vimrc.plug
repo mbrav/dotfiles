@@ -1,6 +1,19 @@
 call plug#begin()
+    " Wakatime time usage
     Plug 'wakatime/vim-wakatime'
+    " Lf file browser
     Plug 'ptzz/lf.vim'
+    " Floating terminal
     Plug 'voldikss/vim-floaterm'
-    " Plug 'yggdroot/indentLine'
+    " Nord Theme
+    Plug 'nordtheme/vim'
+    " Navbar
+    Plug 'vim-airline/vim-airline'
+    " Parenthenis completion
+    Plug 'tpope/vim-surround'  
+    " Git changes
+    Plug 'airblade/vim-gitgutter'
+    " Indent guides  
+    Plug 'nathanaelkane/vim-indent-guides'
 call plug#end()
+

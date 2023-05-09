@@ -9,13 +9,9 @@ nmap <leader>w :w!<cr>
 " (useful for handling the permission-denied error)
 command! W execute 'w !sudo tee % > /dev/null' <bar> edit!
 
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => VIM user interface
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Set 7 lines to the cursor - when moving vertically using j/k
-set so=7
-
 " Avoid garbled characters in Chinese language windows OS
 let $LANG='en'
 set langmenu=en
@@ -24,6 +20,7 @@ source $VIMRUNTIME/menu.vim
 
 " Turn on the Wild menu
 set wildmenu
+set wildmode=longest:full,full
 
 " Ignore compiled files
 set wildignore=*.o,*~,*.pyc
@@ -33,14 +30,8 @@ else
     set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
 endif
 
-" Properly disable sound on errors on MacVim
-if has("gui_macvim")
-    autocmd GUIEnter * set vb t_vb=
-endif
-
 " Add a bit extra margin to the left
 set foldcolumn=1
-
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Colors and Fonts
@@ -56,10 +47,6 @@ endif
 " Use Unix as the standard file type
 set ffs=unix,dos,mac
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Text, tab and indent related
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
 """"""""""""""""""""""""""""""
 " => Visual mode related
 """"""""""""""""""""""""""""""
@@ -67,7 +54,6 @@ set ffs=unix,dos,mac
 " Super useful! From an idea by Michael Naumann
 vnoremap <silent> * :<C-u>call VisualSelection('', '')<CR>/<C-R>=@/<CR><CR>
 vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
-
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Moving around, tabs, windows and buffers
@@ -128,18 +114,11 @@ endtry
 " Remap VIM 0 to first non-blank character
 map 0 ^
 
-" Move a line of text using ALT+[jk] or Command+[jk] on mac
+" Move a line of text using ALT+[jk] 
 nmap <M-j> mz:m+<cr>`z
 nmap <M-k> mz:m-2<cr>`z
 vmap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
 vmap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
-
-if has("mac") || has("macunix")
-    nmap <D-j> <M-j>
-    nmap <D-k> <M-k>
-    vmap <D-j> <M-j>
-    vmap <D-k> <M-k>
-endif
 
 " Delete trailing white space on save, useful for some filetypes ;)
 fun! CleanExtraSpaces()
@@ -151,8 +130,8 @@ fun! CleanExtraSpaces()
 endfun
 
 if has("autocmd")
-    autocmd BufWritePre *.txt,*.js,*.py,*.wiki,*.sh,*.coffee :call CleanExtraSpaces()
-endif
+    autocmd BufWritePre *.yaml,*.txt,*.js,*.py,*.html,*.sh,*.md :call CleanExtraSpaces()
+endif 
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -239,8 +218,8 @@ endfunction
 
 " MY MODS
 
-" Enable syntax highlighting
-syntax enable
+" Reload vim conf
+:nmap <Leader>s :source $MYVIMRC
 
 " Set regular expression engine automatically
 set regexpengine=0
@@ -248,13 +227,30 @@ set regexpengine=0
 " Enable 256 colors palette
 set t_Co=256
 
-" Try laoding theme
+" Try loading theme
 try
     colorscheme desert
 catch
 endtry
 
 set background=dark
+
+set encoding=utf-8
+
+" Set to auto read when a file is changed from the outside
+set autoread
+au FocusGained,BufEnter * checktime
+" Return to last edit position when opening files
+au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+
+" Set indent line
+set autoindent
+
+" Auto intent on file write for some files
+autocmd BufRead,BufWritePre *.sh normal gg=G
+
+" Set 7 lines to the cursor - when moving vertically using j/k
+set so=7
 
 " Use spaces instead of tabs
 set expandtab
@@ -317,25 +313,15 @@ set ai "Auto indent
 set si "Smart indent
 set wrap "Wrap lines
 
+" Enable syntax highlighting
+syntax enable
+
 " Enable filetype plugins
 filetype plugin on
 filetype indent on
 
-" Set to auto read when a file is changed from the outside
-set autoread
-au FocusGained,BufEnter * checktime
-
-" Set indent line
-set autoindent
-" Auto intent on file write
-" DISABLE when needed
-autocmd BufRead,BufWritePre *.sh normal gg=G
 " Language settings
 autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab
-
-set autoread
-set ruler
-set encoding=utf-8
 
 " Set relative line numbers
 set number
@@ -353,8 +339,11 @@ endif
 set undodir=$HOME/.vim/undo
 set undofile
 
-" Return to last edit position when opening files
-au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+" Pane settings
+nnoremap + :res +30<CR>
+nnoremap _ :res -30<CR>
+nnoremap <silent> <Leader>+ :exe "resize " . (winheight(0) * 3/2)<CR>
+nnoremap <silent> <Leader>- :exe "resize " . (winheight(0) * 2/3)<CR>
 
 " Load plugins if .vimrc.plug is present
 if filereadable(expand("~/.vimrc.plug"))

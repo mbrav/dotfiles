@@ -1,0 +1,6 @@
+call plug#begin()
+    Plug 'wakatime/vim-wakatime'
+    Plug 'ptzz/lf.vim'
+    Plug 'voldikss/vim-floaterm'
+    " Plug 'yggdroot/indentLine'
+call plug#end()

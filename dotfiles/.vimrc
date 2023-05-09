@@ -354,6 +354,6 @@ if filereadable(expand("~/.vimrc.plug"))
     map <leader>sl :FloatermNew --wintype=normal --position=right<cr>
     
     " Fuzzy finder with float term
-    map <leader>ff :FloatermNew --height=0.6 --width=0.8 fzf
+    map <leader>ff :FloatermNew --height=0.6 --width=0.8 fzf<cr>
 endif
 

@@ -9,11 +9,13 @@ call plug#begin()
     Plug 'nordtheme/vim'
     " Navbar
     Plug 'vim-airline/vim-airline'
+    " ALE (Asynchronous Lint Engine) is a plugin providing linting
+    " Plug 'dense-analysis/ale'
     " Parenthenis completion
-    Plug 'tpope/vim-surround'  
+    Plug 'tpope/vim-surround'
     " Git changes
     Plug 'airblade/vim-gitgutter'
-    " Indent guides  
+    " Indent guides
     Plug 'nathanaelkane/vim-indent-guides'
 call plug#end()
 

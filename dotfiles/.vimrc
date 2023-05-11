@@ -1,5 +1,5 @@
 
-" MY VIM CONF 
+" MY VIM CONF
 
 " With a map leader it's possible to do extra key combinations
 " like <leader>w saves the current file
@@ -21,7 +21,7 @@ nmap <Leader>r :source ~/.vimrc<cr>
 " Set regular expression engine automatically
 set regexpengine=0
 
-" Set faster update time 
+" Set faster update time
 set updatetime=250
 
 " Add a bit extra margin to the left
@@ -62,6 +62,7 @@ source $VIMRUNTIME/delmenu.vim
 source $VIMRUNTIME/menu.vim
 
 " Use undo files instead of swap files
+set mouse=a
 set nobackup
 set nowb
 set noswapfile
@@ -211,7 +212,7 @@ map <leader>td :tabclose<cr>
 map <leader>tm :tabmove
 map <leader>tn :tabnext<cr>
 map <leader>tp :tabprevious<cr>
-map <leader>t<leader> :tablast<cr>
+map <leader>t<leader> :tabnext<cr>
 
 " Let 'tl' toggle between this and the last accessed tab
 let g:lasttab = 1
@@ -239,11 +240,11 @@ endtry
 " Remap VIM 0 to first non-blank character
 map 0 ^
 
-" Move a line of text using ALT+[jk] 
-nmap <M-j> mz:m+<cr>`z
-nmap <M-k> mz:m-2<cr>`z
-vmap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
-vmap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
+" Move a line of text using ALT+[jk]
+nnoremap <leader>k :move-2<CR>==
+nnoremap <leader>j :move+<CR>==
+xnoremap <leader>k :move-2<CR>gv=gv
+xnoremap <leader>j :move'>+<CR>gv=gv
 
 " Delete trailing white space on save, useful for some filetypes ;)
 fun! CleanExtraSpaces()
@@ -255,8 +256,8 @@ fun! CleanExtraSpaces()
 endfun
 
 if has("autocmd")
-    autocmd BufWritePre *.yaml,*.txt,*.js,*.py,*.html,*.sh,*.md :call CleanExtraSpaces()
-endif 
+    autocmd BufWritePre *.yaml,*.txt,*.js,*.py,*.html,*.sh,*.md,*.vim* :call CleanExtraSpaces()
+endif
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Spell checking
@@ -322,51 +323,41 @@ function! CmdLine(str)
     call feedkeys(":" . a:str)
 endfunction
 
-function! VisualSelection(direction, extra_filter) range
-    let l:saved_reg = @"
-    execute "normal! vgvy"
-
-    let l:pattern = escape(@", "\\/.*'$^~[]")
-    let l:pattern = substitute(l:pattern, "\n$", "", "")
-
-    if a:direction == 'gv'
-        call CmdLine("Ack '" . l:pattern . "' " )
-    elseif a:direction == 'replace'
-        call CmdLine("%s" . '/'. l:pattern . '/')
-    endif
-
-    let @/ = l:pattern
-    let @" = l:saved_reg
-endfunction
-
-
 " Load plugins if .vimrc.plug is present
 if filereadable(expand("~/.vimrc.plug"))
     source ~/.vimrc.plug
-    
+
     " Set plugin theme
     colorscheme nord
+
     " Load plugin settings
-    " Intent line plugin style 
+    " Integrate airline with ale
+    let g:airline#extensions#ale#enabled = 1
+    " Intent line plugin style
     let g:indent_guides_enable_on_vim_startup = 1
     let g:indent_guides_start_level = 2
     let g:indent_guides_guide_size = 1
 
     " Toggle guides
     map <leader>gi :IndentGuidesToggle<cr>
-    
+
     " Git changes toggle
     map <leader>gg :GitGutterToggle<cr>
-    map <leader>gh :GitGutterLineHighlightsToggle<cr>
-    
-    " Terminal 
+    map <leader>gh :GitGutterLineHighlightsToggle<cr
+    " Git shortcuts
+    map ]h :GitGutterNextHunk<cr>
+    map [h :GitGutterPrevHunk<cr>
+    map <leader>hs :GitGutterStageHunk<cr>
+    map <leader>hu :GitGutterLineHighlightsToggle<cr>
+
+    " Terminal
     map <leader>tf :FloatermNew --height=0.7 --width=0.9<cr>
     map <F7> :FloatermNew --height=0.7 --width=0.9<cr>
     map <leader>ts :FloatermNew --wintype=normal --position=bottom<cr>
     map <leader>tv :FloatermNew --wintype=normal --position=right<cr>
     map <leader>tt :FloatermNew --height=0.7 --width=0.9 btm<cr>
     map <leader>th :FloatermNew --height=0.7 --width=0.9 htop<cr>
-    
+
     " Fuzzy finder with float term
     map <leader>ff :FloatermNew --height=0.6 --width=0.8 fzf<cr>
 endif

@@ -94,7 +94,11 @@ alias image-gps='identify -format "%[EXIF:GPSLatitude],%[EXIF:GPSLongitude]\n" '
 # Git aliases
 alias g='git'
 alias gst='git status'
+alias gf='git diff'
+alias gF='git diff --staged'
 alias gl="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(auto)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)'"
+alias ga='git add '
+alias gai='git add --interactive'
 alias gA='git add -A'
 alias gcm='git commit'
 alias gcM='git commit --amend'

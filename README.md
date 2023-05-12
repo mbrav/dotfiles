@@ -14,10 +14,10 @@ My scripts and dot files
 Clone repo:
 
 ```bash
-git clone https://github.com/mbrav/dotfiles
+git clone --recurse-submodules -j8 https://github.com/mbrav/dotfiles
 ```
 
-Copy configs:
+Copy dotfiles:
 
 ```bash
 cp -r ./dotfiles/dotfiles/.*  ~/

@@ -1,5 +1,6 @@
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-yellow.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![tokei](https://tokei.rs/b1/github/mbrav/configs?category=lines)](https://tokei.rs/b1/github/mbrav/configs)
+[![Hits-of-Code](https://hitsofcode.com/github/mbrav/dotfiles?branch=main)](https://hitsofcode.com/github/mbrav/dotfiles/view?branch=main)
 
 # configs (WIP)
 

@@ -27,3 +27,7 @@ command -v pyenv >/dev/null && eval "$(pyenv virtualenv-init -)"
 [[ -f "$HOME/.config/scripts/functions.sh" ]] && source "$HOME/.config/scripts/functions.sh"
 [[ -f "$HOME/.config/scripts/aliases" ]] && source "$HOME/.config/scripts/aliases"
 [[ -f "$HOME/.config/scripts/secrets" ]] && source "$HOME/.config/scripts/secrets"
+
+# Kubectl aliases based on shell 
+# Based on https://github.com/ahmetb/kubectl-aliases
+[[ -d "$HOME/.config/scripts/kubectl-aliases" ]] && source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases"

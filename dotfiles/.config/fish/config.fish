@@ -106,9 +106,15 @@ end
 
 ## MY MODS
 # My aliases
-source ~/.config/scripts/aliases
 source ~/.config/scripts/functions.fish
 source ~/.config/scripts/secrets
+source ~/.config/scripts/aliases
+
+# Kubectl aliases based on shell 
+# Based on https://github.com/ahmetb/kubectl-aliases
+if test -d ~/.config/scripts/kubectl-aliases
+    source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases.fish"
+end
 
 # Init pyenv if available
 if test -d ~/.pyenv

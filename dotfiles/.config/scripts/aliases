@@ -80,10 +80,6 @@ alias dkrmiA='docker images -a -q | xargs docker rmi'
 alias dkvolrmA='docker system prune --volumes --all --force'
 alias dkpruneA='dkstopA && dkrmA && docker image prune'
 
-# Kubectl aliases based on shell 
-# Based on https://github.com/ahmetb/kubectl-aliases
-source ./kubectl-aliases/.kubectl_aliases
-
 # Mount rclone
 alias rclone-crypt='rclone mount crypt:/ ~/Desktop/crypt/ --read-only --max-read-ahead=1G --acd-templink-threshold=0 --contimeout=15s --checkers=16 --bwlimit=0 --retries=3 --timeout=30s --low-level-retries=1 --transfers=8 --dir-cache-time=30m'
 alias mi-display-fix='xrandr --output HDMI-0 --mode 3440x1440 --rate 60'

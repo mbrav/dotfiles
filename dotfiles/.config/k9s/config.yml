@@ -16,16 +16,16 @@ k9s:
     fullScreenLogs: false
     textWrap: false
     showTime: false
-  # currentContext: kubernetes-admin@kubernetes
-  # currentCluster: kubernetes
+  currentContext: kubernetes-admin@kubernetes
+  currentCluster: kubernetes
   clusters:
     kubernetes:
       namespace:
         active: all
         lockFavorites: false
         favorites:
-          - all
-          - default
+        - all
+        - default
       view:
         active: pod
       featureGates:

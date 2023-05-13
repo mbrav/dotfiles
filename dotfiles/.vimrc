@@ -259,6 +259,9 @@ if has("autocmd")
     autocmd BufWritePre *.yaml,*.txt,*.js,*.py,*.html,*.sh,*.md,*.vim* :call CleanExtraSpaces()
 endif
 
+" Manually formate trailing spaces
+map <leader>t :call CleanExtraSpaces()
+
 " Indent
 map <leader>i gg=G
 
@@ -282,10 +285,10 @@ map <leader>s? z=
 noremap <Leader>m mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
 
 " Quickly open a buffer for scribble
-map <leader>q :e ~/buffer<cr>
+map <leader>n :e ~/buffer<cr>
 
 " Quickly open a markdown buffer for scribble
-map <leader>x :e ~/buffer.md<cr>
+map <leader>m :e ~/buffer.md<cr>
 
 " Toggle paste mode on and off
 map <leader>pp :setlocal paste!<cr>
@@ -329,6 +332,13 @@ endfunction
 
 " Load plugins if .vimrc.plug is present
 if filereadable(expand("~/.vimrc.plug"))
+
+    " Check if plug ins installed
+    if !filereadable(expand("~/.vim/autoload/plug.vim"))
+        :! curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    endif
+
+    " Source plug file
     source ~/.vimrc.plug
 
     " Set plugin theme
@@ -342,12 +352,9 @@ if filereadable(expand("~/.vimrc.plug"))
     let g:indent_guides_start_level = 2
     let g:indent_guides_guide_size = 1
 
-    " Toggle guides
-    map <leader>gi :IndentGuidesToggle<cr>
-
     " Git changes toggle
     map <leader>gg :GitGutterToggle<cr>
-    map <leader>gh :GitGutterLineHighlightsToggle<cr
+    map <leader>gh :GitGutterLineHighlightsToggle<cr>
     " Git shortcuts
     map ]h :GitGutterNextHunk<cr>
     map [h :GitGutterPrevHunk<cr>

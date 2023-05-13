@@ -15,7 +15,5 @@ call plug#begin()
     Plug 'tpope/vim-surround'
     " Git changes
     Plug 'airblade/vim-gitgutter'
-    " Indent guides
-    Plug 'nathanaelkane/vim-indent-guides'
 call plug#end()
 

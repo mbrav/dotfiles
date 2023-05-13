@@ -1,0 +1,52 @@
+# K9s plugins: https://github.com/derailed/k9s/tree/master/plugins
+plugin:
+  #get all resources in a namespace using the krew get-all plugin
+  get-all:
+    shortCut: g
+    confirm: false
+    description: get-all
+    scopes:
+    - all
+    command: sh
+    background: false
+    args:
+    - -c
+    - "kubectl get-all -n $NAMESPACE | less"
+
+  # View user-supplied values when the helm chart was created
+  helm-values:
+    shortCut: v
+    confirm: false
+    description: Values
+    scopes:
+    - helm
+    command: sh
+    background: false
+    args:
+    - -c
+    - "helm get values $COL-NAME -n $NAMESPACE --kube-context $CONTEXT | less"
+
+  # Issues a helm delete --purge for the resource associated with the selected pod
+  helm-purge:
+    shortCut: Ctrl-P
+    description: Helm Purge
+    scopes:
+    - po
+    command: kubectl
+    background: true
+    args:
+    - purge
+    - $NAMESPACE
+    - $NAME
+
+  # Inspect container images
+  dive:
+    shortCut: d
+    confirm: false
+    description: "Dive image"
+    scopes:
+      - containers
+    command: dive
+    background: false
+    args:
+      - $COL-IMAGE

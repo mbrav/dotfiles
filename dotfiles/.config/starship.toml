@@ -1,92 +1,72 @@
-## FIRST LINE/ROW: Info & Status
-# First param ─┌
-[username]
-format = " [╭─$user]($style)@"
-show_always = true
-style_root = "bold red"
-style_user = "bold red"
 
-# Second param
-[hostname]
-disabled = false
-format = "[$hostname]($style) in "
-ssh_only = false
-style = "bold dimmed red"
-trim_at = "-"
+# Set 'nord' as custom color palette
+# palette = 'nord'
 
-# Third param
+# Define custom colors
+# [palettes.nord]
+# color1 = '#a3aed2'
+# color2 = '#769ff0'
+# color3 = '#394260'
+# color4 = '#212736'
+# color5 = '#1d2230'
+# color6 = '#e3e5e5'
+# color7 = '#a0a9cb'
+
+format = """
+[░▒▓](#a3aed2)\
+$username\
+$os\
+$hostname\
+[](bg:#769ff0 fg:#a3aed2)\
+$directory\
+[](fg:#769ff0 bg:#394260)\
+$git_branch\
+$git_status\
+[](fg:#394260 bg:#212736)\
+$nodejs\
+$rust\
+$golang\
+$php\
+$kubernetes\
+[](fg:#212736 bg:#1d2230)\
+$time\
+[ ](fg:#1d2230)\
+$cmd_duration\
+\n$character"""
+
 [directory]
-style = "purple"
-truncate_to_repo = true
-truncation_length = 0
-truncation_symbol = "repo: "
+style = "fg:#e3e5e5 bg:#769ff0"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
 
-# Fourth param
-[sudo]
-disabled = false
-
-# Before all the version info (python, nodejs, php, etc.)
-[git_status]
-ahead = "⇡${count}"
-behind = "⇣${count}"
-deleted = "x"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-style = "white"
-
-# Last param in the first line/row
-[cmd_duration]
-disabled = false
-format = "took [$duration]($style)"
-min_time = 1
-
-## SECOND LINE/ROW: Prompt
-# Somethere at the beginning
-[battery]
-charging_symbol = ""
-disabled = true
-discharging_symbol = ""
-full_symbol = ""
-
-[[battery.display]]  # "bold red" style when capacity is between 0% and 10%
-disabled = false
-style = "bold red"
-threshold = 15
-
-[[battery.display]]  # "bold yellow" style when capacity is between 10% and 30%
-disabled = true
-style = "bold yellow"
-threshold = 50
-
-[[battery.display]]  # "bold green" style when capacity is between 10% and 30%
-disabled = true
-style = "bold green"
-threshold = 80
-
-# Prompt: optional param 1
-[time]
-disabled = true
-format = " 🕙 $time($style)\n"
-style = "bright-white"
-time_format = "%T"
-
-# Prompt: param 2
-[character]
-error_symbol = " [×](bold red)"
-success_symbol = " [╰─λ](bold red)"
-
-# SYMBOLS
-[status]
-disabled = false
-format = '[\[$symbol$status_common_meaning$status_signal_name$status_maybe_int\]]($style)'
-map_symbol = true
-pipestatus = true
-symbol = "🔴"
+[directory.substitutions]
+"Documents" = " "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
 
 [aws]
-symbol = " "
+symbol = "  "
+
+[buf]
+symbol = " "
+
+[c]
+symbol = " "
+
+[character]
+error_symbol = " [×](bold red)"
+success_symbol = " [╰─λ](bold #769ff0)"
 
 [conda]
 symbol = " "
+
+[cmd_duration]
+disabled = false
+format = "took [$duration]($style)"
+style = "fg:#769ff0"
+min_time = 1
 
 [dart]
 symbol = " "
@@ -100,17 +80,41 @@ symbol = " "
 [elm]
 symbol = " "
 
-[kubernetes]
-format = 'on [⛵ ($user on )($cluster in )$context \($namespace\)](dimmed green) '
-[git_branch]
-
+[fossil_branch]
 symbol = " "
 
+[git_branch]
+symbol = ""
+style = "bg:#394260"
+format = '[[ $symbol $branch ](fg:#769ff0 bg:#394260)]($style)'
+
+[git_status]
+style = "bg:#394260"
+format = '[[($all_status$ahead_behind )](fg:#769ff0 bg:#394260)]($style)'
+
 [golang]
-symbol = " "
+symbol = "ﳑ"
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[guix_shell]
+symbol = " "
+
+[haskell]
+symbol = " "
+
+[haxe]
+symbol = "⌘ "
 
 [hg_branch]
 symbol = " "
+
+[hostname]
+disabled = false
+ssh_only = false
+format = "[$hostname ]($style)"
+style = "bold bg:#a3aed2 fg:#212736"
+# trim_at = "-"
 
 [java]
 symbol = " "
@@ -118,32 +122,116 @@ symbol = " "
 [julia]
 symbol = " "
 
+[kubernetes]
+format = 'on [⛵ ($user on )($cluster in )$context \($namespace\)](dimmed green) '
+
+[lua]
+symbol = " "
+
+[memory_usage]
+symbol = " "
+
+[meson]
+symbol = "喝 "
+
 [nim]
 symbol = " "
 
 [nix_shell]
-symbol = " "
+symbol = " "
 
 [nodejs]
-symbol = " "
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[os]
+disabled = false  
+format = "[$symbol]($style)"
+style = "bg:#a3aed2 fg:#090c0c"
+
+[os.symbols]
+Alpaquita = " "
+Alpine = " "
+Amazon = " "
+Android = " "
+Arch = " "
+Artix = " "
+CentOS = " "
+Debian = " "
+DragonFly = " "
+Emscripten = " "
+EndeavourOS = " "
+Fedora = " "
+FreeBSD = " "
+Garuda = " "
+Gentoo = " "
+HardenedBSD = "ﲊ "
+Illumos = " "
+Linux = " "
+Mabox = " "
+Macos = " "
+Manjaro = " "
+Mariner = " "
+MidnightBSD = " "
+Mint = " "
+NetBSD = " "
+NixOS = " "
+OpenBSD = " "
+openSUSE = " "
+OracleLinux = " "
+Pop = " "
+Raspbian = " "
+Redhat = " "
+RedHatEnterprise = " "
+Redox = " "
+Solus = "ﴱ "
+SUSE = " "
+Ubuntu = " "
+Unknown = " "
+Windows = " "
 
 [package]
 symbol = " "
 
-[perl]
-symbol = " "
-
 [php]
-symbol = " "
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[pijul_channel]
+symbol = "🪺 "
 
 [python]
-symbol = " "
+symbol = " "
+
+[rlang]
+symbol = "ﳒ "
 
 [ruby]
-symbol = " "
+symbol = " "
 
 [rust]
-symbol = " "
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
 
-[swift]
-symbol = "ﯣ "
+[scala]
+symbol = " "
+
+[spack]
+symbol = "🅢 "
+
+[time]
+disabled = false
+# time_format = "%R" # Hour:Minute Format
+time_format = "%T" # Hour:Minute Format
+style = "bg:#1d2230"
+format = '[[  $time ](fg:#a0a9cb bg:#1d2230)]($style)'
+
+[username]
+format = "[ $user]($style)"
+show_always = true
+style_root = "bold bg:#a3aed2 fg:#212736"
+style_user = "bg:#a3aed2 fg:#212736"
+

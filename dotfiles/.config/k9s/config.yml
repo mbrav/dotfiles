@@ -16,8 +16,8 @@ k9s:
     fullScreenLogs: false
     textWrap: false
     showTime: false
-  currentContext: kubernetes-admin@kubernetes
-  currentCluster: kubernetes
+  currentContext: minikube
+  currentCluster: minikube
   clusters:
     kubernetes:
       namespace:
@@ -28,6 +28,27 @@ k9s:
         - default
       view:
         active: pods
+      featureGates:
+        nodeShell: false
+      shellPod:
+        image: busybox:1.35.0
+        command: []
+        args: []
+        namespace: default
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        labels: {}
+      portForwardAddress: localhost
+    minikube:
+      namespace:
+        active: default
+        lockFavorites: false
+        favorites:
+        - all
+        - default
+      view:
+        active: user
       featureGates:
         nodeShell: false
       shellPod:

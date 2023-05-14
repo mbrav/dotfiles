@@ -10,10 +10,10 @@ command -v vim >/dev/null && \
 export EDITOR='vim' && \
 export VISUAL='vim' && \
 alias vi='vim'
-command -v nvim >/dev/null && \
-export EDITOR='nvim' && \
-export VISUAL='nvim' && \
-alias vim='nvim'
+# command -v nvim >/dev/null && \
+# export EDITOR='nvim' && \
+# export VISUAL='nvim' && \
+# alias vim='nvim'
 
 # Set Absible config folder
 export ANSIBLE_CONFIG="$HOME/.ansible/ansible.cfg"

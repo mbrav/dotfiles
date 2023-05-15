@@ -1,41 +1,40 @@
 
 # Set 'nord' as custom color palette
-# palette = 'nord'
-
-# Define custom colors
-# [palettes.nord]
-# color1 = '#a3aed2'
-# color2 = '#769ff0'
-# color3 = '#394260'
-# color4 = '#212736'
-# color5 = '#1d2230'
-# color6 = '#e3e5e5'
-# color7 = '#a0a9cb'
+palette = 'nord'
 
 format = """
-[░▒▓](#a3aed2)\
+[░▒▓](color1)\
 $username\
 $os\
 $hostname\
-[](bg:#769ff0 fg:#a3aed2)\
+[](bg:color2 fg:color1)\
 $directory\
-[](fg:#769ff0 bg:#394260)\
+[](fg:color2 bg:color3)\
 $git_branch\
 $git_status\
-[](fg:#394260 bg:#212736)\
+[](fg:color3 bg:color4)\
 $nodejs\
 $rust\
 $golang\
 $php\
 $kubernetes\
-[](fg:#212736 bg:#1d2230)\
+[](fg:color4 bg:color5)\
 $time\
-[ ](fg:#1d2230)\
+[ ](fg:color5)\
 $cmd_duration\
 \n$character"""
 
+# Define custom colors
+# Nord theme
+[palettes.nord]
+color1 = '#a0a9cb'
+color2 = '#769ff0'
+color3 = '#394260'
+color4 = '#212736'
+color5 = '#1d2230'
+
 [directory]
-style = "fg:#e3e5e5 bg:#769ff0"
+style = "fg:color3 bg:color2"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
@@ -57,7 +56,7 @@ symbol = " "
 
 [character]
 error_symbol = " [×](bold red)"
-success_symbol = " [╰─λ](bold #769ff0)"
+success_symbol = " [╰─λ](bold color2)"
 
 [conda]
 symbol = " "
@@ -65,7 +64,7 @@ symbol = " "
 [cmd_duration]
 disabled = false
 format = "took [$duration]($style)"
-style = "fg:#769ff0"
+style = "fg:color2"
 min_time = 1
 
 [dart]
@@ -85,17 +84,17 @@ symbol = " "
 
 [git_branch]
 symbol = ""
-style = "bg:#394260"
-format = '[[ $symbol $branch ](fg:#769ff0 bg:#394260)]($style)'
+style = "bg:color3"
+format = '[[ $symbol $branch ](fg:color2 bg:color3)]($style)'
 
 [git_status]
-style = "bg:#394260"
-format = '[[($all_status$ahead_behind )](fg:#769ff0 bg:#394260)]($style)'
+style = "bg:color3"
+format = '[[($all_status$ahead_behind )](fg:color2 bg:color3)]($style)'
 
 [golang]
 symbol = "ﳑ"
-style = "bg:#212736"
-format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+style = "bg:color4"
+format = '[[ $symbol ($version) ](fg:color2 bg:color4)]($style)'
 
 [guix_shell]
 symbol = " "
@@ -113,7 +112,7 @@ symbol = " "
 disabled = false
 ssh_only = false
 format = "[$hostname ]($style)"
-style = "bold bg:#a3aed2 fg:#212736"
+style = "bold bg:#a3aed2 fg:color4"
 # trim_at = "-"
 
 [java]
@@ -142,8 +141,8 @@ symbol = " "
 
 [nodejs]
 symbol = ""
-style = "bg:#212736"
-format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+style = "bg:color4"
+format = '[[ $symbol ($version) ](fg:color2 bg:color4)]($style)'
 
 [os]
 disabled = false  
@@ -196,8 +195,8 @@ symbol = " "
 
 [php]
 symbol = ""
-style = "bg:#212736"
-format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+style = "bg:color4"
+format = '[[ $symbol ($version) ](fg:color2 bg:color4)]($style)'
 
 [pijul_channel]
 symbol = "🪺 "
@@ -213,8 +212,8 @@ symbol = " "
 
 [rust]
 symbol = ""
-style = "bg:#212736"
-format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+style = "bg:color4"
+format = '[[ $symbol ($version) ](fg:color2 bg:color4)]($style)'
 
 [scala]
 symbol = " "
@@ -226,12 +225,12 @@ symbol = "🅢 "
 disabled = false
 # time_format = "%R" # Hour:Minute Format
 time_format = "%T" # Hour:Minute Format
-style = "bg:#1d2230"
-format = '[[  $time ](fg:#a0a9cb bg:#1d2230)]($style)'
+style = "bg:color5"
+format = '[[  $time ](fg:color1 bg:color5)]($style)'
 
 [username]
 format = "[ $user]($style)"
 show_always = true
-style_root = "bold bg:#a3aed2 fg:#212736"
-style_user = "bg:#a3aed2 fg:#212736"
+style_root = "bold bg:#a3aed2 fg:color4"
+style_user = "bg:#a3aed2 fg:color4"
 

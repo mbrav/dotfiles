@@ -1,6 +1,6 @@
 
-# Set 'nord' as custom color palette
-palette = 'nord'
+# Set 'nord-blue' as custom color palette
+palette = 'nord-blue'
 
 format = """
 [░▒▓](color1)\
@@ -26,15 +26,43 @@ $cmd_duration\
 
 # Define custom colors
 # Nord theme
-[palettes.nord]
+[palettes.nord-blue]
 color1 = '#a0a9cb'
-color2 = '#769ff0'
+color2 = '#6C98EF'
 color3 = '#394260'
 color4 = '#212736'
 color5 = '#1d2230'
 
+[palettes.nord-purple]
+color1 = '#757B9B'
+color2 = '#4E65B3'
+color3 = '#32343F'
+color4 = '#1C1D24'
+color5 = '#191A20'
+
+[palettes.nord-green]
+color1 = '#A6CEAB'
+color2 = '#73E877'
+color3 = '#3B5E40'
+color4 = '#223523'
+color5 = '#1E2F20'
+
+[palettes.nord-tan]
+color1 = '#CDC7A2'
+color2 = '#E8BA74'
+color3 = '#5E543B'
+color4 = '#362E22'
+color5 = '#2E291D'
+
+[palettes.nord-red]
+color1 = '#CCA3A1'
+color2 = '#E87478'
+color3 = '#5E3E3B'
+color4 = '#362222'
+color5 = '#2E1E1D'
+
 [directory]
-style = "fg:color3 bg:color2"
+style = "fg:color5 bg:color2"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
@@ -112,7 +140,7 @@ symbol = " "
 disabled = false
 ssh_only = false
 format = "[$hostname ]($style)"
-style = "bold bg:#a3aed2 fg:color4"
+style = "bold bg:color1 fg:color4"
 # trim_at = "-"
 
 [java]
@@ -147,7 +175,7 @@ format = '[[ $symbol ($version) ](fg:color2 bg:color4)]($style)'
 [os]
 disabled = false  
 format = "[$symbol]($style)"
-style = "bg:#a3aed2 fg:#090c0c"
+style = "bg:color1 fg:color5"
 
 [os.symbols]
 Alpaquita = " "
@@ -231,6 +259,6 @@ format = '[[  $time ](fg:color1 bg:color5)]($style)'
 [username]
 format = "[ $user]($style)"
 show_always = true
-style_root = "bold bg:#a3aed2 fg:color4"
-style_user = "bg:#a3aed2 fg:color4"
+style_root = "bold bg:color1 fg:color4"
+style_user = "bg:color1 fg:color4"
 

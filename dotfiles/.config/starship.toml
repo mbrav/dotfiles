@@ -27,39 +27,46 @@ $cmd_duration\
 # Define custom colors
 # Nord theme
 [palettes.nord-blue]
-color1 = '#a0a9cb'
+color1 = '#A0A9CB'
 color2 = '#6C98EF'
 color3 = '#394260'
-color4 = '#212736'
+color4 = '#2F374C'
 color5 = '#1d2230'
 
 [palettes.nord-purple]
 color1 = '#757B9B'
 color2 = '#4E65B3'
 color3 = '#32343F'
-color4 = '#1C1D24'
+color4 = '#2C2E3A'
 color5 = '#191A20'
 
 [palettes.nord-green]
 color1 = '#A6CEAB'
 color2 = '#73E877'
 color3 = '#3B5E40'
-color4 = '#223523'
+color4 = '#304B31'
 color5 = '#1E2F20'
 
 [palettes.nord-tan]
 color1 = '#CDC7A2'
 color2 = '#E8BA74'
 color3 = '#5E543B'
-color4 = '#362E22'
+color4 = '#4B402F'
 color5 = '#2E291D'
 
 [palettes.nord-red]
 color1 = '#CCA3A1'
 color2 = '#E87478'
 color3 = '#5E3E3B'
-color4 = '#362222'
+color4 = '#4B2F2F'
 color5 = '#2E1E1D'
+
+[palettes.nord-fire]
+color1 = '#A0302C'
+color2 = '#9A1D26'
+color3 = '#3F1612'
+color4 = '#300D0D'
+color5 = '#1A0707'
 
 [directory]
 style = "fg:color5 bg:color2"

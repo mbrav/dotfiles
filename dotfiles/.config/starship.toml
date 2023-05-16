@@ -13,11 +13,12 @@ $directory\
 $git_branch\
 $git_status\
 [](fg:color3 bg:color4)\
-$nodejs\
+$kubernetes\
+$python\
 $rust\
+$nodejs\
 $golang\
 $php\
-$kubernetes\
 [](fg:color4 bg:color5)\
 $time\
 [ ](fg:color5)\
@@ -157,7 +158,12 @@ symbol = " "
 symbol = " "
 
 [kubernetes]
-format = 'on [⛵ ($user on )($cluster in )$context \($namespace\)](dimmed green) '
+disabled = false
+symbol = "☸ "
+#format = '[ $symbol ($user on )($cluster in )$context \($namespace\)](fg:color2 bg:color4)'
+format = '[ $symbol ( $context ) ](fg:color2 bg:color4)'
+style = "bg:color4"
+detect_folders = ['k8s', 'kubernetes', 'k9s', 'kube*', '.kube']
 
 [lua]
 symbol = " "
@@ -237,7 +243,11 @@ format = '[[ $symbol ($version) ](fg:color2 bg:color4)]($style)'
 symbol = "🪺 "
 
 [python]
+disabled = false
+pyenv_version_name = true
 symbol = " "
+format = '[ $symbol ($virtualenv) ($version) ](fg:color2 bg:color4)'
+style = "bg:color4"
 
 [rlang]
 symbol = "ﳒ "

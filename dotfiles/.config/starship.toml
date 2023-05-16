@@ -76,10 +76,16 @@ truncation_length = 3
 truncation_symbol = "…/"
 
 [directory.substitutions]
-"Documents" = " "
+"Documents" = "🗁 "
 "Downloads" = " "
 "Music" = " "
 "Pictures" = " "
+"dev" = "⌨"
+".config" = "⚙"
+".ssh" = "🗝"
+".gnupg" = "🔒"
+"/etc" = "/⚒"
+"/var" = "/🕱"
 
 [aws]
 symbol = "  "
@@ -161,7 +167,7 @@ symbol = " "
 disabled = false
 symbol = "☸ "
 #format = '[ $symbol ($user on )($cluster in )$context \($namespace\)](fg:color2 bg:color4)'
-format = '[ $symbol ( $context ) ](fg:color2 bg:color4)'
+format = '[ $symbol ($context) ](fg:color2 bg:color4)'
 style = "bg:color4"
 detect_folders = ['k8s', 'kubernetes', 'k9s', 'kube*', '.kube']
 

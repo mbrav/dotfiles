@@ -14,6 +14,15 @@ command -v mcfly >/dev/null && eval "$(mcfly init bash)"
 # Advanced command-not-found hook
 [[ -f /usr/share/doc/find-the-command/ftc.bash ]] && source /usr/share/doc/find-the-command/ftc.bash
 
+## Run fastfetch, neofetch or screenfetch
+if command -v fastfetch &> /dev/null; then
+    fastfetch --load-config neofetch
+elif command -v neofetch &> /dev/null; then
+    neofetch
+elif command -v screenfetch &> /dev/null; then
+    screenfetch
+fi
+
 # Pyenv config
 [[ -d "$HOME/.pyenv" ]] && export PYENV_ROOT="$HOME/.pyenv"
 command -v pyenv >/dev/null && export PATH="$PYENV_ROOT/bin:$PATH"

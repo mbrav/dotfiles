@@ -99,9 +99,15 @@ function copy
     end
 end
 
-## Run fastfetch if session is interactive
-if status --is-interactive && type -q fastfetch
-    fastfetch --load-config dr460nized
+## Run fastfetch, neofetch or screenfetch if session is interactive
+if status --is-interactive
+    if type -q fastfetch
+        fastfetch --load-config neofetch
+    else if type -q neofetch
+        neofetch
+    else if type -q screenfetch
+        screenfetch
+    end
 end
 
 ## MY MODS

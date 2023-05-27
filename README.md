@@ -8,7 +8,7 @@ My scripts and dot files
 
 Consists of various DevOps-oriented configurations which are meant for my own personal Arch-based linux setup, but can be up based on other Linux distros such as Debian, Ubuntu, RHEL, etc.
 
-![](./screenshot.png)
+![](./screenshot.webp)
 
 ## Overview
 

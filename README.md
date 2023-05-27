@@ -6,19 +6,19 @@
 
 My scripts and dot files
 
-Consists of various DevOps-oriented configurations which are meant for my own personal Arch-based linux setup, but can be up based on other Linux distros such as Debian, Ubuntu, RHEL, etc.
+Consists of various DevOps-oriented configurations which are meant for my own personal Arch-based linux setup, but can be used in with other Linux distros such as Debian, Ubuntu, RHEL, etc.
 
 ![](./screenshot.webp)
 
 ## Overview
 
-My config overall consists of dotfiles and [`scripts`](dotfiles/.config/scripts) that are meant to be `fish` and `bash` shell compatiable.
+My config overall consists of dotfiles and [`scripts`](dotfiles/.config/scripts) that are meant to be `fish` and `bash` shell compatible as much as possible in cases where not all the components are allowed to be installed on certain servers for various reasons, etc.
 Since fish is not POSIX complaint, bash is meant to be used as a backup shell in cases where it would be more comfortable.
 But the main advatnage of fish, in my use case, is that outocompletion is setup automaticaly for tools such as `docker`, `kubectl`, etc.
 
 ## Installation
 
-To take the most advantage of the config, a few tools are used, which are recommended for installation since these are setup in [`aliases`](dotfiles/.config/scripts/aliases), [`.bashrc`](dotfiles/.bashrc) and [`config.fish`](dotfiles/.config/fish/config.fish):
+To take the most advantage of the config, a few tools are used, which are recommended for installation given that they are setup in [`aliases`](dotfiles/.config/scripts/aliases), [`.bashrc`](dotfiles/.bashrc) and [`config.fish`](dotfiles/.config/fish/config.fish):
 
 - [Starship](https://starship.rs/) - A cross-shell prompt customizaion tool written in Rust;
 - [McFly](https://github.com/cantino/mcfly) - A cross-shell tool for browsing through shell history;

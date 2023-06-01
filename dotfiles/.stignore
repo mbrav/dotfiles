@@ -2,6 +2,7 @@
 # Dot Stuff
 .atom
 .bash_history
+.ash_history
 .dir_colors
 .face
 .face.icon
@@ -87,11 +88,16 @@
 */Torrents/*
 Android/
 */share/Steam/
+.steam/
 **/cache/
 .fonts
 .zcompdump
 .firedragon/
 .zoom/
+.cache/
+.parallel/
+.dvdcss/
+.subversion/
 
 #Dev stuff
 .kube/http-cache
@@ -131,6 +137,7 @@ Postman
 .vue-cli-ui
 .vuerc
 .python_history
+.terraform.d/
 
 
 # Vscode stuff
@@ -139,8 +146,9 @@ Postman
 **/User/History
 **/workspaceStorage
 **/globalStorage
-.vscode-oss/extensions
-.vscode/extensions/
+.vscode-oss/
+.vscode/
+.vscode-cli/
 
 # Vim
 .vim/plugged/

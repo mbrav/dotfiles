@@ -122,6 +122,11 @@ if test -d ~/.config/scripts/kubectl-aliases
     source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases.fish"
 end
 
+# Cargo config
+if test -d "$HOME/.cargo/bin" 
+    fish_add_path $HOME/.cargo/bin
+end
+
 # Init pyenv if available
 if test -d ~/.pyenv
     set -Ux PYENV_ROOT $HOME/.pyenv

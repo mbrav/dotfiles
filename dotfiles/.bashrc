@@ -5,6 +5,9 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
+# Add local bin to path if it exists
+[[ -d $HOME/.local/bin ]] && PATH="$PATH:$HOME/.local/bin"
+
 # Load starship prompt if starship is installed:
 command -v starship >/dev/null && eval "$(starship init bash)"
 

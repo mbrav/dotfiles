@@ -13,30 +13,28 @@
 ## https://www.torproject.org/docs/faq#torrc
 User tor
 
-## Setup Bridges for countries where to is blocked
+## Setup Bridges for countries where tor is blocked
 ## Make sure obfs4proxy is installed
-## For obfs2-3 obfsproxy must be used
+## For obfs2-3 obfsproxy must be installed
 
 UseBridges 1
 ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy managed
 
 ## Bridges list
-bridge obfs4 84.177.20.59:8080 3A76222696BA38823C43521FD604189A285D9859 cert=FR1z74IEj2chaLm4ztMtjnU1X4VfAAC6m6fPVSN37IggVKmhJqH0w81b1eEyYoBYDDAyZQ iat-mode=0
-bridge obfs4 81.56.35.10:36494 46510987771E07D8716FB55A07D72BC79CA16AF1 cert=hsXTloWTxpBcS9E5FCI/lE6pBlbXMDFrnLKy/ic35bmtTmk8U6SxD4H9Vz9VPOzpGL9KXA iat-mode=0
-bridge obfs4 57.128.82.226:50493 3D274CDCC3B5518B9CFFCFF5216373C21DD80D96 cert=9T0ZORpHFws2JGPSx+A1imeJbFAXCmipfal2qnRkV4xZQ1ds27lz45k7H/cwaC1M/MwdDQ iat-mode=0
-bridge obfs4 37.27.0.229:28279 8FA8D2D71861493A693E0605ABDE84D1813E4660 cert=zLGvUcvbQN3nXX0knB41+4aL4MWbHpkTfc42JVPB2GJk44JVw8cJUu9AsmdC8EtdHRV8eg iat-mode=0
+bridge obfs4 152.70.173.173:4454 BCC000FF6B6B053220269DBA651C277C76FB866D cert=ZLgH+pGrDjfLpW2y+hINHZ2wbZ6PbaGVxPA090h2yTC7GuQiwFABCO3LjWeGsCCVaU8PYQ iat-mode=0
 
 ## Tor opens a SOCKS proxy on port 9050 by default -- even if you don't
 ## configure one below. Set "SOCKSPort 0" if you plan to run Tor only
 ## as a relay, and not make any local application connections yourself.
-SOCKSPort 9050 # Default: Bind to localhost:9050 for local connections.
+SOCKSPort 0.0.0.0:9050 # Default: Bind to localhost:9050 for local connections.
 #SOCKSPort 192.168.0.1:9100 # Bind to this address:port too.
 
 ## Run a HTTP Proxy
-HTTPTunnelPort 8050
+HTTPTunnelPort 0.0.0.0:8050
 
 ## Run a HTTPS Proxy
 # HTTPSTunnelPort 8053
+HTTPTunnelPort 0.0.0.0:8053
 
 ## Entry policies to allow/deny SOCKS requests based on IP address.
 ## First entry that matches wins. If no SOCKSPolicy is set, we accept

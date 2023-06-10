@@ -264,7 +264,7 @@ function start_tmux() {
         return
     fi
 
-    if [[ -n "$TMUX" || -n "$DOLPHIN_TERM" ]]; then
+    if [[ -n "$TMUX" || "$TERM" = "screen" ]]; then
         # Check if already inside tmux or custom variable
         # if so, exit function
         return

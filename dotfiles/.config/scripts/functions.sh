@@ -253,20 +253,28 @@ function start_tmux() {
     if ! command -v tmux &> /dev/null; then
         # Check if tmux is installed
         # if not, exit function
-        echo "🛑 Tmux not installed, not starting tmux session"
+        # echo "🛑 Tmux not installed, not starting tmux session"
         return
     fi
 
     if [[ -n "$SSH_CONNECTION" || -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
         # Check if inside a SSH session
         # If so, do not enter a tmux session and exit function
-        echo "🛑 Inside SSH session, not starting tmux session"
+        # echo "🛑 Inside SSH session, not starting tmux session"
         return
     fi
 
     if [[ -n "$TMUX" || "$TERM" = "screen" ]]; then
         # Check if already inside tmux or custom variable
         # if so, exit function
+        return
+    fi
+
+    if [[ -n "$KONSOLE_DBUS_SESSION" ]]; then
+        # Check if inside a Konsole session
+        # Since Konsole is asumed to not be the default terminal app
+        # Whenever a integrated terminal opens within a KDE framework app
+        # exit function
         return
     fi
 

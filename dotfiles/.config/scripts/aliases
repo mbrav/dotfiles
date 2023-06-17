@@ -24,25 +24,31 @@ export MCFLY_RESULTS=30
 export MCFLY_PROMPT="❯"
 export MCFLY_FUZZY=5
 
+
+# Utility
+# export doublequote="\""
+# export singlequote="\'"
+
 ## MY ALIASES
 alias dus='du -h --max-depth 1'
 # Force tmux color
 alias tmux='tmux -2'
-alias tmux-new='tmux -2 new -s '
-# alias tmux-reatch="tmux -2 attach -t $(tmux ls | awk '{print $1}' | sed 's/://g' | fzf)"
+alias tmuxn='tmux -2 new -s '
+# Use fuzzy finder to select what tmux session to attach to
+alias tmuxa="tmux ls | sed 's/:.*//' | fzf --header 'Select what tmux session to attach to' | xargs -I % sh -c 'tmux attach -t %'"
 
 # Fuzzy Finder scripts
 command -v fzf >/dev/null && \
 # Fuzzy find dev directory type, then projects
-alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf)' && \
+alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf --preview "ls -la --no-permissions {1}")' && \
 # Fuzzy find dev directory all
-alias deva='cd $(find ~/dev/* -type d | fzf)' && \
+alias deva='cd $(find ~/dev/* -type d | fzf --preview "ls -la --no-permissions {1}")' && \
 # Config folder fuzzy find
-alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf)' && \
+alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf --preview "ls -la --no-permissions {1}")' && \
 # Config folder fuzzy find all
-alias confa='cd $(find ~/.config/* -type d | fzf)' && \
+alias confa='cd $(find ~/.config/* -type d | fzf --preview "ls -la --no-permissions {1}")' && \
 # Log tailer
-alias logt='tail -f $(find /var/log -type f | fzf)' && \
+alias logt='tail -f $(find /var/log -type f | fzf --preview "ls -la --no-permissions {1}")' && \
 # Journalctl process log tailer
 alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _PID=%' && \
 # Process killer
@@ -103,13 +109,13 @@ alias gp='git push'
 alias gP='git push --force'
 alias gsubu='git submodule update --recursive --remote'
 # Use fuzzy finder to select a range from 1 to 20 to soft reset HEAD~X
-alias gS="seq 1 20 | fzf --header 'HEAD~n number to soft reset' | xargs -I % sh -c 'git reset --soft HEAD~%'"
+alias gS="seq 1 20 | fzf --header 'HEAD~n number to soft reset' --preview 'git show HEAD~{1}' | xargs -I % sh -c 'git reset --soft HEAD~%'"
 # Use fuzzy finder to select a range from 1 to 20 to hard reset HEAD~X
-alias gH="seq 1 20 | fzf --header 'HEAD~n number to hard reset' | xargs -I % sh -c 'git reset --hard HEAD~%'"
+alias gH="seq 1 20 | fzf --header 'HEAD~n number to hard reset' --preview 'git show HEAD~{1}' | xargs -I % sh -c 'git reset --hard HEAD~%'"
 # Use fuzzy finder to select a range from 1 to 20 to rebase HEAD~X
-alias gR="seq 1 20 | fzf --header 'HEAD~n number to rebase' | xargs -I % sh -c 'git rebase -i HEAD~%'"
+alias gR="seq 1 20 | fzf --header 'HEAD~n number to rebase' --preview 'git show HEAD~{1}' | xargs -I % sh -c 'git rebase -i HEAD~%'"
 # Use fuzzy finder to select what git branch to checkout 
-alias gchk="git branch --format='%(refname:short)' | fzf --header 'Select branch to checkout' | xargs -I % sh -c 'git checkout %' "
+alias gchk="git branch --format='%(refname:short)' | fzf --header 'Select branch to checkout' --preview 'git show {1}' | xargs -I % sh -c 'git checkout %' "
 
 ## Useful aliases
 # Replace ls with exa

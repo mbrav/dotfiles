@@ -26,7 +26,7 @@ function start_tmux
         return
     end
 
-    if test -n "$TMUX"; and test "$SHELL" = "screen"
+    if test -n "$TMUX"; or test "$SHELL" = "screen"
         # Check if already inside tmux or custom variable
         # if so, exit function
         return

@@ -101,12 +101,15 @@ alias gcm='git commit'
 alias gcM='git commit --amend'
 alias gp='git push'
 alias gP='git push --force'
+alias gsubu='git submodule update --recursive --remote'
 # Use fuzzy finder to select a range from 1 to 20 to soft reset HEAD~X
 alias gS="seq 1 20 | fzf --header 'HEAD~n number to soft reset' | xargs -I % sh -c 'git reset --soft HEAD~%'"
 # Use fuzzy finder to select a range from 1 to 20 to hard reset HEAD~X
 alias gH="seq 1 20 | fzf --header 'HEAD~n number to hard reset' | xargs -I % sh -c 'git reset --hard HEAD~%'"
 # Use fuzzy finder to select a range from 1 to 20 to rebase HEAD~X
 alias gR="seq 1 20 | fzf --header 'HEAD~n number to rebase' | xargs -I % sh -c 'git rebase -i HEAD~%'"
+# Use fuzzy finder to select what git branch to checkout 
+alias gchk="git branch --format='%(refname:short)' | fzf --header 'Select branch to checkout' | xargs -I % sh -c 'git checkout %' "
 
 ## Useful aliases
 # Replace ls with exa
@@ -163,8 +166,8 @@ command -v pacman >/dev/null && \
   alias mirrors="sudo reflector --latest 50 --number 20 --sort score --save /etc/pacman.d/mirrorlist" && \
   alias mirrora="sudo reflector --latest 50 --number 20 --sort age --save /etc/pacman.d/mirrorlist" && \
   # Help people new to Arch
-  alias apt='man pacman' && \
-  alias apt-get='man pacman' && \
+  alias apt='echo "Bruh, you are using Arch, btw" ' && \
+  alias apt-get='echo "Bruh" ' && \
   # Cleanup orphaned packages
   alias cleanup='sudo pacman -Rns (pacman -Qtdq)' && \
   # Recent installed packages

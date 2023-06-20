@@ -42,4 +42,4 @@ command -v pyenv >/dev/null && eval "$(pyenv virtualenv-init -)"
 
 # Kubectl aliases based on shell 
 # Based on https://github.com/ahmetb/kubectl-aliases
-[[ -d "$HOME/.config/scripts/kubectl-aliases" ]] && source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases"
+[[ -f "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases" ]] && source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases"

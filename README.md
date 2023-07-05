@@ -14,7 +14,7 @@ Consists of various DevOps-oriented configurations which are meant for my own pe
 
 My config overall consists of dotfiles and [`scripts`](dotfiles/.config/scripts) that are meant to be `fish` and `bash` shell compatible as much as possible in cases where not all the components are allowed to be installed on certain servers for various reasons, etc.
 Since fish is not POSIX complaint, bash is meant to be used as a backup shell in cases where it would be more comfortable.
-But the main advatnage of fish, in my use case, is that outocompletion is setup automaticaly for tools such as `docker`, `kubectl`, etc.
+But the main advatnage of fish, in my use case, is that outocompletion is setup automatically for tools such as `docker`, `kubectl`, etc.
 
 ## Installation
 

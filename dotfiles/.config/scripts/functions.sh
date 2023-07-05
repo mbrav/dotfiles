@@ -84,6 +84,12 @@ function info_msg() {
 # echo -e -n "$(r_color_st)T$(r_color)E$(r_color)R$(r_color_st)M$(r_color)I$(r_color_st)N$(r_color)A$(r_color_st)L$CLEAR "
 # echo -e "$(r_color_st)C$(r_color)O$(r_color)L$(r_color_st)O$(r_color)R$(r_color_st)S$CLEAR "
 
+# Bash specific aliases
+alias prevd="cd -"
+
+# Bash specific functions
+
+
 function check_sudo () {
     [[ $(whoami) != root ]] && error_msg "Please run script as root or sudo" 13
     warning_msg "Note: to run sudo and preserve passed env variables run with 'sudo -E'"
@@ -150,7 +156,7 @@ function replace-vars() {
 function dock-save() {
     # Save docker images
     if [[ $# -lt 1 || $# -gt 2 ]]; then
-        echo -e $RED"Must provide 2 arguments, docker image name and tar output file name (no exension)"$CLEAR
+        echo -e $RED"Must provide 2 arguments, docker image name and tar output file name (no extension)"$CLEAR
         exit 1
     fi
     mkdir -p ~/docker-images
@@ -272,7 +278,7 @@ function start_tmux() {
 
     if [[ -n "$KONSOLE_DBUS_SESSION" ]]; then
         # Check if inside a Konsole session
-        # Since Konsole is asumed to not be the default terminal app
+        # Since Konsole is assumed to not be the default terminal app
         # Whenever a integrated terminal opens within a KDE framework app
         # exit function
         return

@@ -186,5 +186,3 @@ command -v pacman >/dev/null && \
 
 # Get the error messages from journalctl
 alias jctl="journalctl -p 3 -xb"
-
-

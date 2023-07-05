@@ -13,7 +13,7 @@ end
 
 function start_tmux
     if not type -sq tmux
-        # Check if tmux is insalled
+        # Check if tmux is installed
         # if not, exit function
         # echo "🛑 Tmux not installed, not starting tmux session"
         return
@@ -34,7 +34,7 @@ function start_tmux
 
     if test -n "$KONSOLE_DBUS_SESSION"
         # Check if inside a Konsole session
-        # Since Konsole is asumed to not be the default terminal app
+        # Since Konsole is assumed to not be the default terminal app
         # Whenever a integrated terminal opens within a KDE framework app
         # exit function
         return

@@ -24,6 +24,25 @@ return {
       return opts
     end,
   },
+  -- You can also easily customize additional setup of plugins that is outside of the plugin's setup call
+  {
+    "nvim-neo-tree/neo-tree.nvim",
+    config = function(_, opts)
+      opts.filesystem.filtered_items = {
+        visible = true,
+        show_hidden_count = true,
+        hide_dotfiles = false,
+        hide_gitignored = false,
+        hide_by_name = {
+        -- '.git',
+        -- '.DS_Store',
+        -- 'thumbs.db',
+        },
+        never_show = {},
+      }
+      return opts
+    end,
+  },
   -- You can disable default plugins as follows:
   -- { "max397574/better-escape.nvim", enabled = false },
   --

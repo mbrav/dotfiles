@@ -267,7 +267,9 @@ function start_tmux() {
         # Check if inside a SSH session
         # If so, do not enter a tmux session and exit function
         # echo "🛑 Inside SSH session, not starting tmux session"
-        return
+        if [[ "$TERM_PROGRAM" != @(vscode|my_ide_name) ]]; then
+            return
+        fi
     fi
 
     if [[ -n "$TMUX" || "$TERM" = "screen" ]]; then

@@ -19,13 +19,26 @@ function start_tmux
         return
     end
 
-    if test -n "$SSH_CONNECTION"; and test -n "$SSH_CLIENT"; and test -n "$SSH_TTY"
-        # Check if inside a SSH session
+    if contains "$TERM_PROGRAM" vscode; or test -n "$NVIM"
+        # Check if terminal inside an IDE
+        set IN_IDE 1
+    end
+    
+    if test -n "$SSH_CONNECTION"; and test -n "$SSH_CLIENT"; and test -n "$SSH_TTY"; test -n "$KONSOLE_DBUS_SESSION"
+
+        # $SSH_* - Check if inside a SSH session
         # If so, do not enter a tmux session and exit function
-        # echo "🛑 Inside SSH session, not starting tmux session"
-        if not contains "$TERM_PROGRAM" vscode my_ide_name
+
+        # $KONSOLE_DBUS_SESSION - Check if inside a Konsole session
+        # Since Konsole is assumed to not be the default terminal app
+        # Whenever a integrated terminal opens within a KDE framework app
+        # exit function
+
+        if test -n "$IN_IDE"
+            # If inside IDE, ignore
             return
         end
+        # echo "🛑 Inside SSH session, not starting tmux session"
     end
 
     if test -n "$TMUX"; or test "$SHELL" = "screen"
@@ -34,20 +47,12 @@ function start_tmux
         return
     end
 
-    if test -n "$KONSOLE_DBUS_SESSION"
-        # Check if inside a Konsole session
-        # Since Konsole is assumed to not be the default terminal app
-        # Whenever a integrated terminal opens within a KDE framework app
-        # exit function
-        return
-    end
-
     # Attach to tmux session on shell login if tmux is installed
     # Set default session name to a random animal icon "main"
     # set animal_icons ("🐺" "🐯" "🦁" "🐪" "🐧" "🦩" "🦆" "🦅" "🐼" "🦏" "🦀" "🦂" "🕷️" "🦍" "🦊" "🦖" "🐊" "🐉" "🐲" "🐍" "🐋" "🐬" "🐙")
     set tmux_session_name "🐺main"
 
-    if test -n "$TERM_PROGRAM"; and contains "$TERM_PROGRAM" vscode my_ide_name
+    if test -n "$IN_IDE"
         # Check if term is inside an IDE or other environments
         set folder "$(pwd)"
         set folder_name "$(basename $folder)"
@@ -55,11 +60,6 @@ function start_tmux
     end
 
     # Attach to existing or create a new tmux session
-    if test -n "(tmux ls | grep "$tmux_session_name")"
-        echo "🚪 Tmux session '$tmux_session_name' exists, entering"
-    else
-        echo "🪄 Tmux session '$tmux_session_name' does not exist, creating"
-    end
     tmux -2 attach -t "$tmux_session_name"; or tmux -2 new-session -s "$tmux_session_name"
 end
 

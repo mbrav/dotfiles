@@ -15,7 +15,7 @@ ConditionsCount=0
 
 [Data_1_1]
 Comment=Imitate Sofle keyoboard with Alt as Layer Down key
-DataCount=8
+DataCount=9
 Enabled=true
 Name=Shortcuts
 SystemGroup=0
@@ -48,7 +48,7 @@ Comment=Simple_action
 TriggersCount=1
 
 [Data_1_1_1Triggers0]
-Key=Alt+K
+Key=Alt+J
 Type=SHORTCUT
 Uuid={3d8e267d-c19e-40f2-b71d-7116d1c8273d}
 
@@ -75,7 +75,7 @@ Comment=Simple_action
 TriggersCount=1
 
 [Data_1_1_2Triggers0]
-Key=Alt+I
+Key=Alt+K
 Type=SHORTCUT
 Uuid={c0cd3280-e5fd-4ad0-ad7b-44268bf20dd3}
 
@@ -102,7 +102,7 @@ Comment=Simple_action
 TriggersCount=1
 
 [Data_1_1_3Triggers0]
-Key=Alt+J
+Key=Alt+L
 Type=SHORTCUT
 Uuid={af488019-db5a-4b25-bae4-bcbe6cd27fb7}
 
@@ -129,7 +129,7 @@ Comment=Simple_action
 TriggersCount=1
 
 [Data_1_1_4Triggers0]
-Key=Alt+L
+Key=Alt+H
 Type=SHORTCUT
 Uuid={8bda7a4a-8961-42eb-872b-9529ef34df84}
 
@@ -156,7 +156,7 @@ Comment=Simple_action
 TriggersCount=1
 
 [Data_1_1_5Triggers0]
-Key=Alt+Y
+Key=Alt+I
 Type=SHORTCUT
 Uuid={116c9b60-10b8-4520-8c39-02c1e53d1f5d}
 
@@ -183,7 +183,7 @@ Comment=Simple_action
 TriggersCount=1
 
 [Data_1_1_6Triggers0]
-Key=Alt+H
+Key=Alt+U
 Type=SHORTCUT
 Uuid={06878e01-2e7b-411d-9a9d-ec3db8881ac4}
 
@@ -237,9 +237,36 @@ Comment=Simple_action
 TriggersCount=1
 
 [Data_1_1_8Triggers0]
-Key=Alt+"
+Key=
 Type=SHORTCUT
 Uuid={33938821-8479-45a9-a8e5-3856df6f59b8}
+
+[Data_1_1_9]
+Comment=Type — symbol
+Enabled=false
+Name=Symbol —
+Type=SIMPLE_ACTION_DATA
+
+[Data_1_1_9Actions]
+ActionsCount=1
+
+[Data_1_1_9Actions0]
+DestinationWindow=0
+Input=:—
+Type=KEYBOARD_INPUT
+
+[Data_1_1_9Conditions]
+Comment=
+ConditionsCount=0
+
+[Data_1_1_9Triggers]
+Comment=Simple_action
+TriggersCount=1
+
+[Data_1_1_9Triggers0]
+Key=Alt+_
+Type=SHORTCUT
+Uuid={6cc4a941-8d80-43cf-a8fa-1e2c354b319e}
 
 [Data_1_2]
 Comment=Comment

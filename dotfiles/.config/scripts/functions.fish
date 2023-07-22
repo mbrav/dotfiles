@@ -24,7 +24,7 @@ function start_tmux
         set IN_IDE 1
     end
     
-    if test -n "$SSH_CONNECTION"; and test -n "$SSH_CLIENT"; and test -n "$SSH_TTY"; test -n "$KONSOLE_DBUS_SESSION"
+    if test -n "$SSH_CONNECTION"; or test -n "$SSH_CLIENT"; or test -n "$SSH_TTY"; or test -n "$KONSOLE_DBUS_SESSION"
 
         # $SSH_* - Check if inside a SSH session
         # If so, do not enter a tmux session and exit function
@@ -34,7 +34,7 @@ function start_tmux
         # Whenever a integrated terminal opens within a KDE framework app
         # exit function
 
-        if test -n "$IN_IDE"
+        if test -z "$IN_IDE"
             # If inside IDE, ignore
             return
         end

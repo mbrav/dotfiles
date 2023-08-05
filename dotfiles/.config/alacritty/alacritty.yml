@@ -20,43 +20,35 @@ window:
   decorations_theme_variant: Dark
   title: Alacritty
   # opacity: 0.95
-  opacity: 0.85
+  opacity: 1.0
   class:
     instance: Alacritty
     general: Alacritty
-
 font:
   normal:
     family: JetbrainsMonoNL
     style: Regular
   size: 11
-
 scrolling:
   history: 100000
   multiplier: 3
-
 draw_bold_text_with_bright_colors: true
 save_to_clipboard: true
 dynamic_padding: true
 window.dynamic_title: true
-
 cursor:
   style: Underline
   blinking: Always
   blink-interval: 750
-
 live_config_reload: true
-
 shell:
   program: /usr/bin/fish
   args:
     - --login
-
 mouse:
   hide_when_typing: true
-
 key_bindings:
-   # (Windows, Linux, and BSD only)
+  # (Windows, Linux, and BSD only)
   - { key: V, mods: Control|Shift, action: Paste }
   - { key: C, mods: Control|Shift, action: Copy }
   - { key: N, mods: Command, action: SpawnNewInstance }
@@ -66,8 +58,11 @@ key_bindings:
   - { key: Plus, mods: Control, action: IncreaseFontSize }
   - { key: Minus, mods: Control, action: DecreaseFontSize }
   - { key: Minus, mods: Control, action: DecreaseFontSize }
-  - { key: Return,   mods: Control|Shift, action: SpawnNewInstance }
-
+  - {
+      key: Return,
+      mods: Control|Shift,
+      action: SpawnNewInstance
+    }
 schemes:
   # Tokyo Night theme, based on both:
   #   https://github.com/ghifarit53/tokyonight-vim
@@ -78,7 +73,6 @@ schemes:
     primary:
       background: "#1a1b26"
       foreground: "#a9b1d6"
-
     # Normal colors
     normal:
       black: "#32344a"
@@ -89,7 +83,6 @@ schemes:
       magenta: "#ad8ee6"
       cyan: "#449dab"
       white: "#787c99"
-
     # Bright colors
     bright:
       black: "#444b6a"
@@ -100,14 +93,12 @@ schemes:
       magenta: "#bb9af7"
       cyan: "#0db9d7"
       white: "#acb0d0"
-
   tokyo-night-storm:
     # Default colors
     &tokyo-night-storm
     primary:
       background: "#24283b"
       foreground: "#a9b1d6"
-
     # Normal colors
     normal:
       black: "#32344a"
@@ -118,7 +109,6 @@ schemes:
       magenta: "#ad8ee6"
       cyan: "#449dab"
       white: "#9699a8"
-
     # Bright colors
     bright:
       black: "#444b6a"
@@ -129,14 +119,12 @@ schemes:
       magenta: "#bb9af7"
       cyan: "#0db9d7"
       white: "#acb0d0"
-
   monokai-pro:
     # Default colors
     &monokai-pro
     primary:
       background: "#2D2A2E"
       foreground: "#fff1f3"
-
     # Normal colors
     normal:
       black: "#2c2525"
@@ -147,7 +135,6 @@ schemes:
       magenta: "#a8a9eb"
       cyan: "#85dacc"
       white: "#fff1f3"
-
     # Bright colors
     bright:
       black: "#72696a"
@@ -158,13 +145,11 @@ schemes:
       magenta: "#a8a9eb"
       cyan: "#85dacc"
       white: "#fff1f3"
-
 # github Alacritty Colors
 github-dark: &github-dark
   primary:
     background: "#0d1117"
     foreground: "#b3b1ad"
-
   # Normal colors
   normal:
     black: "#484f58"
@@ -175,7 +160,6 @@ github-dark: &github-dark
     magenta: "#bc8cff"
     cyan: "#39c5cf"
     white: "#b1bac4"
-
   # Bright colors
   bright:
     black: "#6e7681"
@@ -186,11 +170,9 @@ github-dark: &github-dark
     magenta: "#d2a8ff"
     cyan: "#56d4dd"
     white: "#f0f6fc"
-
   indexed_colors:
     - { index: 16, color: "#d18616" }
     - { index: 17, color: "#ffa198" }
-
 # github Alacritty Colors
 github-dimmed:
   # Default colors
@@ -198,7 +180,6 @@ github-dimmed:
   primary:
     background: "#22272e"
     foreground: "#768390"
-
   # Normal colors
   normal:
     black: "#22272e"
@@ -209,7 +190,6 @@ github-dimmed:
     magenta: "#b083f0"
     cyan: "#39c5cf"
     white: "#909dab"
-
   # Bright colors
   bright:
     black: "#22272e"
@@ -220,11 +200,36 @@ github-dimmed:
     magenta: "#dcbdfb"
     cyan: "#56d4dd"
     white: "#cdd9e5"
-
   indexed_colors:
     - { index: 16, color: "#d18616" }
     - { index: 17, color: "#ff938a" }
-
+# Midnight Haze theme
+midnight-haze:
+  # Default colors
+  &midnight-haze
+  primary:
+    background: '0x0c0c16'
+    foreground: '0xd8dee9'
+  # Normal colors
+  normal:
+    black: '0x2c2c3d'
+    red: '0xff6e6e'
+    green: '0x9ec875'
+    yellow: '0xffa759'
+    blue: '0x70a7d4'
+    magenta: '0xd291e0'
+    cyan: '0x96e0e0'
+    white: '0xd8dee9'
+  # Bright colors
+  bright:
+    black: '0x414166'
+    red: '0xff8d8d'
+    green: '0xb3d987'
+    yellow: '0xffc57f'
+    blue: '0x9bb3d3'
+    magenta: '0xffa1ff'
+    cyan: '0x9cd8d8'
+    white: '0xffffff'
 # My scheme
 my:
   # My scheme
@@ -276,11 +281,10 @@ my:
     magenta: '#8c738c'
     cyan: '#6d96a5'
     white: '#aeb3bb'
-
-
 # colors: *tokyo-night
 # colors: *tokyo-night-storm
 # colors: *monokai-pro
 # colors: *github-dark
 # colors: *github-dimmed
-colors: *my
+# colors: *my
+colors: *midnight-haze

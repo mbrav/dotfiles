@@ -50,22 +50,22 @@ command -v bat >/dev/null && \
 
 # Fuzzy Finder scripts
 # Fuzzy find and cd from current directory
-# alias fcd='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "exa -al --color=always --group-directories-first --icons --no-permissions {1}")'
-alias fc='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
+alias f='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview "$LS_PREVIEW_CMD {1}")'
+#alias f='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 # Fuzzy find and vim edit from current directory
-alias fv='vim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "Folder contents" --preview "$CAT_PREVIEW_CMD {1}")'
+alias fv='vim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview "$CAT_PREVIEW_CMD {1}")'
 # Fuzzy find and nvim edit from current directory 
-alias fV='nvim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "Folder contents" --preview "$CAT_PREVIEW_CMD {1}")'
+alias fV='nvim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview "$CAT_PREVIEW_CMD {1}")'
 # Fuzzy find dev directory type, then projects
-alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
+alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview "$LS_PREVIEW_CMD {1}")'
 # Fuzzy find dev directory all
-alias deva='cd $(find ~/dev/* -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
+alias deva='cd $(find ~/dev/* -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview "$LS_PREVIEW_CMD {1}")'
 # Config folder fuzzy find
 alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview-label "$LS_PREVIEW_CMD {1}")'
 # Config folder fuzzy find all
-alias confa='cd $(find ~/.config/* -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
+alias confa='cd $(find ~/.config/* -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview "$LS_PREVIEW_CMD {1}")'
 # Log tailer
-alias logt='tail -f $(find /var/log -type f | fzf --header "Select what log file to tail" --preview-window "up:50%" --preview-label "File contents" --preview "tail -n 20 {1}")'
+alias logt='tail -f $(find /var/log -type f | fzf --header "Select what log file to tail" --preview-window "up:50%" --preview "tail -n 20 {1}")'
 # Journalctl process log tailer
 alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _PID=%'
 # Process killer

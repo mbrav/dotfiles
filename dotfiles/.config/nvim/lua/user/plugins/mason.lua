@@ -30,8 +30,8 @@ return {
         "jsonlint",
         "yamlfmt",
         "sqlfmt",
-        "rustfmt",
-        "codespell"
+        -- "rustfmt", -- Installed via rustup now
+        -- "codespell"
       },
     },
   },

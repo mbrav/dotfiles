@@ -40,20 +40,34 @@ alias tmuxn='tmux -2 new -s '
 # Use fuzzy finder to select what tmux session to attach to
 alias tmuxa='tmux attach -t $(tmux ls | sed "s/:.*//" | fzf --header "Select what tmux session to attach to")'
 
+# Set preview aliases for fzf preview
+command -v exa >/dev/null && \
+  export LS_PREVIEW_CMD="exa -al --color=always --group-directories-first --icons --no-permissions " || \
+  export LS_PREVIEW_CMD="ls -lahg --color=auto "
+command -v bat >/dev/null && \
+  export CAT_PREVIEW_CMD="bat --style header --style snip --style changes --style header " || \
+  export CAT_PREVIEW_CMD="cat -n "
+
 # Fuzzy Finder scripts
-command -v fzf >/dev/null && \
+# Fuzzy find and cd from current directory
+# alias fcd='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "exa -al --color=always --group-directories-first --icons --no-permissions {1}")'
+alias fc='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
+# Fuzzy find and vim edit from current directory
+alias fv='vim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "Folder contents" --preview "$CAT_PREVIEW_CMD {1}")'
+# Fuzzy find and nvim edit from current directory 
+alias fV='nvim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "Folder contents" --preview "$CAT_PREVIEW_CMD {1}")'
 # Fuzzy find dev directory type, then projects
-alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "ls -la --no-permissions {1}")' && \
+alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 # Fuzzy find dev directory all
-alias deva='cd $(find ~/dev/* -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "ls -la --no-permissions {1}")' && \
+alias deva='cd $(find ~/dev/* -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 # Config folder fuzzy find
-alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "ls -la --no-permissions {1}")' && \
+alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview-label "$LS_PREVIEW_CMD {1}")'
 # Config folder fuzzy find all
-alias confa='cd $(find ~/.config/* -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "ls -la --no-permissions {1}")' && \
+alias confa='cd $(find ~/.config/* -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 # Log tailer
-alias logt='tail -f $(find /var/log -type f | fzf --header "Select what log file to tail" --preview-window "up:50%" --preview-label "File contents" --preview "tail -n 20 {1}")' && \
+alias logt='tail -f $(find /var/log -type f | fzf --header "Select what log file to tail" --preview-window "up:50%" --preview-label "File contents" --preview "tail -n 20 {1}")'
 # Journalctl process log tailer
-alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _PID=%' && \
+alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _PID=%'
 # Process killer
 alias pkl='ps aux | fzf --header "Please select what process to kill" | awk "{print $2}" | xargs kill'
 
@@ -89,7 +103,7 @@ alias dkrmi='docker rmi $(docker images -a --format "table {{.ID}}\t{{.Repositor
 alias dkrmI='docker rmi --force $(docker images -a --format "table {{.ID}}\t{{.Repository}}:{{.Tag}}\t{{.CreatedSince}}\t{{.Size}}" | fzf --header "Please select which image to remove" --preview "docker image inspect '{1}'" --preview-window "top:60%" --preview-label "Image inspect" | cut -f 1 -d " ")'
 alias dkrmiA='docker images -a -q | xargs docker rmi'
 alias dkvolrmA='docker system prune --volumes --all --force'
-alias dkpruneA='dkstopA && dkrmA && docker image prune'
+alias dkpruneA='docker image prune && docker system prune -af'
 
 # Mount rclone
 alias rclone-crypt='rclone mount crypt:/ ~/Desktop/crypt/ --read-only --max-read-ahead=1G --acd-templink-threshold=0 --contimeout=15s --checkers=16 --bwlimit=0 --retries=3 --timeout=30s --low-level-retries=1 --transfers=8 --dir-cache-time=30m'

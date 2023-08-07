@@ -65,3 +65,7 @@ end
 
 load_starship
 start_tmux
+
+# Set trucolor
+set -x COLORTERM truecolor
+

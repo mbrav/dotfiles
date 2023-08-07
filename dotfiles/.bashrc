@@ -43,3 +43,7 @@ command -v pyenv >/dev/null && eval "$(pyenv virtualenv-init -)"
 # Kubectl aliases based on shell 
 # Based on https://github.com/ahmetb/kubectl-aliases
 [[ -f "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases" ]] && source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases"
+
+# Set trucolor
+export COLORTERM=truecolor
+

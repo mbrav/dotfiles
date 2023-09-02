@@ -140,3 +140,7 @@ end
 if type -q mcfly
     mcfly init fish | source
 end 
+
+### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
+set --export --prepend PATH "/home/mbrav/.rd/bin"
+### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)

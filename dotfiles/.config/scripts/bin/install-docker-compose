@@ -25,19 +25,19 @@ function fetch_version_docker_compose {
 # $1 - Docker compose version, otherwise default docker_
 if [[ -n "${1}" ]]; then
     # Set a random color
-    info_msg "Setting to version to $1"
+    info_msg "Setting to version to ${UNDERLINE}$1"
     version="${1}"
 else
     # Set a random color with style
     info_msg "Fetching latest docker compose tag from GitHub"
     version=$(fetch_version_docker_compose)
     [[ -n ${version} ]] || error_msg "Error fetching version" 1
-    info_msg "Setting version to: ${version}"
+    info_msg "Setting version to: ${UNDERLINE}${version}"
 fi
 
 docker_url="https://github.com/docker/compose/releases/download/${version}/docker-compose-$(uname -s)-$(uname -m)"
 [[ $(check_url "$docker_url") -ne 0 ]] && error_msg "Bad url" 6
-success_msg "Valid url: $docker_url"
+success_msg "Valid url: ${UNDERLINE}${docker_url}"
 
 sudo curl -L $docker_url -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose

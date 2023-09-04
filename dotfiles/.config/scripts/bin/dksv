@@ -1,5 +1,5 @@
 #!/bin/bash
-# Save docker images into an archive 
+# Export docker images to a tar archive 
 
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
@@ -7,22 +7,44 @@ script_dir="$(dirname "$(realpath "$0")")"
 # Source util function
 source "${script_dir}/_util.sh"
 
+ran_col_str "Docker image tar archive utility"
+
+# Check requirements
+command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
+command -v fzf >/dev/null || error_msg "Please install fzf utility" 1
+
 # Save docker images
-if [[ $# -lt 1 || $# -gt 2 ]]; then
-    echo -e $RED"Must provide 2 arguments, docker image name and tar output file name (no extension)"$CLEAR
-    exit 1
-fi
 
-echo -e $GREEN"Exporting image $YELLOW$1 $GREEN to ./$YELLOW$2.tar.gz"$CLEAR
+image=$(docker images -a --format "table {{.ID}} {{.Repository}}:{{.Tag}} {{.CreatedSince}} {{.Size}}" | fzf --header "Select docker image" --preview "docker image inspect '{1}'" --preview-window "top:60%" --preview-label "Image inspect" | cut -f 2 -d " ")
 
-docker save $1 | gzip -c > "./$2.tar.gz"
+[[ -n "${image}" ]] || error_msg "Error setting docker image" 1
+
+image_file="${image##*/}"              # Remove slash
+image_file="${image_file/:/-}.tar.gz"  # Remove ':' and add file extenstion
+
+success_msg "Image set to:     ${UNDERLINE}${image}"
+success_msg "Imagefile set to: ${UNDERLINE}${image_file}"
+
+info_msg "Now select folder to export archive to"
+sleep 2    
+export_path=$(find ~/dev/* -type d | fzf --header "Select folder to export image to" --preview "ls -la '{1}'" --preview-window "top:60%" --preview-label "Image inspect")
+
+info_msg "Exporting image ${image} to ${UNDERLINE}${export_path}/${image_file}"
+
+docker save "$image" | gzip -c > "${export_path}/${image_file}"
+
+[[ -f "${export_path}/${image_file}" ]] || error_msg "Error creating image tar archive" 1
+
+success_msg "Archive created:"
+
+ls -lah "${export_path}/${image_file}" 
 
 # Completions testing
-function _dock-save_completions() {
-    # Auto completion for docker-save
-    [ "${#COMP_WORDS[@]}" != "2" ] && return || \
-        COMPREPLY=($(compgen -W "$(docker images --format "{{.Repository}}:{{.Tag}}")" "${COMP_WORDS[1]}"))
-}
-
-complete -F _dock-save_completions dock-save
+# function _dock-save_completions() {
+#     # Auto completion for docker-save
+#     [ "${#COMP_WORDS[@]}" != "2" ] && return || \
+#         COMPREPLY=($(compgen -W "$(docker images --format "{{.Repository}}:{{.Tag}}")" "${COMP_WORDS[1]}"))
+# }
+#
+# complete -F _dock-save_completions dock-save
 

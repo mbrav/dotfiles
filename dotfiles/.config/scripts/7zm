@@ -7,7 +7,7 @@
 script_dir="$(dirname "$(realpath "$0")")"
 
 # Source util function
-source "${script_dir}/_util.sh"
+source "${script_dir}/_util"
 
 echo -e $GREEN$BOLD"7z max compression using lzma2"$CLEAR
 echo -e $YELLOW$BOLD"arg1$CLEAR - archive name without extension"

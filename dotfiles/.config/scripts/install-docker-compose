@@ -5,7 +5,7 @@
 script_dir="$(dirname "$(realpath "$0")")"
 
 # Source util function
-source "${script_dir}/_util.sh"
+source "${script_dir}/_util"
 
 ran_col_str "Docker compose install utility" c
 

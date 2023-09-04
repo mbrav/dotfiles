@@ -7,7 +7,7 @@
 script_dir="$(dirname "$(realpath "$0")")"
 
 # Source util function
-source "${script_dir}/_util.sh"
+source "${script_dir}/_util"
 
 [[ $# -lt 2 ]] && error_msg "do-interval accepts no less than 2 arguments, passed $#" 22
 [[ $1 == ?(-)+([[:digit:]]) ]] || error_msg "$1 is not a number" 22

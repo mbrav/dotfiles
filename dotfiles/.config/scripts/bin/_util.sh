@@ -53,12 +53,34 @@ STYLES=("$UNDERLINE" "$BOLD")
 
 function r_color () {
     # Set a random color
-    echo -e -n "${COLORS[RANDOM%${#COLORS[@]}]}"
+    # $1 - If non empty set with style 
+    
+    if [[ -z "${1}" ]]; then
+        # Set a random color
+        echo -e -n "${COLORS[RANDOM%${#COLORS[@]}]}"
+    else
+        # Set a random color with style
+        echo -e -n "${COLORS[RANDOM%${#COLORS[@]}]}${STYLES[RANDOM%${#STYLES[@]}]}"
+    fi
+
 }
 
-function r_color_st () {
-    # Set a random color with style
-    echo -e -n "${COLORS[RANDOM%${#COLORS[@]}]}${STYLES[RANDOM%${#STYLES[@]}]}"
+function ran_col_str () {
+    # Print a string with random color characaters
+    # $1 - String to randomize characters 
+    # $2 - If non empty set characters with a random style 
+    [[ -z "${1}" ]] && echo "${RED}Please provide a string to randomize colors:" && exit 1
+    result=""
+    for (( i=0; i<${#1}; i++ )); do
+        if [[ -z "${2}" ]]; then
+            # Set string with a random color
+            result="${result}$(r_color)${1:$i:1}${CLEAR}"
+        else
+            # Set string with a random color with style
+            result="${result}$(r_color c)${1:$i:1}${CLEAR}"
+        fi
+    done
+    echo -e "${result}"
 }
 
 function error_msg() {
@@ -66,7 +88,7 @@ function error_msg() {
     # $1            - Message string argument
     # $2 (optional) - exit code
     echo -e "${RED}${BOLD}[X] ${1}${CLEAR}"
-    [[ -n $2 ]] && exit $2
+    [[ -n $2 ]] && echo "${RED}Program exiting with code: ${2}${CLEAR}" && exit "${2}"
 }
 
 function warning_msg() {
@@ -102,6 +124,7 @@ function check_url() {
     # Check for passed url
     # 0 - exists
     # 1 - does not
+    [[ -z "${1}" ]] && echo "${RED}Please provide a URL string to check:" && exit 1
     if curl --output /dev/null --silent --head --fail "$1"; then
         echo 0
     else

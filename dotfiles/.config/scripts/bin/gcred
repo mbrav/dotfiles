@@ -1,0 +1,19 @@
+#!/bin/bash
+# Set git creds
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util.sh"
+
+if [[ $PWD == *"$USER/dev/work"* ]]; then
+    git-cred-mbrav
+else
+    git-cred-mbrav
+fi
+
+echo "User:  $(git config user.name)"
+echo "Email: $(git config user.email)"
+echo "Key:   $(git config user.signingkey)"
+

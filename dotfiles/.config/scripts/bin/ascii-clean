@@ -1,0 +1,13 @@
+#!/bin/bash
+# Clean non ascii chars from a file
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util.sh"
+
+temp_file="$(rand-hex-ssl 6).tmp"
+tr -cd '\11\12\15\40-\176' < "$1" > "$temp_file"
+mv "$temp_file" "$1"
+

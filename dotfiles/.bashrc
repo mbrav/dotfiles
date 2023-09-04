@@ -1,4 +1,4 @@
-#
+#!/bin/bash
 # ~/.bashrc
 #
 
@@ -39,6 +39,9 @@ command -v pyenv >/dev/null && eval "$(pyenv virtualenv-init -)"
 [[ -f "$HOME/.config/scripts/functions.sh" ]] && source "$HOME/.config/scripts/functions.sh"
 [[ -f "$HOME/.config/scripts/aliases" ]] && source "$HOME/.config/scripts/aliases"
 [[ -f "$HOME/.config/scripts/secrets" ]] && source "$HOME/.config/scripts/secrets"
+
+# Load exceutable scripts and add to PATH
+[[ -d "$HOME/.config/scripts/bin" ]] && PATH="$PATH:$HOME/.config/scripts/bin"
 
 # Kubectl aliases based on shell 
 # Based on https://github.com/ahmetb/kubectl-aliases

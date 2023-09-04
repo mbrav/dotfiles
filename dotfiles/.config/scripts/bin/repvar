@@ -1,0 +1,25 @@
+#!/bin/bash
+# Replace var script that seds and greps
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util.sh"
+
+# Replace text and show interactive
+# $1 - string to find
+# $2 - string to change to
+# $3 - File path
+[[ $# -ne 3 ]] && error_msg "replace_vars() accepts 3 arguments, not $#" 22
+
+info_msg "Will replace '${1}' with '${2}' in file ${3}"
+grep_command=$(grep "${1}" "${3}")
+info_msg "Before:\n${BLUE}${grep_command}"
+
+sed -i "s,${1},${2},g" "${3}"
+
+grep_command=$(grep "${2}" "${3}")
+info_msg "After:\n${BLUE}${grep_command}"
+unset grep_command
+

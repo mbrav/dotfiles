@@ -1,0 +1,28 @@
+#!/bin/bash
+# Save docker images into an archive 
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util.sh"
+
+# Save docker images
+if [[ $# -lt 1 || $# -gt 2 ]]; then
+    echo -e $RED"Must provide 2 arguments, docker image name and tar output file name (no extension)"$CLEAR
+    exit 1
+fi
+
+echo -e $GREEN"Exporting image $YELLOW$1 $GREEN to ./$YELLOW$2.tar.gz"$CLEAR
+
+docker save $1 | gzip -c > "./$2.tar.gz"
+
+# Completions testing
+function _dock-save_completions() {
+    # Auto completion for docker-save
+    [ "${#COMP_WORDS[@]}" != "2" ] && return || \
+        COMPREPLY=($(compgen -W "$(docker images --format "{{.Repository}}:{{.Tag}}")" "${COMP_WORDS[1]}"))
+}
+
+complete -F _dock-save_completions dock-save
+

@@ -1,0 +1,20 @@
+#!/bin/bash
+# Install docker compose from source bin from source 
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util.sh"
+
+# $1 - Docker compose version, otherwise default docker_
+[[ -n $1 ]] && docker_v=$1 || docker_v=2.21.0
+docker_url="https://github.com/docker/compose/releases/download/v${docker_v}/docker-compose-$(uname -s)-$(uname -m)"
+[[ $(check_url "$docker_url") -ne 0 ]] && error_msg "Bad url" 6
+success_msg "Valid url: $docker_url"
+sudo curl -L $docker_url -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+success_msg "Docker Dompose installed"
+docker-compose --version
+
+

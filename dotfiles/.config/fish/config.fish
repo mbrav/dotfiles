@@ -111,10 +111,18 @@ if status --is-interactive
 end
 
 ## MY MODS
-# My aliases
+
+# Init custom scripts
 source ~/.config/scripts/functions.fish
 source ~/.config/scripts/secrets
 source ~/.config/scripts/aliases
+
+# Load exceutable scripts and add to PATH
+if test -d ~/.config/scripts/bin
+    if not contains -- ~/.config/scripts/bin $PATH
+        set -p PATH ~/.config/scripts/bin
+    end
+end
 
 # Kubectl aliases based on shell 
 # Based on https://github.com/ahmetb/kubectl-aliases
@@ -141,6 +149,3 @@ if type -q mcfly
     mcfly init fish | source
 end 
 
-### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
-set --export --prepend PATH "/home/mbrav/.rd/bin"
-### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)

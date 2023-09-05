@@ -13,8 +13,6 @@ ran_col_str "Docker image tar archive utility"
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
 command -v fzf >/dev/null || error_msg "Please install fzf utility" 1
 
-# Save docker images
-
 image=$(docker images -a --format "table {{.ID}} {{.Repository}}:{{.Tag}} {{.CreatedSince}} {{.Size}}" | fzf --header "Select docker image" --preview "docker image inspect '{1}'" --preview-window "top:60%" --preview-label "Image inspect" | cut -f 2 -d " ")
 
 [[ -n "${image}" ]] || error_msg "Error setting docker image" 1
@@ -31,6 +29,7 @@ export_path=$(find ~/dev/* -type d | fzf --header "Select folder to export image
 
 info_msg "Exporting image ${image} to ${UNDERLINE}${export_path}/${image_file}"
 
+# Save docker image
 docker save "$image" | gzip -c > "${export_path}/${image_file}"
 
 [[ -f "${export_path}/${image_file}" ]] || error_msg "Error creating image tar archive" 1

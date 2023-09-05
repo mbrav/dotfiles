@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install docker compose from source bin from source 
+# Install docker compose binary from source
 
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
@@ -18,7 +18,7 @@ function fetch_version_docker_compose {
     curl -s "https://api.github.com/repos/docker/compose/tags" | \
         # Get all tag names
         jq -r '.[]|.name' | \
-        # Get lastest "vx.x.x" pattern without additional characters
+        # Get latest "vx.x.x" pattern without additional characters
         grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
 }
 

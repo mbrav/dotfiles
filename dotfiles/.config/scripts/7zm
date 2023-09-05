@@ -1,7 +1,5 @@
 #!/bin/bash
 # Max 7z compression
-# $1 - Folder name
-# $2 - Archive name
 
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
@@ -9,9 +7,10 @@ script_dir="$(dirname "$(realpath "$0")")"
 # Source util function
 source "${script_dir}/_util"
 
-echo -e $GREEN$BOLD"7z max compression using lzma2"$CLEAR
-echo -e $YELLOW$BOLD"arg1$CLEAR - archive name without extension"
-echo -e $YELLOW$BOLD"arg2$CLEAR - folder name (optional)"
+ran_col_str "7z Max compression archiver utility uzing lzma2"
+cmd_arg_help \
+    "Archive name without extension" \
+    "Folder name (optional)"
 
 if [ -z "$1" ]; then
     error_msg "Please provide at least one argument" 1

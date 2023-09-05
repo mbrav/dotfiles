@@ -132,3 +132,12 @@ function check_url() {
     fi
 }
 
+function cmd_arg_help() {
+    # Prints list of string separated arguments and their indexes as instruction
+    local arg_n=1
+    for arg in "$@"; do
+        echo "${YELLOW}${BOLD}${arg_n}${CLEAR} - ${arg}"
+        # echo -e $YELLOW$BOLD"arg1$CLEAR - archive name without extension"
+        arg_n=$((arg_n + 1))
+    done
+}

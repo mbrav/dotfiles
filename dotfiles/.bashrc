@@ -5,6 +5,12 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
+# Bash options
+shopt -s histappend
+
+# Auto append history
+PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
+
 # Add local bin to path if it exists
 [[ -d $HOME/.local/bin ]] && PATH="$PATH:$HOME/.local/bin"
 

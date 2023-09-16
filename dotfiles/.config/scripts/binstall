@@ -9,7 +9,7 @@ source "${script_dir}/_util"
 
 ran_col_str "Binary install utility" c
 
-binaries="docker-compose k9s eza bat starship mcfly"
+binaries="docker-compose k9s eza bat starship mcfly fzf jq"
 
 cmd_arg_help \
 	"Program name. Available: ${GREEN}${binaries}${CLEAR}"
@@ -18,7 +18,7 @@ cmd_arg_help \
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
 # command -v fzf >/dev/null || error_msg "Please install fzf utility" 1
 
-# Fetch functions
+# FETCH FUNCTIONS
 function fetch_version_docker_compose {
 	# Get latest Docker compose version and print result
 	curl -s "https://api.github.com/repos/docker/compose/tags" |
@@ -73,7 +73,44 @@ function fetch_version_mcfly {
 		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
 }
 
+function fetch_version_fzf {
+	# Get latest fzf version and print result
+	curl -s "https://api.github.com/repos/junegunn/fzf/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "x.x.x" pattern without additional characters
+		grep -P -m 1 '[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_jq {
+	# Get latest jq version and print result
+	curl -s "https://api.github.com/repos/jqlang/jq/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "jq-x.x" pattern without additional characters
+		grep -P -m 1 'jq-[0-9]+\.[0-9]+$'
+}
+
+# TODO
+function fetch_version_ripgrep {
+	# Get latest ripgrep version and print result
+	curl -s "https://api.github.com/repos/BurntSushi/ripgrep/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
 case $1 in
+all)
+	warning_msg "Installing all binaries: ${binaries}"
+	# Create and array from string
+	bins=($binaries)
+	for b in "${bins[@]}"; do
+		# Execute self with all binaries
+		eval "${0} ${b}"
+	done
+	;;
 docker-compose)
 	info_msg "Fetching latest ${1} tag from GitHub"
 	version=$(fetch_version_docker_compose)
@@ -105,7 +142,7 @@ k9s)
 	# Set vars for file download and untar dir
 	down_file="${url##*/}"
 	untar_dir="${1}-${version}"
-	mkdir -pv "${untar_dir}"
+	mkdir -pv "/tmp/${untar_dir}"
 
 	# Download archive and unpack
 	curl -L "${url}" -o "/tmp/${down_file}"
@@ -136,7 +173,7 @@ eza)
 	# Set vars for file download and untar dir
 	down_file="${url##*/}"
 	untar_dir="${1}-${version}"
-	mkdir -pv "${untar_dir}"
+	mkdir -pv "/tmp/${untar_dir}"
 
 	# Download archive and unpack
 	curl -L "${url}" -o "/tmp/${down_file}"
@@ -167,7 +204,7 @@ bat)
 	# Set vars for file download and untar dir
 	down_file="${url##*/}"
 	untar_dir="${1}-${version}"
-	mkdir -pv "${untar_dir}"
+	mkdir -pv "/tmp/${untar_dir}"
 
 	# Download archive and unpack
 	curl -L "${url}" -o "/tmp/${down_file}"
@@ -198,7 +235,7 @@ starship)
 	# Set vars for file download and untar dir
 	down_file="${url##*/}"
 	untar_dir="${1}-${version}"
-	mkdir -pv "${untar_dir}"
+	mkdir -pv "/tmp/${untar_dir}"
 
 	# Download archive and unpack
 	curl -L "${url}" -o "/tmp/${down_file}"
@@ -221,7 +258,6 @@ mcfly)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/cantino/mcfly/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-musl.tar.gz"
-	# https://github.com/cantino/mcfly/releases/download/v0.8.1/mcfly-v0.8.1-x86_64-unknown-linux-musl.tar.gz
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -230,7 +266,7 @@ mcfly)
 	# Set vars for file download and untar dir
 	down_file="${url##*/}"
 	untar_dir="${1}-${version}"
-	mkdir -pv "${untar_dir}"
+	mkdir -pv "/tmp/${untar_dir}"
 
 	# Download archive and unpack
 	curl -L "${url}" -o "/tmp/${down_file}"
@@ -244,7 +280,57 @@ mcfly)
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	bat --version
+	mcfly --version
+	;;
+fzf)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_fzf)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/junegunn/fzf/releases/download/${version}/${1}-${version}-linux_amd64.tar.gz"
+
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+
+	# Set vars for file download and untar dir
+	down_file="${url##*/}"
+	untar_dir="${1}-${version}"
+	mkdir -pv "/tmp/${untar_dir}"
+
+	# Download archive and unpack
+	curl -L "${url}" -o "/tmp/${down_file}"
+	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
+
+	# Make binary excutable and move to /usr/local/bin
+	chmod +x "/tmp/${untar_dir}/${1}"
+	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+
+	# Remove tmp files
+	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
+
+	success_msg "${1} installed"
+	fzf --version
+	;;
+jq)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_jq)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/jqlang/jq/releases/download/${version}/${1}-linux-amd64"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+
+	sudo curl -L "${url}" -o "/usr/local/bin/${1}"
+	sudo chmod +x "/usr/local/bin/${1}"
+
+	success_msg "${1} installed"
+	jq --version
 	;;
 *)
 	error_msg "Unknown program: ${CLEAR}${UNDERLINE}${1}"

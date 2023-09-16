@@ -160,7 +160,7 @@ function start_tmux
         return
     end
 
-    if contains "$TERM_PROGRAM" vscode; or test -n "$NVIM"
+    if contains "$TERM_PROGRAM" vscode; or test -n "$NVIM"; or test -n "$FLOATERM"
         # Check if terminal inside an IDE
         set IN_IDE 1
     end

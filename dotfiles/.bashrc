@@ -17,7 +17,7 @@ PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
 # Load starship prompt if starship is installed:
 command -v starship >/dev/null && eval "$(starship init bash)"
 
-# Load Macfly history lookup plugin if installed:
+# Load Mcfly history lookup plugin if installed:
 command -v mcfly >/dev/null && eval "$(mcfly init bash)"
 
 # Advanced command-not-found hook
@@ -83,7 +83,7 @@ function start_tmux() {
         return
     fi
  
-    if [[ -n "$NVIM" || "$TERM_PROGRAM" = @(vscode) ]]; then
+    if [[ "$TERM_PROGRAM" = @(vscode) || -n "$NVIM" || -n "$FLOATERM" ]]; then
         # Check if terminal inside an IDE
         IN_IDE=1
     fi

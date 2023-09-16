@@ -68,7 +68,7 @@ set nobackup
 set nowb
 set noswapfile
 set history=500
-" Create undo directory if its does not exist
+" Create undo directory if it does not exist
 if !isdirectory($HOME . "/.vim/undo")
     call mkdir($HOME . "/.vim/undo", "p", 0700)
 endif
@@ -174,7 +174,7 @@ filetype plugin on
 filetype indent on
 
 " Language settings
-autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab
+autocmd FileType yaml setlocal ts=2 sts=2 sw=2
 
 """"""""""""""""""""""""""""""
 " => Visual mode related
@@ -256,11 +256,11 @@ endfun
 
 " Delete trailing spaces on save
 if has("autocmd")
-    autocmd BufWritePre *.yaml,*.txt,*.js,*.py,*.html,*.sh,*.md,*.vim* :call CleanExtraSpaces()
+   autocmd BufWritePre *.yaml,*.txt,*.js,*.py,*.html,*.sh,*.md,*.vim* :call CleanExtraSpaces()
 endif
 
-" Manually formate trailing spaces
-map <leader>t :call CleanExtraSpaces()
+" Manually format trailing spaces
+map <leader>t :call CleanExtraSpaces()<cr>
 
 " Indent
 map <leader>i gg=G

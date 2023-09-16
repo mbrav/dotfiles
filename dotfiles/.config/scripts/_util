@@ -2,142 +2,152 @@
 # Various colors definitions for Bash scripts
 
 # COLORS
-ncolors=$(command -v tput > /dev/null && tput colors) # supports color
+ncolors=$(command -v tput >/dev/null && tput colors) # supports color
 if [[ -n $ncolors && -z $NO_COLOR ]]; then
-    TERMCOLS=$(tput cols)
-    CLEAR="$(tput sgr0)"
+	TERMCOLS=$(tput cols)
+	CLEAR="$(tput sgr0)"
 
-    # 4 bit colors
-    if test $ncolors -ge 8; then
-        # Normal
-        BLACK="$(tput setaf 0)"
-        RED="$(tput setaf 1)"
-        GREEN="$(tput setaf 2)"
-        YELLOW="$(tput setaf 3)"
-        BLUE="$(tput setaf 4)"
-        MAGENTA="$(tput setaf 5)"
-        CYAN="$(tput setaf 6)"
-        GREY="$(tput setaf 7)"
-    fi
+	# 4 bit colors
+	if test $ncolors -ge 8; then
+		# Normal
+		BLACK="$(tput setaf 0)"
+		RED="$(tput setaf 1)"
+		GREEN="$(tput setaf 2)"
+		YELLOW="$(tput setaf 3)"
+		BLUE="$(tput setaf 4)"
+		MAGENTA="$(tput setaf 5)"
+		CYAN="$(tput setaf 6)"
+		GREY="$(tput setaf 7)"
+	fi
 
-    # >4 bit colors
-    if test $ncolors -gt 8; then
-        # High intensity
-        BLACK_I="$(tput setaf 8)"
-        RED_I="$(tput setaf 9)"
-        GREEN_I="$(tput setaf 10)"
-        YELLOW_I="$(tput setaf 11)"
-        BLUE_I="$(tput setaf 12)"
-        MAGENTA_I="$(tput setaf 13)"
-        CYAN_I="$(tput setaf 14)"
-        WHITE="$(tput setaf 15)"
-    else
-        BLACK_I=$BLACK
-        RED_I=$RED
-        GREEN_I=$GREEN
-        YELLOW_I=$YELLOW
-        BLUE_I=$BLUE
-        MAGENTA_I=$MAGENTA
-        CYAN_I=$CYAN
-        WHITE=$GREY
-    fi
+	# >4 bit colors
+	if test $ncolors -gt 8; then
+		# High intensity
+		BLACK_I="$(tput setaf 8)"
+		RED_I="$(tput setaf 9)"
+		GREEN_I="$(tput setaf 10)"
+		YELLOW_I="$(tput setaf 11)"
+		BLUE_I="$(tput setaf 12)"
+		MAGENTA_I="$(tput setaf 13)"
+		CYAN_I="$(tput setaf 14)"
+		WHITE="$(tput setaf 15)"
+	else
+		BLACK_I=$BLACK
+		RED_I=$RED
+		GREEN_I=$GREEN
+		YELLOW_I=$YELLOW
+		BLUE_I=$BLUE
+		MAGENTA_I=$MAGENTA
+		CYAN_I=$CYAN
+		WHITE=$GREY
+	fi
 
-    # Styles
-    UNDERLINE="$(tput smul)"
-    STANDOUT="$(tput smso)"
-    BOLD="$(tput bold)"
+	# Styles
+	UNDERLINE="$(tput smul)"
+	STANDOUT="$(tput smso)"
+	BOLD="$(tput bold)"
 fi
 
 COLORS=("$BLACK" "$RED" "$GREEN" "$YELLOW" "$BLUE" "$MAGENTA" "$CYAN" "$GREY" "$BLACK_I" "$BLACK_I" "$RED_I" "$GREEN_I" "$YELLOW_I" "$BLUE_I" "$MAGENTA_I" "$CYAN_I" "$WHITE")
 STYLES=("$UNDERLINE" "$BOLD")
 
-function r_color () {
-    # Set a random color
-    # $1 - If non empty set with style 
-    
-    if [[ -z "${1}" ]]; then
-        # Set a random color
-        echo -e -n "${COLORS[RANDOM%${#COLORS[@]}]}"
-    else
-        # Set a random color with style
-        echo -e -n "${COLORS[RANDOM%${#COLORS[@]}]}${STYLES[RANDOM%${#STYLES[@]}]}"
-    fi
+function r_color() {
+	# Set a random color
+	# $1 - If non empty set with style
 
+	if [[ -z "${1}" ]]; then
+		# Set a random color
+		echo -e -n "${COLORS[RANDOM % ${#COLORS[@]}]}"
+	else
+		# Set a random color with style
+		echo -e -n "${COLORS[RANDOM % ${#COLORS[@]}]}${STYLES[RANDOM % ${#STYLES[@]}]}"
+	fi
 }
 
-function ran_col_str () {
-    # Print a string with random color characaters
-    # $1 - String to randomize characters 
-    # $2 - If non empty set characters with a random style 
-    [[ -z "${1}" ]] && echo "${RED}Please provide a string to randomize colors:" && exit 1
-    result=""
-    for (( i=0; i<${#1}; i++ )); do
-        if [[ -z "${2}" ]]; then
-            # Set string with a random color
-            result="${result}$(r_color)${1:$i:1}${CLEAR}"
-        else
-            # Set string with a random color with style
-            result="${result}$(r_color c)${1:$i:1}${CLEAR}"
-        fi
-    done
-    echo -e "${result}"
+function ran_col_str() {
+	# Print a string with random color characaters
+	# $1 - String to randomize characters
+	# $2 - If non empty set characters with a random style
+	[[ -z "${1}" ]] && echo "${RED}Please provide a string to randomize colors:" && exit 1
+	result=""
+	for ((i = 0; i < ${#1}; i++)); do
+		if [[ -z "${2}" ]]; then
+			# Set string with a random color
+			result="${result}$(r_color)${1:$i:1}${CLEAR}"
+		else
+			# Set string with a random color with style
+			result="${result}$(r_color c)${1:$i:1}${CLEAR}"
+		fi
+	done
+	echo -e "${result}"
 }
 
 function error_msg() {
-    # Error message
-    # $1            - Message string argument
-    # $2 (optional) - exit code
-    echo -e "${RED}${BOLD}[X] ${1}${CLEAR}"
-    [[ -n $2 ]] && echo "${RED}Program exiting with code: ${2}${CLEAR}" && exit "${2}"
+	# Error message
+	# $1            - Message string argument
+	# $2 (optional) - exit code
+	echo -e "${RED}${BOLD}[X] ${1}${CLEAR}"
+	[[ -n $2 ]] && echo "${RED}Program exiting with code: ${2}${CLEAR}" && exit "${2}"
 }
 
 function warning_msg() {
-    echo -e "${YELLOW}${BOLD}[!] ${*}${CLEAR}"
+	echo -e "${YELLOW}${BOLD}[!] ${*}${CLEAR}"
 }
 
 function success_msg() {
-    echo -e "${GREEN}${BOLD}[✓] ${*}${CLEAR}"
+	echo -e "${GREEN}${BOLD}[✓] ${*}${CLEAR}"
 }
 
 function info_msg() {
-    echo -e "${CYAN}[i] ${*}${CLEAR}"
+	echo -e "${CYAN}[i] ${*}${CLEAR}"
 }
 
 function yes_no_prompt() {
-    # Yes no prompt
-    # $1 - Space separated string for prompt
-    # Sets $Y_N to:
-    # 0 - yes
-    # 1 - no
-    local yes_no_finish=1
-    while [ $yes_no_finish -ne 0 ]; do
-        read -p "${GREEN}${BOLD}${1} ${YELLOW}${BOLD}y/n${CLEAR}:" Y_N
-        case $Y_N in
-            y|Y|yes) yes_no_finish=0 && Y_N=0 ;;
-            n|N|no) yes_no_finish=0 && Y_N=1 ;;
-            *) echo "${RED}${BOLD}[X] ${Y_N} is not a yes/no option!" ;;
-        esac
-    done
+	# Yes no prompt
+	# $1 - Space separated string for prompt
+	# Sets $Y_N to:
+	# 0 - yes
+	# 1 - no
+	local yes_no_finish=1
+	while [ $yes_no_finish -ne 0 ]; do
+		read -p "${GREEN}${BOLD}${1} ${YELLOW}${BOLD}y/n${CLEAR}:" Y_N
+		case $Y_N in
+		y | Y | yes) yes_no_finish=0 && Y_N=0 ;;
+		n | N | no) yes_no_finish=0 && Y_N=1 ;;
+		*) echo "${RED}${BOLD}[X] ${Y_N} is not a yes/no option!" ;;
+		esac
+	done
 }
 
 function check_url() {
-    # Check for passed url
-    # 0 - exists
-    # 1 - does not
-    [[ -z "${1}" ]] && echo "${RED}Please provide a URL string to check:" && exit 1
-    if curl --output /dev/null --silent --head --fail "$1"; then
-        echo 0
-    else
-        echo 1
-    fi
+	# Check for passed url
+	# 0 - exists
+	# 1 - does not
+	[[ -z "${1}" ]] && echo "${RED}Please provide a URL string to check:" && exit 1
+	if curl --output /dev/null --silent --head --fail "$1"; then
+		echo 0
+	else
+		echo 1
+	fi
 }
 
 function cmd_arg_help() {
-    # Prints list of string separated arguments and their indexes as instruction
-    local arg_n=1
-    for arg in "$@"; do
-        echo "${YELLOW}${BOLD}${arg_n}${CLEAR} - ${arg}"
-        # echo -e $YELLOW$BOLD"arg1$CLEAR - archive name without extension"
-        arg_n=$((arg_n + 1))
-    done
+	# Prints list of string separated arguments and their indexes as instruction
+	echo "${YELLOW}${BOLD}Vailable Program arguments${CLEAR}"
+	local arg_n=1
+	for arg in "$@"; do
+		echo "${YELLOW}${BOLD}${arg_n}${CLEAR} - ${arg}"
+		# echo -e $YELLOW$BOLD"arg1$CLEAR - archive name without extension"
+		arg_n=$((arg_n + 1))
+	done
+}
+
+function is_x86() {
+	# Check if current architecture is x86
+	[[ "x86_64" = "$(uname -m)" ]] && echo 0
+}
+
+function is_linux() {
+	# Check if current architecture is Linux
+	[[ "Linux" = "$(uname -s)" ]] && echo 0
 }

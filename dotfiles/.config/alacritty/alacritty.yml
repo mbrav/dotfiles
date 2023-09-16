@@ -230,57 +230,6 @@ midnight-haze:
     magenta: '0xffa1ff'
     cyan: '0x9cd8d8'
     white: '0xffffff'
-# My scheme
-my:
-  # My scheme
-  &my
-  primary:
-    background: '#0D1117'
-    foreground: '#d8dee9'
-    dim_foreground: '#282c34'
-  cursor:
-    text: '#2e3440'
-    cursor: '#d8dee9'
-  vi_mode_cursor:
-    text: '#2e3440'
-    cursor: '#d8dee9'
-  selection:
-    text: CellForeground
-    background: '#4c566a'
-  search:
-    matches:
-      foreground: CellBackground
-      background: '#88c0d0'
-    colors.footer_bar:
-      background: '#434c5e'
-      foreground: '#d8dee9'
-  normal:
-    black: '#434c5e'
-    red: '#f9929b'
-    green: '#98c379'
-    yellow: '#ebcb8b'
-    blue: '#81a1c1'
-    magenta: '#b48ead'
-    cyan: '#88c0d0'
-    white: '#d8dee9'
-  bright:
-    black: '#4c566a'
-    red: '#bf616a'
-    green: '#8fbcbb'
-    yellow: '#fbdf90'
-    blue: '#81a1c1'
-    magenta: '#d2b8ed'
-    cyan: '#8fbcbb'
-    white: '#d8dee9'
-  dim:
-    black: '#373e4d'
-    red: '#94545d'
-    green: '#809575'
-    yellow: '#b29e75'
-    blue: '#68809a'
-    magenta: '#8c738c'
-    cyan: '#6d96a5'
-    white: '#aeb3bb'
 # colors: *tokyo-night
 # colors: *tokyo-night-storm
 # colors: *monokai-pro

@@ -1,0 +1,253 @@
+#!/bin/bash
+# Install various binaries directly from GitHub
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util"
+
+ran_col_str "Binary install utility" c
+
+binaries="docker-compose k9s eza bat starship mcfly"
+
+cmd_arg_help \
+	"Program name. Available: ${GREEN}${binaries}${CLEAR}"
+
+# Check requirements
+command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
+# command -v fzf >/dev/null || error_msg "Please install fzf utility" 1
+
+# Fetch functions
+function fetch_version_docker_compose {
+	# Get latest Docker compose version and print result
+	curl -s "https://api.github.com/repos/docker/compose/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_k9s {
+	# Get latest k9s version and print result
+	curl -s "https://api.github.com/repos/derailed/k9s/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_eza {
+	# Get latest eza version and print result
+	curl -s "https://api.github.com/repos/eza-community/eza/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_bat {
+	# Get latest bat version and print result
+	curl -s "https://api.github.com/repos/sharkdp/bat/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_starship {
+	# Get latest starship version and print result
+	curl -s "https://api.github.com/repos/starship/starship/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_mcfly {
+	# Get latest mcfly version and print result
+	curl -s "https://api.github.com/repos/cantino/mcfly/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+case $1 in
+docker-compose)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_docker_compose)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/docker/compose/releases/download/${version}/${1}-$(uname -s)-$(uname -m)"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	sudo curl -L "${url}" -o "/usr/local/bin/${1}"
+	sudo chmod +x "/usr/local/bin/${1}"
+
+	success_msg "${1} installed"
+	docker-compose --version
+	;;
+k9s)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_k9s)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/derailed/k9s/releases/download/${version}/${1}_$(uname -s)_amd64.tar.gz"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
+
+	# Set vars for file download and untar dir
+	down_file="${url##*/}"
+	untar_dir="${1}-${version}"
+	mkdir -pv "${untar_dir}"
+
+	# Download archive and unpack
+	curl -L "${url}" -o "/tmp/${down_file}"
+	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
+
+	# Make binary excutable and move to /usr/local/bin
+	chmod +x "/tmp/${untar_dir}/${1}"
+	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+
+	# Remove tmp files
+	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
+
+	success_msg "${1} installed"
+	k9s version
+	;;
+eza)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_eza)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/eza-community/eza/releases/download/${version}/${1}_$(uname -m)-unknown-linux-gnu.tar.gz"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+
+	# Set vars for file download and untar dir
+	down_file="${url##*/}"
+	untar_dir="${1}-${version}"
+	mkdir -pv "${untar_dir}"
+
+	# Download archive and unpack
+	curl -L "${url}" -o "/tmp/${down_file}"
+	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
+
+	# Make binary excutable and move to /usr/local/bin
+	chmod +x "/tmp/${untar_dir}/${1}"
+	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+
+	# Remove tmp files
+	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
+
+	success_msg "${1} installed"
+	eza --version
+	;;
+bat)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_bat)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/sharkdp/bat/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-gnu.tar.gz"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+
+	# Set vars for file download and untar dir
+	down_file="${url##*/}"
+	untar_dir="${1}-${version}"
+	mkdir -pv "${untar_dir}"
+
+	# Download archive and unpack
+	curl -L "${url}" -o "/tmp/${down_file}"
+	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
+
+	# Make binary excutable and move to /usr/local/bin
+	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}"
+	sudo mv -v "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}" /usr/local/bin/
+
+	# Remove tmp files
+	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
+
+	success_msg "${1} installed"
+	bat --version
+	;;
+starship)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_starship)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/starship/starship/releases/download/${version}/${1}-$(uname -m)-unknown-linux-gnu.tar.gz"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+
+	# Set vars for file download and untar dir
+	down_file="${url##*/}"
+	untar_dir="${1}-${version}"
+	mkdir -pv "${untar_dir}"
+
+	# Download archive and unpack
+	curl -L "${url}" -o "/tmp/${down_file}"
+	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
+
+	# Make binary excutable and move to /usr/local/bin
+	chmod +x "/tmp/${untar_dir}/${1}"
+	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+
+	# Remove tmp files
+	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
+
+	success_msg "${1} installed"
+	bat --version
+	;;
+mcfly)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_mcfly)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/cantino/mcfly/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-musl.tar.gz"
+	# https://github.com/cantino/mcfly/releases/download/v0.8.1/mcfly-v0.8.1-x86_64-unknown-linux-musl.tar.gz
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+
+	# Set vars for file download and untar dir
+	down_file="${url##*/}"
+	untar_dir="${1}-${version}"
+	mkdir -pv "${untar_dir}"
+
+	# Download archive and unpack
+	curl -L "${url}" -o "/tmp/${down_file}"
+	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
+
+	# Make binary excutable and move to /usr/local/bin
+	chmod +x "/tmp/${untar_dir}/${1}"
+	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+
+	# Remove tmp files
+	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
+
+	success_msg "${1} installed"
+	bat --version
+	;;
+*)
+	error_msg "Unknown program: ${CLEAR}${UNDERLINE}${1}"
+	error_msg "List of available binaries: ${CLEAR}${UNDERLINE}${binaries}" 1
+	;;
+esac

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Interval command
-# $1 - interval in seconds 
+# $1 - interval in seconds
 # $2-n - command and any number of arguments to execute
 
 # Set script_dir
@@ -12,4 +12,3 @@ source "${script_dir}/_util"
 [[ $# -lt 2 ]] && error_msg "do-interval accepts no less than 2 arguments, passed $#" 22
 [[ $1 == ?(-)+([[:digit:]]) ]] || error_msg "$1 is not a number" 22
 watch -n $1 -d=cumulative ${@:2}
-

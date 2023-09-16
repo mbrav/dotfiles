@@ -19,4 +19,3 @@ info_msg "IP range: $ip_range"
 info_msg "Scan name: $scan_name"
 
 nmap -sTV -A -oX $scan_name.xml --webxml $ip_range && xsltproc $scan_name.xml -o $scan_name.html && rm $scan_name.xml
-

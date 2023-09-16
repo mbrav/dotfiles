@@ -1,5 +1,5 @@
 #!/bin/bash
-# Export docker images to a tar archive 
+# Export docker images to a tar archive
 
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
@@ -17,26 +17,26 @@ image=$(docker images -a --format "table {{.ID}} {{.Repository}}:{{.Tag}} {{.Cre
 
 [[ -n "${image}" ]] || error_msg "Error setting docker image" 1
 
-image_file="${image##*/}"              # Remove slash
-image_file="${image_file/:/-}.tar.gz"  # Remove ':' and add file extenstion
+image_file="${image##*/}"             # Remove slash
+image_file="${image_file/:/-}.tar.gz" # Remove ':' and add file extenstion
 
 success_msg "Image set to:     ${UNDERLINE}${image}"
 success_msg "Imagefile set to: ${UNDERLINE}${image_file}"
 
 info_msg "Now select folder to export archive to"
-sleep 2    
+sleep 2
 export_path=$(find ~/dev/* -type d | fzf --header "Select folder to export image to" --preview "ls -la '{1}'" --preview-window "top:60%" --preview-label "Image inspect")
 
 info_msg "Exporting image ${image} to ${UNDERLINE}${export_path}/${image_file}"
 
 # Save docker image
-docker save "$image" | gzip -c > "${export_path}/${image_file}"
+docker save "$image" | gzip -c >"${export_path}/${image_file}"
 
 [[ -f "${export_path}/${image_file}" ]] || error_msg "Error creating image tar archive" 1
 
 success_msg "Archive created:"
 
-ls -lah "${export_path}/${image_file}" 
+ls -lah "${export_path}/${image_file}"
 
 # Completions testing
 # function _dock-save_completions() {
@@ -46,4 +46,3 @@ ls -lah "${export_path}/${image_file}"
 # }
 #
 # complete -F _dock-save_completions dock-save
-

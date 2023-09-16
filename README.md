@@ -20,7 +20,7 @@ The configs for Bash shell ([`.bashrc`](dotfiles/.bashrc)) and Fish ([`config.fi
 
 ## Installation
 
-To take the most advantage of the config, a few tools are used, which are recommended for installation given that they are setup in [`aliases`](dotfiles/.config/scripts/aliases), [`.bashrc`](dotfiles/.bashrc) and [`config.fish`](dotfiles/.config/fish/config.fish):
+To take the most advantage of the config, a few tools are used, which are recommended for installation given that they are setup in [`_aliases`](dotfiles/.config/scripts/_aliases), [`.bashrc`](dotfiles/.bashrc) and [`config.fish`](dotfiles/.config/fish/config.fish):
 
 - [Starship](https://starship.rs/) - A cross-shell prompt customizaion tool (Rust);
 - [McFly](https://github.com/cantino/mcfly) - A cross-shell tool for browsing through shell history (Rust);

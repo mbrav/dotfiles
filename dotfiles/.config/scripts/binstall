@@ -9,7 +9,7 @@ source "${script_dir}/_util"
 
 ran_col_str "Binary install utility" c
 
-binaries="docker-compose k9s eza bat starship mcfly fzf jq"
+binaries="docker-compose k9s eza bat starship mcfly fzf jq fd"
 
 cmd_arg_help \
 	"Program name. Available: ${GREEN}${binaries}${CLEAR}"
@@ -95,6 +95,15 @@ function fetch_version_jq {
 function fetch_version_ripgrep {
 	# Get latest ripgrep version and print result
 	curl -s "https://api.github.com/repos/BurntSushi/ripgrep/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_fd {
+	# Get latest mcfly version and print result
+	curl -s "https://api.github.com/repos/sharkdp/fd/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
 		# Get latest "vx.x.x" pattern without additional characters
@@ -249,7 +258,7 @@ starship)
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	bat --version
+	starship --version
 	;;
 mcfly)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -331,6 +340,37 @@ jq)
 
 	success_msg "${1} installed"
 	jq --version
+	;;
+fd)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_fd)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/sharkdp/fd/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-gnu.tar.gz"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+
+	# Set vars for file download and untar dir
+	down_file="${url##*/}"
+	untar_dir="${1}-${version}"
+	mkdir -pv "/tmp/${untar_dir}"
+
+	# Download archive and unpack
+	curl -L "${url}" -o "/tmp/${down_file}"
+	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
+
+	# Make binary excutable and move to /usr/local/bin
+	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}"
+	sudo mv -v "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}" /usr/local/bin/
+
+	# Remove tmp files
+	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
+
+	success_msg "${1} installed"
+	fd --version
 	;;
 *)
 	error_msg "Unknown program: ${CLEAR}${UNDERLINE}${1}"

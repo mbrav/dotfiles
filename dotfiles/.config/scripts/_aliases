@@ -15,7 +15,8 @@ command -v vim >/dev/null &&
 # export VISUAL='nvim' && \
 # alias vim='nvim'
 
-# Set Absible config folder
+# TOOLS ENVIORNMENT SETTINGS
+# Set Ansible config folder
 export ANSIBLE_CONFIG="$HOME/.ansible/ansible.cfg"
 # Use QEMU system URI
 export LIBVIRT_DEFAULT_URI="qemu:///system"
@@ -24,22 +25,12 @@ export MCFLY_RESULTS=30
 export MCFLY_PROMPT="❯"
 export MCFLY_FUZZY=5
 
-# Utility
-# export doublequote="\""
-# export singlequote="\'"
+# FZF options for finding files
+command -v fd >/dev/null &&
+	export FZF_DEFAULT_COMMAND="fd --type f --strip-cwd-prefix --hidden --follow --exclude .git" ||
+	export FZF_DEFAULT_COMMAND="find . --type f"
 
-alias bash-reload='source ~/.bashrc'
-alias fish-reload='source ~/.config/fish/config.fish'
-
-## MY ALIASES
-alias dus='du -h --max-depth 1'
-# Force tmux color
-alias tmux='tmux -2'
-alias tmuxn='tmux -2 new -s '
-# Use fuzzy finder to select what tmux session to attach to
-alias tmuxa='tmux attach -t $(tmux ls | sed "s/:.*//" | fzf --header "Select what tmux session to attach to")'
-
-# Set preview aliases for fzf preview
+# Set preview aliases for Fuzzy Finder alias scripts
 command -v eza >/dev/null &&
 	export LS_PREVIEW_CMD="eza -al --color=always --group-directories-first --icons --no-permissions " ||
 	export LS_PREVIEW_CMD="ls -lahg --color=auto "
@@ -47,24 +38,34 @@ command -v bat >/dev/null &&
 	export CAT_PREVIEW_CMD="bat --style header --style snip --style changes --style header " ||
 	export CAT_PREVIEW_CMD="cat -n "
 
-# Fuzzy Finder scripts
+## MY ALIASES
+alias bash-reload='source ~/.bashrc'
+alias fish-reload='source ~/.config/fish/config.fish'
+alias dus='du -h --max-depth 1 '
+# Force tmux color
+alias tmux='tmux -2 '
+alias tmuxn='tmux -2 new -s '
+# Use fuzzy finder to select what tmux session to attach to
+alias tmuxa='tmux attach -t $(tmux ls | sed "s/:.*//" | fzf --header "Select what tmux session to attach to")'
+
+# Fuzzy Finder alias scripts
 # Fuzzy find and cd from current directory
-alias f='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview "$LS_PREVIEW_CMD {1}")'
+alias f='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 #alias f='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 # Fuzzy find and vim edit from current directory
-alias fv='vim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview "$CAT_PREVIEW_CMD {1}")'
+alias fv='vim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "Folder contents" --preview "$CAT_PREVIEW_CMD {1}")'
 # Fuzzy find and nvim edit from current directory
-alias fV='nvim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview "$CAT_PREVIEW_CMD {1}")'
+alias fnv='nvim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "Folder contents" --preview "$CAT_PREVIEW_CMD {1}")'
 # Fuzzy find dev directory type, then projects
-alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview "$LS_PREVIEW_CMD {1}")'
+alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 # Fuzzy find dev directory all
-alias deva='cd $(find ~/dev/* -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview "$LS_PREVIEW_CMD {1}")'
+alias deva='cd $(find ~/dev/* -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 # Config folder fuzzy find
-alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview-label "$LS_PREVIEW_CMD {1}")'
+alias conf='cd $(find ~/.config/* -maxdepth 0 -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview-label "$LS_PREVIEW_CMD {1}")'
 # Config folder fuzzy find all
-alias confa='cd $(find ~/.config/* -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview "$LS_PREVIEW_CMD {1}")'
+alias confa='cd $(find ~/.config/* -type d | fzf --header "Select what ~/.config folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 # Log tailer
-alias logt='tail -f $(find /var/log -type f | fzf --header "Select what log file to tail" --preview-window "up:50%" --preview "tail -n 20 {1}")'
+alias logt='tail -f $(find /var/log -type f | fzf --header "Select what log file to tail" --preview-window "up:50%" --preview-label "File contents" --preview "tail -n 20 {1}")'
 # Journalctl process log tailer
 alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _PID=%'
 # Process killer
@@ -72,6 +73,10 @@ alias pkl='ps aux | fzf --header "Please select what process to kill" | awk "{pr
 
 # Pass gen
 # alias pass-gen='< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c' # $1 - number of bytes
+
+# Extract GPS data from image with imagemagick
+# $1 file name
+alias image-gps='identify -format "%[EXIF:GPSLatitude],%[EXIF:GPSLongitude]\n" '
 
 # Sudo aliases
 # List SSH sessions
@@ -108,10 +113,6 @@ alias dkprune='docker image prune && docker system prune -af'
 # Mount rclone
 alias rclone-crypt='rclone mount crypt:/ ~/Desktop/crypt/ --read-only --max-read-ahead=1G --acd-templink-threshold=0 --contimeout=15s --checkers=16 --bwlimit=0 --retries=3 --timeout=30s --low-level-retries=1 --transfers=8 --dir-cache-time=30m'
 alias mi-display-fix='xrandr --output HDMI-0 --mode 3440x1440 --rate 60'
-
-# Extract GPS data from image with imagemagick
-# $1 file name
-alias image-gps='identify -format "%[EXIF:GPSLatitude],%[EXIF:GPSLongitude]\n" '
 
 # Git aliases
 alias g='git'

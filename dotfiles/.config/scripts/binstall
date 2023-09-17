@@ -9,7 +9,7 @@ source "${script_dir}/_util"
 
 ran_col_str "Binary install utility" c
 
-binaries="docker-compose k9s eza bat starship mcfly fzf jq fd"
+binaries="docker-compose k9s eza bat starship mcfly fzf jq fd upx"
 
 cmd_arg_help \
 	"Program name. Available: ${GREEN}${binaries}${CLEAR}"
@@ -102,8 +102,17 @@ function fetch_version_ripgrep {
 }
 
 function fetch_version_fd {
-	# Get latest mcfly version and print result
+	# Get latest fd version and print result
 	curl -s "https://api.github.com/repos/sharkdp/fd/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_upx {
+	# Get latest fd version and print result
+	curl -s "https://api.github.com/repos/upx/upx/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
 		# Get latest "vx.x.x" pattern without additional characters
@@ -113,12 +122,25 @@ function fetch_version_fd {
 case $1 in
 all)
 	warning_msg "Installing all binaries: ${binaries}"
-	# Create and array from string
+	# Create an array from string
 	bins=($binaries)
 	for b in "${bins[@]}"; do
 		# Execute self with all binaries
 		eval "${0} ${b}"
 	done
+
+	# Create prompt and register $Y_N variable
+	yes_no_prompt "Compress downloades binaries with upx?"
+	if [[ "$Y_N" = "0" ]]; then
+		for b in "${bins[@]}"; do
+			# Compress binaries in array
+			sudo upx --best --lzma "/usr/local/bin/${b}"
+			sudo upx --best --lzma "/usr/local/bin/*"
+		done
+		success_msg "Binaries compressed with upx!"
+	else
+		info_msg "Skipping compression"
+	fi
 	;;
 docker-compose)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -303,6 +325,7 @@ fzf)
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
 	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+	[[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
 
 	# Set vars for file download and untar dir
 	down_file="${url##*/}"
@@ -371,6 +394,39 @@ fd)
 
 	success_msg "${1} installed"
 	fd --version
+	;;
+upx)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_upx)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/upx/upx/releases/download/${version}/${1}-${version##*v}-amd64_linux.tar.xz"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+	[[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
+
+	# Set vars for file download and untar dir
+	down_file="${url##*/}"
+	untar_dir="${1}-${version}"
+	mkdir -pv "/tmp/${untar_dir}"
+
+	# Download archive and unpack
+	curl -L "${url}" -o "/tmp/${down_file}"
+	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
+
+	# Make binary excutable and move to /usr/local/bin
+	chmod +x "/tmp/${untar_dir}/${1}-${version##*v}-amd64_linux/${1}"
+	sudo mv -v "/tmp/${untar_dir}/${1}-${version##*v}-amd64_linux/${1}" /usr/local/bin/
+
+	# /tmp/upx-v4.1.0/upx-4.1.0-amd64_linux/
+	# Remove tmp files
+	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
+
+	success_msg "${1} installed"
+	upx --version
 	;;
 *)
 	error_msg "Unknown program: ${CLEAR}${UNDERLINE}${1}"

@@ -3,20 +3,24 @@
 
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
+bin_dir="/usr/local/bin"
 
-# Source util function
+# Source util lib
 source "${script_dir}/_util"
+
+[[ -n "${2}" ]] && bin_dir="${2}"
 
 ran_col_str "Binary install utility" c
 
 binaries="docker-compose k9s eza bat starship mcfly fzf jq fd upx"
 
 cmd_arg_help \
-	"Program name. Available: ${GREEN}${binaries}${CLEAR}"
+	"Program name. Available: ${GREEN}${binaries}${CLEAR}" \
+	"Bin path. Set: ${GREEN}${bin_dir}${CLEAR}"
 
 # Check requirements
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
-# command -v fzf >/dev/null || error_msg "Please install fzf utility" 1
+command -v fzf >/dev/null || error_msg "Please install fzf utility" 1
 
 # FETCH FUNCTIONS
 function fetch_version_docker_compose {
@@ -125,17 +129,20 @@ all)
 	# Create an array from string
 	bins=($binaries)
 	for b in "${bins[@]}"; do
-		# Execute self with all binaries
-		eval "${0} ${b}"
+		# Execute self with all binaries and bin path
+		eval "${0} ${b} ${bin_dir}"
 	done
 
-	# Create prompt and register $Y_N variable
-	yes_no_prompt "Compress downloades binaries with upx?"
-	if [[ "$Y_N" = "0" ]]; then
+	# Create Y/N prompt
+	if yes_no_prompt "Compress downloads binaries with upx?"; then
 		for b in "${bins[@]}"; do
 			# Compress binaries in array
-			sudo upx --best --lzma "/usr/local/bin/${b}"
-			sudo upx --best --lzma "/usr/local/bin/*"
+			#sudo upx --best --lzma "${bin_dir}/*"
+			if [[ -w "${bin_dir}" ]]; then
+				upx --best --lzma "${bin_dir}/${b}"
+			else
+				sudo upx --best --lzma "${bin_dir}/${b}"
+			fi
 		done
 		success_msg "Binaries compressed with upx!"
 	else
@@ -152,8 +159,13 @@ docker-compose)
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
-	sudo curl -L "${url}" -o "/usr/local/bin/${1}"
-	sudo chmod +x "/usr/local/bin/${1}"
+	if [[ -w "${bin_dir}" ]]; then
+		curl -L "${url}" -o "${bin_dir}/${1}"
+		chmod +x "${bin_dir}/${1}"
+	else
+		sudo curl -L "${url}" -o "${bin_dir}/${1}"
+		sudo chmod +x "${bin_dir}/${1}"
+	fi
 
 	success_msg "${1} installed"
 	docker-compose --version
@@ -179,9 +191,9 @@ k9s)
 	curl -L "${url}" -o "/tmp/${down_file}"
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
-	# Make binary excutable and move to /usr/local/bin
+	# Make binary excutable and move to bin directory
 	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -210,9 +222,9 @@ eza)
 	curl -L "${url}" -o "/tmp/${down_file}"
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
-	# Make binary excutable and move to /usr/local/bin
+	# Make binary excutable and move to bin directory
 	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -241,9 +253,9 @@ bat)
 	curl -L "${url}" -o "/tmp/${down_file}"
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
-	# Make binary excutable and move to /usr/local/bin
+	# Make binary excutable and move to bin directory
 	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}"
-	sudo mv -v "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}" /usr/local/bin/
+	sudo_or_mv "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -272,9 +284,9 @@ starship)
 	curl -L "${url}" -o "/tmp/${down_file}"
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
-	# Make binary excutable and move to /usr/local/bin
+	# Make binary excutable and move to bin directory
 	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -303,9 +315,9 @@ mcfly)
 	curl -L "${url}" -o "/tmp/${down_file}"
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
-	# Make binary excutable and move to /usr/local/bin
+	# Make binary excutable and move to bin directory
 	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -336,9 +348,9 @@ fzf)
 	curl -L "${url}" -o "/tmp/${down_file}"
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
-	# Make binary excutable and move to /usr/local/bin
+	# Make binary excutable and move to bin directory
 	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo mv -v "/tmp/${untar_dir}/${1}" /usr/local/bin/
+	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -358,8 +370,13 @@ jq)
 
 	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
 
-	sudo curl -L "${url}" -o "/usr/local/bin/${1}"
-	sudo chmod +x "/usr/local/bin/${1}"
+	if [[ -w "${bin_dir}" ]]; then
+		curl -L "${url}" -o "${bin_dir}/${1}"
+		chmod +x "${bin_dir}/${1}"
+	else
+		sudo curl -L "${url}" -o "${bin_dir}/${1}"
+		sudo chmod +x "${bin_dir}/${1}"
+	fi
 
 	success_msg "${1} installed"
 	jq --version
@@ -385,9 +402,9 @@ fd)
 	curl -L "${url}" -o "/tmp/${down_file}"
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
-	# Make binary excutable and move to /usr/local/bin
+	# Make binary excutable and move to bin directory
 	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}"
-	sudo mv -v "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}" /usr/local/bin/
+	sudo_or_mv "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -417,11 +434,10 @@ upx)
 	curl -L "${url}" -o "/tmp/${down_file}"
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
-	# Make binary excutable and move to /usr/local/bin
+	# Make binary excutable and move to bin directory
 	chmod +x "/tmp/${untar_dir}/${1}-${version##*v}-amd64_linux/${1}"
-	sudo mv -v "/tmp/${untar_dir}/${1}-${version##*v}-amd64_linux/${1}" /usr/local/bin/
+	sudo_or_mv "/tmp/${untar_dir}/${1}-${version##*v}-amd64_linux/${1}" "${bin_dir}/"
 
-	# /tmp/upx-v4.1.0/upx-4.1.0-amd64_linux/
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 

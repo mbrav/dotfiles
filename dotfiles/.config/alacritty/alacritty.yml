@@ -20,7 +20,8 @@ window:
   decorations_theme_variant: Dark
   title: Alacritty
   # opacity: 0.95
-  opacity: 1.0
+  opacity: 0.87
+
   class:
     instance: Alacritty
     general: Alacritty

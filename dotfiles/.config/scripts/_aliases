@@ -86,7 +86,6 @@ alias lsprt="sudo lsof -i -P -n"
 # Python aliases
 alias pip-install='pip install --upgrade --no-cache pip wheel setuptools '
 alias python-venv='python3 -m venv venv && source ./venv/bin/activate'
-alias python-https-server='python3 ~/dev/HTTPSPythonServer/server-start.py'
 alias dj-migrate='python manage.py makemigrations && python manage.py migrate'
 alias pip-req-txt-to-toml="echo 'Adding requirements.txt to pyprpoject.toml' && cat requirements.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add"
 

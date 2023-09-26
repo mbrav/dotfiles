@@ -127,7 +127,7 @@ if test -d ~/.config/scripts/kubectl-aliases
 end
 
 # Cargo config
-if test -d "$HOME/.cargo/bin" 
+if test -d "$HOME/.cargo/bin"
     fish_add_path $HOME/.cargo/bin
 end
 
@@ -142,8 +142,10 @@ end
 
 # init mcfly
 if type -q mcfly
-    mcfly init fish | source
-end 
+    if status --is-interactive && type -q mcfly
+        mcfly init fish | source
+    end
+end
 
 # init starship
 function load_starship
@@ -153,7 +155,7 @@ function load_starship
 end
 
 function start_tmux
-    if not type -sq tmux; and not status --is-interactive
+    if not type -q tmux; or not status --is-interactive
         # Check if tmux is installed
         # if not, exit function
         # echo "🛑 Tmux not installed, not starting tmux session"
@@ -164,7 +166,7 @@ function start_tmux
         # Check if terminal inside an IDE
         set IN_IDE 1
     end
-    
+
     if test -n "$SSH_CONNECTION"; or test -n "$SSH_CLIENT"; or test -n "$SSH_TTY"; or test -n "$KONSOLE_DBUS_SESSION"
 
         # $SSH_* - Check if inside a SSH session
@@ -182,7 +184,7 @@ function start_tmux
         # echo "🛑 Inside SSH session, not starting tmux session"
     end
 
-    if test -n "$TMUX"; or test "$SHELL" = "screen"
+    if test -n "$TMUX"; or test "$SHELL" = screen
         # Check if already inside tmux or custom variable
         # if so, exit function
         return
@@ -206,4 +208,3 @@ end
 
 load_starship
 start_tmux
-

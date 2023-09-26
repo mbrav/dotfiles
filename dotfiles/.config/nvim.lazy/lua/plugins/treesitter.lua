@@ -16,6 +16,8 @@ return {
         "regex",
         "vim",
         "yaml",
+        "terraform",
+        "hcl",
       },
     },
   },

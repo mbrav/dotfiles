@@ -1,6 +1,6 @@
 
 # Set 'nord-blue' as custom color palette
-palette = 'nord-blue'
+palette = 'default'
 
 format = """
 [░▒▓](color1)\
@@ -28,7 +28,7 @@ $cmd_duration\
 
 # Define custom colors
 # Nord theme
-[palettes.nord-blue]
+[palettes.default]
 color1 = '#A0A9CB'
 color2 = '#6C98EF'
 color3 = '#394260'

@@ -42,11 +42,13 @@ command -v bat >/dev/null &&
 alias bash-reload='source ~/.bashrc'
 alias fish-reload='source ~/.config/fish/config.fish'
 alias dus='du -h --max-depth 1 '
+
 # Force tmux color
-alias tmux='tmux -2 '
-alias tmuxn='tmux -2 new -s '
-# Use fuzzy finder to select what tmux session to attach to
-alias tmuxa='tmux attach -t $(tmux ls | sed "s/:.*//" | fzf --header "Select what tmux session to attach to")'
+command -v tmux >/dev/null &&
+	alias tmux='tmux -2 ' &&
+	alias tmuxn='tmux -2 new -s ' &&
+	# Use fuzzy finder to select what tmux session to attach to
+	alias tmuxa='tmux attach -t $(tmux ls | sed "s/:.*//" | fzf --header "Select what tmux session to attach to")'
 
 # Fuzzy Finder alias scripts
 # Fuzzy find and cd from current directory

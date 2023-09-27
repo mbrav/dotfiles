@@ -20,7 +20,6 @@ cmd_arg_help \
 
 # Check requirements
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
-command -v fzf >/dev/null || error_msg "Please install fzf utility" 1
 
 # FETCH FUNCTIONS
 function fetch_version_docker_compose {

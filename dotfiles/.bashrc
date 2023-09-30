@@ -42,8 +42,8 @@ command -v pyenv >/dev/null && eval "$(pyenv virtualenv-init -)"
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
 # Init custom scripts
-[[ -f "$HOME/.config/scripts/aliases" ]] && source "$HOME/.config/scripts/aliases"
-[[ -f "$HOME/.config/scripts/secrets" ]] && source "$HOME/.config/scripts/secrets"
+[[ -f "$HOME/.config/scripts/_aliases" ]] && source "$HOME/.config/scripts/_aliases"
+[[ -f "$HOME/.config/scripts/_secrets" ]] && source "$HOME/.config/scripts/_secrets"
 
 # Load exceutable scripts and add to PATH
 [[ -d "$HOME/.config/scripts" ]] && PATH="$PATH:$HOME/.config/scripts"

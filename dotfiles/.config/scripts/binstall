@@ -3,12 +3,15 @@
 
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
-bin_dir="/usr/local/bin"
+bin_dir=${bin_dir:-"/usr/local/bin"}
+delay=${delay:-0.5}
 
 # Source util lib
 source "${script_dir}/_util"
 
+# Overide script args if present
 [[ -n "${2}" ]] && bin_dir="${2}"
+[[ -n "${3}" ]] && delay="${3}"
 
 ran_col_str "Binary install utility" c
 
@@ -16,14 +19,15 @@ binaries="docker-compose k9s eza bat starship mcfly fzf jq fd upx"
 
 cmd_arg_help \
 	"Program name. Available: ${GREEN}${binaries}${CLEAR}" \
-	"Bin path. Set: ${GREEN}${bin_dir}${CLEAR}"
+	"Bin path. Set: ${GREEN}${bin_dir}${CLEAR}" \
+	"Curl requests delay in seconds: Set: ${GREEN}${delay}${CLEAR}s"
 
 # Check requirements
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
-
 # FETCH FUNCTIONS
 function fetch_version_docker_compose {
 	# Get latest Docker compose version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/docker/compose/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -33,6 +37,7 @@ function fetch_version_docker_compose {
 
 function fetch_version_k9s {
 	# Get latest k9s version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/derailed/k9s/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -42,6 +47,7 @@ function fetch_version_k9s {
 
 function fetch_version_eza {
 	# Get latest eza version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/eza-community/eza/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -51,6 +57,7 @@ function fetch_version_eza {
 
 function fetch_version_bat {
 	# Get latest bat version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/sharkdp/bat/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -60,6 +67,7 @@ function fetch_version_bat {
 
 function fetch_version_starship {
 	# Get latest starship version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/starship/starship/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -69,6 +77,7 @@ function fetch_version_starship {
 
 function fetch_version_mcfly {
 	# Get latest mcfly version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/cantino/mcfly/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -78,6 +87,7 @@ function fetch_version_mcfly {
 
 function fetch_version_fzf {
 	# Get latest fzf version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/junegunn/fzf/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -87,6 +97,7 @@ function fetch_version_fzf {
 
 function fetch_version_jq {
 	# Get latest jq version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/jqlang/jq/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -97,6 +108,7 @@ function fetch_version_jq {
 # TODO
 function fetch_version_ripgrep {
 	# Get latest ripgrep version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/BurntSushi/ripgrep/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -106,6 +118,7 @@ function fetch_version_ripgrep {
 
 function fetch_version_fd {
 	# Get latest fd version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/sharkdp/fd/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -115,6 +128,7 @@ function fetch_version_fd {
 
 function fetch_version_upx {
 	# Get latest fd version and print result
+	sleep "$delay"
 	curl -s "https://api.github.com/repos/upx/upx/tags" |
 		# Get all tag names
 		jq -r '.[]|.name' |
@@ -155,6 +169,7 @@ docker-compose)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/docker/compose/releases/download/${version}/${1}-$(uname -s)-$(uname -m)"
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -176,6 +191,7 @@ k9s)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/derailed/k9s/releases/download/${version}/${1}_$(uname -s)_amd64.tar.gz"
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -207,6 +223,7 @@ eza)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/eza-community/eza/releases/download/${version}/${1}_$(uname -m)-unknown-linux-gnu.tar.gz"
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -238,6 +255,7 @@ bat)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/sharkdp/bat/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-gnu.tar.gz"
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -269,6 +287,7 @@ starship)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/starship/starship/releases/download/${version}/${1}-$(uname -m)-unknown-linux-gnu.tar.gz"
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -300,6 +319,7 @@ mcfly)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/cantino/mcfly/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-musl.tar.gz"
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -331,7 +351,7 @@ fzf)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/junegunn/fzf/releases/download/${version}/${1}-${version}-linux_amd64.tar.gz"
-
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -364,6 +384,7 @@ jq)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/jqlang/jq/releases/download/${version}/${1}-linux-amd64"
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -387,6 +408,7 @@ fd)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/sharkdp/fd/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-gnu.tar.gz"
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 
@@ -418,6 +440,7 @@ upx)
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
 	url="https://github.com/upx/upx/releases/download/${version}/${1}-${version##*v}-amd64_linux.tar.xz"
+	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
 

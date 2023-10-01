@@ -150,7 +150,10 @@ command -v eza >/dev/null &&
 	# tree listing
 	alias lt='eza -aT --color=always --group-directories-first --icons' &&
 	# show only dotfiles
-	alias l.='eza -a | egrep"^\."'
+	alias l.='eza -a | egrep"^\."' ||
+	# Ls with with no exa
+	alias ls='ls --color=always -lhsi --author'
+
 # Ip with colors
 alias ip='ip -color'
 

@@ -148,6 +148,7 @@ Postman
 **/globalStorage
 .vscode-oss/
 .vscode/
+.vscode-server/
 .vscode-cli/
 
 # Vim

@@ -21,7 +21,6 @@ window:
   title: Alacritty
   # opacity: 0.95
   opacity: 0.87
-
   class:
     instance: Alacritty
     general: Alacritty
@@ -48,6 +47,10 @@ shell:
     - --login
 mouse:
   hide_when_typing: true
+  launcher:
+    program: firefox
+selection:
+  save_to_clipboard: true
 key_bindings:
   # (Windows, Linux, and BSD only)
   - { key: V, mods: Control|Shift, action: Paste }
@@ -59,11 +62,11 @@ key_bindings:
   - { key: Plus, mods: Control, action: IncreaseFontSize }
   - { key: Minus, mods: Control, action: DecreaseFontSize }
   - { key: Minus, mods: Control, action: DecreaseFontSize }
-  - {
-      key: Return,
-      mods: Control|Shift,
-      action: SpawnNewInstance
-    }
+  - { key: Return, mods: Control|Shift, action: SpawnNewInstance }
+  # - { key: PageUp, mods: Shift, action: ScrollPageUp }
+  # - { key: PageDown, mods: Shift, action: ScrollPageDown }
+  # - { key: Home, mods: Shift, action: ScrollToTop }
+  # - { key: End, mods: Shift, action: ScrollToBottom }
 schemes:
   # Tokyo Night theme, based on both:
   #   https://github.com/ghifarit53/tokyonight-vim
@@ -209,28 +212,28 @@ midnight-haze:
   # Default colors
   &midnight-haze
   primary:
-    background: '0x0c0c16'
-    foreground: '0xd8dee9'
+    background: "0x0c0c16"
+    foreground: "0xd8dee9"
   # Normal colors
   normal:
-    black: '0x2c2c3d'
-    red: '0xff6e6e'
-    green: '0x9ec875'
-    yellow: '0xffa759'
-    blue: '0x70a7d4'
-    magenta: '0xd291e0'
-    cyan: '0x96e0e0'
-    white: '0xd8dee9'
+    black: "0x2c2c3d"
+    red: "0xff6e6e"
+    green: "0x9ec875"
+    yellow: "0xffa759"
+    blue: "0x70a7d4"
+    magenta: "0xd291e0"
+    cyan: "0x96e0e0"
+    white: "0xd8dee9"
   # Bright colors
   bright:
-    black: '0x414166'
-    red: '0xff8d8d'
-    green: '0xb3d987'
-    yellow: '0xffc57f'
-    blue: '0x9bb3d3'
-    magenta: '0xffa1ff'
-    cyan: '0x9cd8d8'
-    white: '0xffffff'
+    black: "0x414166"
+    red: "0xff8d8d"
+    green: "0xb3d987"
+    yellow: "0xffc57f"
+    blue: "0x9bb3d3"
+    magenta: "0xffa1ff"
+    cyan: "0x9cd8d8"
+    white: "0xffffff"
 # colors: *tokyo-night
 # colors: *tokyo-night-storm
 # colors: *monokai-pro

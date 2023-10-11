@@ -15,7 +15,7 @@ source "${script_dir}/_util"
 
 ran_col_str "Binary install utility" c
 
-binaries="docker-compose k9s eza bat starship mcfly fzf jq fd upx"
+binaries="docker-compose k9s eza bat starship mcfly fzf jq htmlq yq fd upx"
 
 cmd_arg_help \
 	"Program name. Available: ${GREEN}${binaries}${CLEAR}" \
@@ -103,6 +103,26 @@ function fetch_version_jq {
 		jq -r '.[]|.name' |
 		# Get latest "jq-x.x" pattern without additional characters
 		grep -P -m 1 'jq-[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_htmlq {
+	# Get latest htmlq version and print result
+	sleep "$delay"
+	curl -s "https://api.github.com/repos/mgdm/htmlq/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
+function fetch_version_yq {
+	# Get latest yq version and print result
+	sleep "$delay"
+	curl -s "https://api.github.com/repos/mikefarah/yq/tags" |
+		# Get all tag names
+		jq -r '.[]|.name' |
+		# Get latest "vx.x.x" pattern without additional characters
+		grep -P -m 1 'v[0-9]+\.[0-9]+\.[0-9]+$'
 }
 
 # TODO
@@ -400,6 +420,63 @@ jq)
 
 	success_msg "${1} installed"
 	jq --version
+	;;
+htmlq)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_htmlq)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/mgdm/htmlq/releases/download/${version}/${1}-$(uname -m)-linux.tar.gz"
+	sleep "$delay"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+
+	# Set vars for file download and untar dir
+	down_file="${url##*/}"
+	untar_dir="${1}-${version}"
+	mkdir -pv "/tmp/${untar_dir}"
+
+	# Download archive and unpack
+	curl -L "${url}" -o "/tmp/${down_file}"
+	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
+
+	# Make binary excutable and move to bin directory
+	chmod +x "/tmp/${untar_dir}/${1}"
+	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
+
+	# Remove tmp files
+	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
+
+	success_msg "${1} installed"
+	htmlq --version
+	;;
+yq)
+	info_msg "Fetching latest ${1} tag from GitHub"
+	version=$(fetch_version_yq)
+	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
+	info_msg "Setting version to: ${UNDERLINE}${version}"
+
+	url="https://github.com/mikefarah/yq/releases/download/${version}/${1}_linux_amd64"
+	sleep "$delay"
+	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
+	success_msg "Valid url: ${UNDERLINE}${url}"
+
+	[[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+	[[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
+
+	if [[ -w "${bin_dir}" ]]; then
+		curl -L "${url}" -o "${bin_dir}/${1}"
+		chmod +x "${bin_dir}/${1}"
+	else
+		sudo curl -L "${url}" -o "${bin_dir}/${1}"
+		sudo chmod +x "${bin_dir}/${1}"
+	fi
+
+	success_msg "${1} installed"
+	yq --version
 	;;
 fd)
 	info_msg "Fetching latest ${1} tag from GitHub"

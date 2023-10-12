@@ -18,6 +18,7 @@ return {
         "yaml",
         "terraform",
         "hcl",
+        "c",
       },
     },
   },

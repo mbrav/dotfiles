@@ -8,6 +8,7 @@ return {
         "shellcheck",
         "shfmt",
         "flake8",
+        "cpplint",
       },
     },
   },

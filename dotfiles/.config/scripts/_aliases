@@ -41,7 +41,7 @@ command -v bat >/dev/null &&
 ## MY ALIASES
 alias bash-reload='source ~/.bashrc'
 alias fish-reload='source ~/.config/fish/config.fish'
-alias dus='du -h --max-depth 1 '
+alias dus='du -h -d 1 '
 
 # Force tmux color
 command -v tmux >/dev/null &&

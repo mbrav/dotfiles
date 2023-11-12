@@ -23,10 +23,10 @@ for d in "${delimeters[@]}"; do
 	# Check if no delimeter is not contained in the strings
 	[[ "{$1}{$2}" != *"${d}"* ]] && delim="${d}"
 	# If delimeter set, exit
-	[[ -n "${d}" ]] && break
+	[[ -n "${delim}" ]] && break
 done
 
-[[ -z "${d}" ]] && error_msg "Couldn't find a valid delimeter" 1
+[[ -z "${delim}" ]] && error_msg "Couldn't find a valid delimeter" 1
 
 info_msg "Sed delimeter ${delim}"
 info_msg "Will replace '${1}' with '${2}' in file ${3}"

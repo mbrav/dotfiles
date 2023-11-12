@@ -32,7 +32,8 @@ command -v fd >/dev/null &&
 
 # Set preview aliases for Fuzzy Finder alias scripts
 command -v eza >/dev/null &&
-	export LS_PREVIEW_CMD="eza -al --color=always --group-directories-first --icons --no-permissions " ||
+	# --color-scale only available with eza v >0.15.0
+	export LS_PREVIEW_CMD="eza -al --color=always --color-scale --group-directories-first --icons --no-permissions " ||
 	export LS_PREVIEW_CMD="ls -lahg --color=auto "
 command -v bat >/dev/null &&
 	export CAT_PREVIEW_CMD="bat --style header --style snip --style changes --style header " ||
@@ -140,19 +141,20 @@ alias gchk="git branch --format='%(refname:short)' | fzf --header 'Select git br
 
 ## Useful aliases
 # Replace ls with eza
+# --color-scale only available with eza v >0.15.0
 command -v eza >/dev/null &&
 	# preferred listing
-	alias ls='eza -al --color=always --group-directories-first --icons' &&
-	# all files and dirs
-	alias la='eza -a --color=always --group-directories-first --icons' &&
+	alias ls='eza -aloF --no-permissions --color=always --color-scale --group-directories-first --icons' &&
 	# long format
-	alias ll='eza -l --color=always --group-directories-first --icons' &&
+	alias ll='eza -ahlFHgmU  --color=always --color-scale --group-directories-first --icons' &&
+	# all files and dirs
+	alias la='eza -aF --color=always --color-scale --group-directories-first --icons' &&
 	# tree listing
-	alias lt='eza -aT --color=always --group-directories-first --icons' &&
+	alias lt='eza -aT --color=always --color-scale --group-directories-first --icons' &&
 	# show only dotfiles
-	alias l.='eza -a | egrep"^\."' ||
+	alias l.='eza -a | grep -E "^\."' ||
 	# Ls with with no exa
-	alias ls='ls --color=always -lhsi --author'
+	alias ls='ls --color=auto -lhsi --author'
 
 # Ip with colors
 alias ip='ip -color'
@@ -177,8 +179,10 @@ alias ......='cd ../../../../..'
 alias dir='dir --color=auto'
 alias vdir='vdir --color=auto'
 alias grep='grep --color=auto'
-alias fgrep='fgrep --color=auto'
-alias egrep='egrep --color=auto'
+# 'fgrep' is an obsolescent pattern for 'grep -F'
+alias fgrep='grep -F --color=auto'
+# 'egrep' is an obsolescent pattern for 'grep -E'
+alias egrep='grep -E --color=auto'
 alias hw='hwinfo --short' # Hardware Info
 alias please='sudo'
 alias tb='nc termbin.com 9999'

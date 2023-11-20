@@ -1,20 +1,6 @@
 #!/bin/sh
 # Alias file that is Bash and Fish intercompatible
 
-# MY ALIASES BEGIN
-
-# vi < vim < nvim substituton
-export EDITOR='vi'
-export VISUAL='vi'
-command -v vim >/dev/null &&
-	export EDITOR='vim' &&
-	export VISUAL='vim' &&
-	alias vi='vim'
-# command -v nvim >/dev/null && \
-# export EDITOR='nvim' && \
-# export VISUAL='nvim' && \
-# alias vim='nvim'
-
 # TOOLS ENVIORNMENT SETTINGS
 # Set Ansible config folder
 export ANSIBLE_CONFIG="$HOME/.ansible/ansible.cfg"
@@ -24,6 +10,20 @@ export LIBVIRT_DEFAULT_URI="qemu:///system"
 export MCFLY_RESULTS=30
 export MCFLY_PROMPT="❯"
 export MCFLY_FUZZY=5
+
+# MY ALIASES BEGIN
+
+# vi < vim < nvim substituton
+export EDITOR='vi'
+export VISUAL='vi'
+command -v vim >/dev/null &&
+	export EDITOR='vim' &&
+	export VISUAL='vim' &&
+	alias vi='vim' &&
+	command -v nvim >/dev/null &&
+	export EDITOR='nvim' &&
+	export VISUAL='nvim' &&
+	alias vim='nvim'
 
 # FZF options for finding files
 command -v fd >/dev/null &&
@@ -40,9 +40,36 @@ command -v bat >/dev/null &&
 	export CAT_PREVIEW_CMD="cat -n "
 
 ## MY ALIASES
-alias bash-reload='source ~/.bashrc'
-alias fish-reload='source ~/.config/fish/config.fish'
+alias bashrc='source ~/.bashrc'
+alias fishrc='source ~/.config/fish/config.fish'
+
+# Common use
 alias dus='du -h -d 1 '
+alias grubup='sudo update-grub'
+alias tarnow='tar -acf '
+alias untar='tar -xvf '
+alias wget='wget -c '
+alias psmem='ps auxf | sort -nr -k 4'
+alias psmem10='ps auxf | sort -nr -k 4 | head -10'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias ......='cd ../../../../..'
+alias dir='dir --color=auto'
+alias vdir='vdir --color=auto'
+alias grep='grep --color=auto'
+# 'fgrep' is an obsolescent pattern for 'grep -F'
+alias fgrep='grep -F --color=auto'
+# 'egrep' is an obsolescent pattern for 'grep -E'
+alias egrep='grep -E --color=auto'
+alias hw='hwinfo --short' # Hardware Info
+alias please='sudo'
+alias tb='nc termbin.com 9999'
+# Ip with colors
+alias ip='ip -color'
+# Get the error messages from journalctl
+alias jctl="journalctl -p 3 -xb"
 
 # Force tmux color
 command -v tmux >/dev/null &&
@@ -55,10 +82,12 @@ command -v tmux >/dev/null &&
 # Fuzzy find and cd from current directory
 alias f='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 #alias f='cd $(find ./* -type d | fzf --header "Select what folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
+# Fuzzy find and cat/bat from current directory
+alias fc='cat $(find ./* -type f | fzf --header "Select what file to cat" --preview-window "up:50%" --preview-label "File contents" --preview "$CAT_PREVIEW_CMD {1}")'
 # Fuzzy find and vim edit from current directory
-alias fv='vim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "Folder contents" --preview "$CAT_PREVIEW_CMD {1}")'
+alias fv='vim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "File contents" --preview "$CAT_PREVIEW_CMD {1}")'
 # Fuzzy find and nvim edit from current directory
-alias fnv='nvim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "Folder contents" --preview "$CAT_PREVIEW_CMD {1}")'
+alias fnv='nvim $(find ./* -type f | fzf --header "Select what file to vi" --preview-window "up:50%" --preview-label "File contents" --preview "$CAT_PREVIEW_CMD {1}")'
 # Fuzzy find dev directory type, then projects
 alias dev='cd $(find ~/dev/* -maxdepth 1 -type d | fzf --header "Select what ~/dev folder to cd into" --preview-window "up:50%" --preview-label "Folder contents" --preview "$LS_PREVIEW_CMD {1}")'
 # Fuzzy find dev directory all
@@ -156,36 +185,10 @@ command -v eza >/dev/null &&
 	# Ls with with no exa
 	alias ls='ls --color=auto -lhsi --author'
 
-# Ip with colors
-alias ip='ip -color'
-
 # Replace some more things with better alternatives
 command -v pygmentize >/dev/null && alias cat='pygmentize -g '
 command -v bat >/dev/null && alias cat='bat --style header --style snip --style changes --style header'
 [ ! -x /usr/bin/yay ] && [ -x /usr/bin/paru ] && alias yay='paru'
-
-# Common use
-alias grubup='sudo update-grub'
-alias tarnow='tar -acf '
-alias untar='tar -xvf '
-alias wget='wget -c '
-alias psmem='ps auxf | sort -nr -k 4'
-alias psmem10='ps auxf | sort -nr -k 4 | head -10'
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-alias .....='cd ../../../..'
-alias ......='cd ../../../../..'
-alias dir='dir --color=auto'
-alias vdir='vdir --color=auto'
-alias grep='grep --color=auto'
-# 'fgrep' is an obsolescent pattern for 'grep -F'
-alias fgrep='grep -F --color=auto'
-# 'egrep' is an obsolescent pattern for 'grep -E'
-alias egrep='grep -E --color=auto'
-alias hw='hwinfo --short' # Hardware Info
-alias please='sudo'
-alias tb='nc termbin.com 9999'
 
 # Bindings for Arch
 command -v pacman >/dev/null &&
@@ -206,6 +209,3 @@ command -v pacman >/dev/null &&
 	alias cleanup='sudo pacman -Rns (pacman -Qtdq)' &&
 	# Recent installed packages
 	alias rip="expac --timefmt='%Y-%m-%d %T' '%l\t%n %v' | sort | tail -200 | nl"
-
-# Get the error messages from journalctl
-alias jctl="journalctl -p 3 -xb"

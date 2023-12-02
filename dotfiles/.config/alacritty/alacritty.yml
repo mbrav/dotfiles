@@ -26,8 +26,8 @@ window:
     general: Alacritty
 font:
   normal:
-    family: JetbrainsMonoNL
-    style: Regular
+    family: "JetbrainsMonoNL Nerd Font"
+    # style: Regular
   size: 11
 scrolling:
   history: 100000

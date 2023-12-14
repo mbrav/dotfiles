@@ -18,7 +18,7 @@ But the main advantage of Fish shell, in my use case, is that outocompletion is 
 
 The configs for Bash shell ([`.bashrc`](dotfiles/.bashrc)) and Fish ([`config.fish`](dotfiles/.config/fish/config.fish)) reference aliases and commands defined in the [`scripts/`](dotfiles/.config/scripts) folder.
 
-## Installation
+### Programs
 
 To take the most advantage of the config, a few tools are used, which are recommended for installation given that they are setup in [`_aliases`](dotfiles/.config/scripts/_aliases), [`.bashrc`](dotfiles/.bashrc) and [`config.fish`](dotfiles/.config/fish/config.fish):
 
@@ -27,6 +27,12 @@ To take the most advantage of the config, a few tools are used, which are recomm
 - [fzf](https://github.com/junegunn/fzf) - A command-line fuzzy finder (Rust);
 - [eza](https://github.com/eza-community/eza) - A modern replacement for `ls`, based on `exa` (Rust);
 - [bat](https://github.com/sharkdp/bat) - A modern replacement for `cat` (yes, you guessed it, Rust).
+
+### Font configuration
+
+In order for the terminal to display those symbols correctly, you must install one of many [Nerd Fonts](https://www.nerdfonts.com) and configure your terminal to use one of them.
+
+## Installation
 
 ⚠️ **Warning:** This will overwrite your configs!
 

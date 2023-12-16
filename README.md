@@ -55,6 +55,8 @@ force=1 ./install.sh
 
 ## Trying out these configs in a Docker container
 
+![](./docker.webp)
+
 Before you install these configs on your system, you can try them out in a docker container. This is a feature that is still a work in progress. You can build and run these configs by simply doing:
 
 ```bash

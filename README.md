@@ -36,7 +36,7 @@ In order for the terminal to display those symbols correctly, you must install o
 
 ⚠️ **Warning:** This will overwrite your configs!
 
-Clone repo:
+Clone repo (It is important to clone with modules!):
 
 ```bash
 git clone --recurse-submodules -j8 https://github.com/mbrav/dotfiles && cd dotfiles
@@ -52,3 +52,12 @@ Install dotfiles non-interactively
 ```bash
 force=1 ./install.sh
 ```
+
+## Trying out these configs in a Docker container
+
+Before you install these configs on your system, you can try them out in a docker container. This is a feature that is still a work in progress. You can build and run these configs by simply doing:
+
+```bash
+./docker.sh
+```
+

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Install various binaries directly from GitHub
 
 # Set script_dir
@@ -234,7 +234,7 @@ k9s)
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	k9s version
+	# k9s version
 	;;
 eza)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -242,7 +242,7 @@ eza)
 	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
-	url="https://github.com/eza-community/eza/releases/download/${version}/${1}_$(uname -m)-unknown-linux-gnu.tar.gz"
+	url="https://github.com/eza-community/eza/releases/download/${version}/${1}_$(uname -m)-unknown-linux-musl.tar.gz"
 	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
@@ -266,7 +266,7 @@ eza)
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	eza --version
+	# eza --version
 	;;
 bat)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -274,7 +274,7 @@ bat)
 	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
-	url="https://github.com/sharkdp/bat/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-gnu.tar.gz"
+	url="https://github.com/sharkdp/bat/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-musl.tar.gz"
 	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
@@ -291,14 +291,14 @@ bat)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}" "${bin_dir}/"
+	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}"
+	sudo_or_mv "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	bat --version
+	# bat --version
 	;;
 starship)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -306,7 +306,7 @@ starship)
 	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
-	url="https://github.com/starship/starship/releases/download/${version}/${1}-$(uname -m)-unknown-linux-gnu.tar.gz"
+	url="https://github.com/starship/starship/releases/download/${version}/${1}-$(uname -m)-unknown-linux-musl.tar.gz"
 	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
@@ -330,7 +330,7 @@ starship)
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	starship --version
+	# starship --version
 	;;
 mcfly)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -362,7 +362,7 @@ mcfly)
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	mcfly --version
+	# mcfly --version
 	;;
 fzf)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -395,7 +395,7 @@ fzf)
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	fzf --version
+	# fzf --version
 	;;
 jq)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -419,7 +419,7 @@ jq)
 	fi
 
 	success_msg "${1} installed"
-	jq --version
+	# jq --version
 	;;
 htmlq)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -451,7 +451,7 @@ htmlq)
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	htmlq --version
+	# htmlq --version
 	;;
 yq)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -476,7 +476,7 @@ yq)
 	fi
 
 	success_msg "${1} installed"
-	yq --version
+	# yq --version
 	;;
 fd)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -484,7 +484,7 @@ fd)
 	[[ -n "${version}" ]] || error_msg "Error fetching version" 1
 	info_msg "Setting version to: ${UNDERLINE}${version}"
 
-	url="https://github.com/sharkdp/fd/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-gnu.tar.gz"
+	url="https://github.com/sharkdp/fd/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-musl.tar.gz"
 	sleep "$delay"
 	[[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
 	success_msg "Valid url: ${UNDERLINE}${url}"
@@ -501,14 +501,14 @@ fd)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-gnu/${1}" "${bin_dir}/"
+	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}"
+	sudo_or_mv "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	fd --version
+	# fd --version
 	;;
 upx)
 	info_msg "Fetching latest ${1} tag from GitHub"
@@ -541,7 +541,7 @@ upx)
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
 
 	success_msg "${1} installed"
-	upx --version
+	# upx --version
 	;;
 *)
 	error_msg "Unknown program: ${CLEAR}${UNDERLINE}${1}"

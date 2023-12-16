@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Export docker images to a tar archive
 
 # Set script_dir

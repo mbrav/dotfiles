@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Various colors definitions for Bash scripts
 
 # COLORS

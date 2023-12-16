@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Interval command
 # $1 - interval in seconds
 # $2-n - command and any number of arguments to execute

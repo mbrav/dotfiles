@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+docker_tag="mbrav/dotfiles:latest"
+uid=$(id -u)
+gid=$(id -g)
+user=$USER
+cur_dir=$(pwd)
+
+# Source util functions
+source "${script_dir}/_util"
+
+ran_col_str "Utility for running mbrav dotfiles inside an ephemeral docker container"
+
+command -v docker >/dev/null || error_msg "Please install docker" 1
+
+if docker image inspect "${docker_tag}" >/dev/null; then
+	info_msg "Docker container present, skipping build"
+else
+	info_msg "No docker container, building..."
+	docker build \
+		-f "${script_dir}/../../../Dockerfile" \
+		--build-arg DOCKER_USER="${user}" \
+		--build-arg DOCKER_UID="${uid}" \
+		--build-arg DOCKER_GID="${gid}" \
+		--tag "${docker_tag}" \
+		"${script_dir}/../../../." &&
+		success_msg "Container ${docker_tag} built"
+fi
+
+[[ $? -ne 0 ]] && error_msg "Failed to build image" 1
+
+info_msg "Running ${docker_tag} interactively with ${cur_dir} as mount to /root/mount and user "${uid}:${gid}""
+
+docker run -it --rm \
+	--user "${uid}:${gid}" \
+	--volume "${cur_dir}:/home/${user}/mount:rw" \
+	"${docker_tag}" &&
+	success_msg "Exited dotfiles container"

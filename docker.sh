@@ -1,0 +1,1 @@
+dotfiles/.config/scripts/dotdok

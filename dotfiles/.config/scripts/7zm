@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Max 7z compression
 
 # Set script_dir

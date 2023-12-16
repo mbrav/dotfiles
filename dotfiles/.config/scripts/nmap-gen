@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Nmap scanner and report generation
 # $1 - IP range
 # $2 - report name

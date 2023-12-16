@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 mbrav_dotfiles_v="0.3.3"
 script_id="mbrav/dotfiles v${mbrav_dotfiles_v}"
 script_dir="$(dirname "$(realpath "$0")")"
@@ -36,11 +36,11 @@ function dotfiles_symlink() {
 			info_msg "Item $item_path exists"
 			yes_no_prompt "${GREEN}Replace $item_path with new symlink?${YELLOW}" &&
 				rm -rfv "$HOME/.config/$item" &&
-				ln -srv "$item_path" "$HOME/.config/$item"
+				ln -sv "$item_path" "$HOME/.config/$item"
 		else
 			info_msg "Symlinking file $item_path to $HOME/.config/$item"
 			rm -rfv "$HOME/.config/$item"
-			ln -srv "$item_path" "$HOME/.config/$item"
+			ln -sv "$item_path" "$HOME/.config/$item"
 		fi
 	done
 
@@ -53,20 +53,26 @@ function dotfiles_symlink() {
 			info_msg "Item $item_path exists"
 			yes_no_prompt "${GREEN}Replace $item_path with new symlink?${YELLOW}" &&
 				rm -fv "$HOME/$item" &&
-				ln -srv "$item_path" "$HOME/$item"
+				ln -sv "$item_path" "$HOME/$item"
 		else
 			info_msg "Symlinking file $item_path to $HOME/$item"
 			rm -fv "$HOME/$item"
-			ln -srv "$item_path" "$HOME/$item"
+			ln -sv "$item_path" "$HOME/$item"
 		fi
 	done
 }
 
 ran_col_str "${script_id} installer"
-[[ -z "$force" ]] && warning_msg "Script in interative mode. Use force=1 ./install for non-interactive install"
-
-yes_no_prompt "${GREEN}Install Dotfiles as symlinks? ${YELLOW}" &&
+if [[ -z "$force" ]]; then
+	warning_msg "Script in interative mode. Use force=1 ./install.sh for non-interactive install"
+	yes_no_prompt "${GREEN}Install Dotfiles as symlinks? ${YELLOW}" &&
+		dotfiles_symlink
+else
+	info_msg "Installing dotfiles non-interactively"
 	dotfiles_symlink
+fi
+
+[[ $? -ne 0 ]] && error_msg "Failed to install dotfiles" 1 ||
+	success_msg "Dotfiles install successfuly! Reload shell."
 
 exit 0
-success_msg "Install successful! Reload shell."

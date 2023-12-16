@@ -39,11 +39,16 @@ In order for the terminal to display those symbols correctly, you must install o
 Clone repo:
 
 ```bash
-git clone --recurse-submodules -j8 https://github.com/mbrav/dotfiles
+git clone --recurse-submodules -j8 https://github.com/mbrav/dotfiles && cd dotfiles
 ```
 
-Copy dotfiles:
+Install dotfiles interactively:
 
 ```bash
-cp -r ./dotfiles/dotfiles/.*  ~/
+./install.sh
+```
+
+Install dotfiles non-interactively
+```bash
+force=1 ./install.sh
 ```

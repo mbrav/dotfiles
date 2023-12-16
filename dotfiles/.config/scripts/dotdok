@@ -31,9 +31,10 @@ fi
 
 [[ $? -ne 0 ]] && error_msg "Failed to build image" 1
 
-info_msg "Running ${docker_tag} interactively with ${cur_dir} as mount to /root/mount and user "${uid}:${gid}""
+info_msg "Running ${docker_tag} interactively with ${cur_dir} as mount to /root/mount and user '${uid}:${gid}'"
 
 docker run -it --rm \
+	--name "tmp-${cur_dir##*/}" \
 	--user "${uid}:${gid}" \
 	--volume "${cur_dir}:/home/${user}/mount:rw" \
 	"${docker_tag}" &&

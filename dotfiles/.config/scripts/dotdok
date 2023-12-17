@@ -31,11 +31,23 @@ fi
 
 [[ $? -ne 0 ]] && error_msg "Failed to build image" 1
 
+# Print mount if source exists
+function mount_if() {
+	# $1 - Soruce mount
+	# $2 - Destination mount
+	if [ -f "$1" ] || [ -d "$1" ]; then
+		echo "--mount type=bind,source="${1}",target="${2}",readonly"
+	fi
+}
+
 info_msg "Running ${docker_tag} interactively with ${cur_dir} as mount to /root/mount and user '${uid}:${gid}'"
 
 docker run -it --rm \
 	--name "tmp-${cur_dir##*/}" \
 	--user "${uid}:${gid}" \
 	--volume "${cur_dir}:/home/${user}/mount:rw" \
+	$(mount_if "${HOME}/.wakatime.cfg" "/home/${user}/.wakatime.cfg") \
+	$(mount_if "${HOME}/.ssh" "/home/${user}/.ssh") \
+	$(mount_if "${HOME}/.gnupg" "/home/${user}/.gnupg") \
 	"${docker_tag}" &&
 	success_msg "Exited dotfiles container"

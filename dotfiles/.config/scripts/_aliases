@@ -1,3 +1,4 @@
+#!/usr/bin/env sh
 # Alias file that is Bash and Fish intercompatible
 
 # TOOLS ENVIORNMENT SETTINGS
@@ -75,7 +76,7 @@ command -v tmux >/dev/null &&
 	alias tmux='tmux -2 ' &&
 	alias tmuxn='tmux -2 new -s ' &&
 	# Use fuzzy finder to select what tmux session to attach to
-	alias tmuxa='tmux attach -t $(tmux ls | sed "s/:.*//" | fzf --header "Select what tmux session to attach to")'
+	alias tmuxa='tmux attach -t $(tmux list-sessions | sed "s/:.*//" | fzf --header "Select what tmux session to attach to")'
 
 # Fuzzy Finder alias scripts
 # Fuzzy find and cd from current directory

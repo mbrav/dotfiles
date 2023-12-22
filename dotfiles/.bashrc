@@ -25,7 +25,7 @@ command -v mcfly >/dev/null && eval "$(mcfly init bash)"
 
 ## Run fastfetch, neofetch or screenfetch
 if command -v fastfetch &>/dev/null; then
-	fastfetch --load-config neofetch
+	fastfetch --load-config neofetch.jsonc
 elif command -v neofetch &>/dev/null; then
 	neofetch
 elif command -v screenfetch &>/dev/null; then

@@ -96,7 +96,7 @@ end
 ## Run fastfetch, neofetch or screenfetch if session is interactive
 if status --is-interactive
     if type -q fastfetch
-        fastfetch --load-config neofetch
+        fastfetch --load-config neofetch.jsonc
     else if type -q neofetch
         neofetch
     else if type -q screenfetch

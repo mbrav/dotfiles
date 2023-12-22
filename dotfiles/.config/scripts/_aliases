@@ -173,9 +173,9 @@ alias gchk="git branch --format='%(refname:short)' | fzf --header 'Select git br
 # --color-scale only available with eza v >0.15.0
 command -v eza >/dev/null &&
 	# preferred listing
-	alias ls='eza -aloF --no-permissions --color=always --color-scale --group-directories-first --icons' &&
+	alias ls='eza -al --color=always --color-scale --group-directories-first --icons' &&
 	# long format
-	alias ll='eza -ahlFHgmU  --color=always --color-scale --group-directories-first --icons' &&
+	alias ll='eza -alFgmU --color=always --color-scale --group-directories-first --icons' &&
 	# all files and dirs
 	alias la='eza -aF --color=always --color-scale --group-directories-first --icons' &&
 	# tree listing

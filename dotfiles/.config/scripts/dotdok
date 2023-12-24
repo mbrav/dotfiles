@@ -20,6 +20,7 @@ if docker image inspect "${docker_tag}" >/dev/null; then
 else
 	info_msg "No docker container, building..."
 	docker build \
+		--progress=plain \
 		-f "${script_dir}/../../../Dockerfile" \
 		--build-arg DOCKER_USER="${user}" \
 		--build-arg DOCKER_UID="${uid}" \

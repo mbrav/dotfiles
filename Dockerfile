@@ -3,7 +3,7 @@ FROM alpine:latest
 ARG DOCKER_USER=${DOCKER_USER:-mbrav}
 ARG DOCKER_UID=${DOCKER_UID:-1000}
 ARG DOCKER_GID=${DOCKER_GID:-1000}
-ARG DOTFILES_ROOT="/home/${DOCKER_USER:-mbrav}/.config/dotfiles/"
+ARG DOTFILES_ROOT="/home/${DOCKER_USER:-mbrav}/.dotfiles/"
 
 # Install system packages
 RUN apk add --upgrade --latest \
@@ -32,7 +32,6 @@ RUN apk add --upgrade --latest \
 
 # Copy dotfiles config
 COPY ../dotfiles "$DOTFILES_ROOT/dotfiles/"
-COPY ../install.sh "$DOTFILES_ROOT"
 
 # Setup docker user
 RUN addgroup "$DOCKER_USER" --gid "$DOCKER_GID" \
@@ -43,11 +42,13 @@ RUN addgroup "$DOCKER_USER" --gid "$DOCKER_GID" \
   && $DOTFILES_ROOT/dotfiles/.config/scripts/binstall starship \
   && $DOTFILES_ROOT/dotfiles/.config/scripts/sedchad "palette = 'default'" "palette = 'nord-tan'" $DOTFILES_ROOT/dotfiles/.config/starship.toml \
   && mkdir -p /home/$DOCKER_USER/.config \
+  && mkdir -p /home/$DOCKER_USER/.local/share/fish \
+  && touch /home/$DOCKER_USER/.local/share/fish/fish_history \
   && chown -R "$DOCKER_USER" /home/$DOCKER_USER
 
 WORKDIR /home/$DOCKER_USER
 USER $DOCKER_USER
 
-RUN force=1 /home/$DOCKER_USER/.config/dotfiles/install.sh
+RUN force=1 $DOTFILES_ROOT/dotfiles/.config/scripts/dotinstall
 
 ENTRYPOINT [ "fish" ]

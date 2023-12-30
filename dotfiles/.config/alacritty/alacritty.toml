@@ -1,0 +1,201 @@
+# Alacritty toml config 
+
+import = [
+  "~/.config/alacritty/keybindings.toml",
+  # "~/.config/alacritty/schemes/Cobalt2.toml",
+  # "~/.config/alacritty/schemes/afterglow.toml",
+  # "~/.config/alacritty/schemes/alabaster_dark.toml",
+  # "~/.config/alacritty/schemes/alabaster.toml",
+  # "~/.config/alacritty/schemes/alacritty_0_12.toml",
+  # "~/.config/alacritty/schemes/argonaut.toml",
+  # "~/.config/alacritty/schemes/atom_one_light.toml",
+  # "~/.config/alacritty/schemes/ayu_dark.toml",
+  # "~/.config/alacritty/schemes/ayu_light.toml",
+  # "~/.config/alacritty/schemes/baitong.toml",
+  # "~/.config/alacritty/schemes/base16_default_dark.toml",
+  # "~/.config/alacritty/schemes/blood_moon.toml",
+  # "~/.config/alacritty/schemes/bluish.toml",
+  # "~/.config/alacritty/schemes/breeze.toml",
+  # "~/.config/alacritty/schemes/campbell.toml",
+  # "~/.config/alacritty/schemes/carbonfox.toml",
+  # "~/.config/alacritty/schemes/catppuccin_frappe.toml",
+  # "~/.config/alacritty/schemes/catppuccin_latte.toml",
+  # "~/.config/alacritty/schemes/catppuccin_macchiato.toml",
+  # "~/.config/alacritty/schemes/catppuccin_mocha.toml",
+  # "~/.config/alacritty/schemes/catppuccin.toml",
+  # "~/.config/alacritty/schemes/challenger_deep.toml",
+  # "~/.config/alacritty/schemes/citylights.toml",
+  # "~/.config/alacritty/schemes/Cobalt2.toml",
+  # "~/.config/alacritty/schemes/cyber_punk_neon.toml",
+  # "~/.config/alacritty/schemes/darcula.toml",
+  # "~/.config/alacritty/schemes/dark_pastels.toml",
+  # "~/.config/alacritty/schemes/deep_space.toml",
+  # "~/.config/alacritty/schemes/doom_one.toml",
+  # "~/.config/alacritty/schemes/dracula.toml",
+  # "~/.config/alacritty/schemes/everforest_dark.toml",
+  # "~/.config/alacritty/schemes/everforest_light.toml",
+  # "~/.config/alacritty/schemes/falcon.toml",
+  # "~/.config/alacritty/schemes/flat_remix.toml",
+  # "~/.config/alacritty/schemes/flexoki.toml",
+  # "~/.config/alacritty/schemes/github_dark_colorblind.toml",
+  # "~/.config/alacritty/schemes/github_dark_default.toml",
+  # "~/.config/alacritty/schemes/github_dark_dimmed.toml",
+  # "~/.config/alacritty/schemes/github_dark_high_contrast.toml",
+  # "~/.config/alacritty/schemes/github_dark.toml",
+  # "~/.config/alacritty/schemes/github_dark_tritanopia.toml",
+  # "~/.config/alacritty/schemes/github_light_colorblind.toml",
+  # "~/.config/alacritty/schemes/github_light_default.toml",
+  # "~/.config/alacritty/schemes/github_light_high_contrast.toml",
+  # "~/.config/alacritty/schemes/github_light.toml",
+  # "~/.config/alacritty/schemes/github_light_tritanopia.toml",
+  # "~/.config/alacritty/schemes/gnome_terminal.toml",
+  # "~/.config/alacritty/schemes/gotham.toml",
+  # "~/.config/alacritty/schemes/gruvbox_dark.toml",
+  # "~/.config/alacritty/schemes/gruvbox_light.toml",
+  # "~/.config/alacritty/schemes/gruvbox_material_medium_dark.toml",
+  # "~/.config/alacritty/schemes/gruvbox_material_medium_light.toml",
+  # "~/.config/alacritty/schemes/gruvbox_material.toml",
+  # "~/.config/alacritty/schemes/hardhacker.toml",
+  # "~/.config/alacritty/schemes/high_contrast.toml",
+  # "~/.config/alacritty/schemes/horizon-dark.toml",
+  # "~/.config/alacritty/schemes/hyper.toml",
+  # "~/.config/alacritty/schemes/inferno.toml",
+  # "~/.config/alacritty/schemes/iris.toml",
+  # "~/.config/alacritty/schemes/iterm.toml",
+  # "~/.config/alacritty/schemes/kanagawa_dragon.toml",
+  # "~/.config/alacritty/schemes/kanagawa_wave.toml",
+  # "~/.config/alacritty/schemes/konsole_linux.toml",
+  # "~/.config/alacritty/schemes/low_contrast.toml",
+  # "~/.config/alacritty/schemes/Mariana.toml",
+  # "~/.config/alacritty/schemes/marine_dark.toml",
+  # "~/.config/alacritty/schemes/material_theme_mod.toml",
+  # "~/.config/alacritty/schemes/material_theme.toml",
+  # "~/.config/alacritty/schemes/meliora.toml",
+  "~/.config/alacritty/schemes/midnight-haze.toml",
+  # "~/.config/alacritty/schemes/monokai_charcoal.toml",
+  # "~/.config/alacritty/schemes/monokai_pro.toml",
+  # "~/.config/alacritty/schemes/moonlight_ii_vscode.toml",
+  # "~/.config/alacritty/schemes/msx.toml",
+  # "~/.config/alacritty/schemes/nightfox.toml",
+  # "~/.config/alacritty/schemes/night_owlish_light.toml",
+  # "~/.config/alacritty/schemes/noctis-lux.toml",
+  # "~/.config/alacritty/schemes/nordic.toml",
+  # "~/.config/alacritty/schemes/nord_light.toml",
+  # "~/.config/alacritty/schemes/nord.toml",
+  # "~/.config/alacritty/schemes/oceanic_next.toml",
+  # "~/.config/alacritty/schemes/omni.toml",
+  # "~/.config/alacritty/schemes/one_dark.toml",
+  # "~/.config/alacritty/schemes/palenight.toml",
+  # "~/.config/alacritty/schemes/papercolor_dark.toml",
+  # "~/.config/alacritty/schemes/papercolor_light.toml",
+  # "~/.config/alacritty/schemes/papertheme.toml",
+  # "~/.config/alacritty/schemes/pencil_dark.toml",
+  # "~/.config/alacritty/schemes/pencil_light.toml",
+  # "~/.config/alacritty/schemes/rainbow.toml",
+  # "~/.config/alacritty/schemes/remedy_dark.toml",
+  # "~/.config/alacritty/schemes/rose-pine-dawn.toml",
+  # "~/.config/alacritty/schemes/rose-pine-moon.toml",
+  # "~/.config/alacritty/schemes/rose-pine.toml",
+  # "~/.config/alacritty/schemes/seashells.toml",
+  # "~/.config/alacritty/schemes/smoooooth.toml",
+  # "~/.config/alacritty/schemes/snazzy.toml",
+  # "~/.config/alacritty/schemes/solarized_dark.toml",
+  # "~/.config/alacritty/schemes/solarized_light.toml",
+  # "~/.config/alacritty/schemes/taerminal.toml",
+  # "~/.config/alacritty/schemes/tango_dark.toml",
+  # "~/.config/alacritty/schemes/tender.toml",
+  # "~/.config/alacritty/schemes/terminal_app.toml",
+  # "~/.config/alacritty/schemes/thelovelace.toml",
+  # "~/.config/alacritty/schemes/tokyo-night-storm.toml",
+  # "~/.config/alacritty/schemes/tokyo-night.toml",
+  # "~/.config/alacritty/schemes/tomorrow_night_bright.toml",
+  # "~/.config/alacritty/schemes/tomorrow_night.toml",
+  # "~/.config/alacritty/schemes/ubuntu.toml",
+  # "~/.config/alacritty/schemes/wombat.toml",
+  # "~/.config/alacritty/schemes/xterm.toml",
+  # "~/.config/alacritty/schemes/zenburn.toml",
+]
+
+live_config_reload = true
+ipc_socket = true         # Unix only
+# working_directory = "~/"
+
+# Shell and env settings
+[shell]
+program = "/usr/bin/fish"
+args = ["--login"]
+
+[env]
+IN_ALACRITTY = "true"
+
+# Window settings
+[window]
+title = "Alacritty"
+decorations = "Full"
+decorations_theme_variant = "Dark"
+dynamic_padding = true
+# opacity = 0.9
+opacity = 1.0
+# decorations = "None"
+# decorations = "Transparent" # MacOS only
+# decorations = "Buttonless" # MacOS only
+blur = true              # works on macOS/KDE Wayland
+resize_increments = true
+#"OnlyLeft" | "OnlyRight" | "Both" | "None" # (macos only)
+# option_as_alt = "None"
+
+[window.class]
+general = "Alacritty"
+instance = "Alacritty"
+
+[window.dimensions]
+columns = 180
+lines = 42
+
+[window.padding]
+x = 0
+y = 0
+
+# Font config
+[font]
+size = 11
+builtin_box_drawing = true
+
+[font.normal]
+family = "JetbrainsMonoNL Nerd Font"
+
+[scrolling]
+history = 100000
+multiplier = 3
+
+[selection]
+save_to_clipboard = true
+
+[cursor]
+blink_interval = 500
+blink_timeout = 10
+unfocused_hollow = true
+thickness = 0.2
+
+[cursor.style]
+blinking = "Always"
+
+[mouse]
+hide_when_typing = true
+
+[debug]
+# render_timer = true
+
+[[hints.enabled]]
+command = "xdg-open" # On Linux/BSD
+# command = "open" # On macOS
+# command = { program = "cmd", args = [ "/c", "start", "" ] } # On Windows
+hyperlinks = true
+post_processing = true
+persist = false
+mouse.enabled = true
+binding = { key = "U", mods = "Control|Shift" }
+regex = "(ipfs:|ipns:|magnet:|mailto:|gemini://|gopher://|https://|http://|news:|file:|git://|ssh:|ftp://)[^\u0000-\u001F\u007F-\u009F<>\"\\s{-}\\^⟨⟩`]+"
+
+[colors]
+draw_bold_text_with_bright_colors = true

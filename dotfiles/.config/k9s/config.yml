@@ -24,29 +24,22 @@ k9s:
     fullScreenLogs: false
     textWrap: false
     showTime: false
-  currentContext: kubernetes-admin@kubernetes
-  currentCluster: kubernetes
+  currentContext: 1917-cluster
+  currentCluster: 1917-cluster
+  keepMissingClusters: false
   clusters:
-    kubernetes:
+    1917-cluster:
       namespace:
         active: all
         lockFavorites: false
         favorites:
+        - kube-system
         - all
         - default
       view:
-        active: context
+        active: pod
       featureGates:
         nodeShell: false
-      shellPod:
-        image: busybox:1.35.0
-        command: []
-        args: []
-        namespace: default
-        limits:
-          cpu: 100m
-          memory: 100Mi
-        labels: {}
       portForwardAddress: localhost
   thresholds:
     cpu:
@@ -56,3 +49,4 @@ k9s:
       critical: 90
       warn: 70
   screenDumpDir: /tmp/k9s-screens-mbrav
+  disablePodCounting: false

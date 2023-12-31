@@ -1,2 +1,3 @@
 scripts/secrets.ini
 dotfiles/.config/fish/fish_variables
+dotfiles/.config/k9s/clusters

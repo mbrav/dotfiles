@@ -103,6 +103,8 @@ alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _
 # Process killer
 alias pkl='ps aux | fzf --header "Please select what process to kill" | awk "{print $2}" | xargs kill'
 
+# Net aliases
+alias curlpf="curl -o /dev/null -s -w 'HTTP %{http_code} - IP %{remote_ip} \n▲%{size_upload}B ▼%{size_download}B \n▲%{speed_upload}Bps ▼%{speed_download}Bps \nConnects %{num_connects} \nConnect %{time_connect}s \nLookup %{time_namelookup}s \nTransfer %{time_starttransfer}s (pre %{time_pretransfer}s) \nTotal %{time_total}s' "
 # Pass gen
 # alias pass-gen='< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c' # $1 - number of bytes
 

@@ -84,18 +84,6 @@ plugins:
       - $NAMESPACE
       - $NAME
 
-  # Inspect container images
-  dive:
-    shortCut: d
-    confirm: false
-    description: "Dive image"
-    scopes:
-      - containers
-    command: dive
-    background: false
-    args:
-      - $COL-IMAGE
-
   # Sends logs over to jq for processing. This leverages kubectl plugin kubectl-jq.
   jqlogs:
     shortCut: Ctrl-J
@@ -110,6 +98,18 @@ plugins:
       - $NAME
       - $NAMESPACE
       - $CONTEXT
+
+  # Inspect container images
+  dive:
+    shortCut: Ctrl-D
+    confirm: false
+    description: "Dive image"
+    scopes:
+      - containers
+    command: dive
+    background: false
+    args:
+      - $COL-IMAGE
 
   #--- Create debug container for selected pod in current namespace
   # See https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/#ephemeral-container

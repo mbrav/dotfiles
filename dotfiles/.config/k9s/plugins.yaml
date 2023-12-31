@@ -1,0 +1,126 @@
+# K9s plugins: https://github.com/derailed/k9s/tree/master/plugins
+plugins:
+  # See https://k9scli.io/topics/plugins/
+  log-less:
+    shortCut: Shift-L
+    description: "logs|less"
+    scopes:
+      - po
+    command: bash
+    background: false
+    args:
+      - -c
+      - '"$@" | less'
+      - dummy-arg
+      - kubectl
+      - logs
+      - $NAME
+      - -n
+      - $NAMESPACE
+      - --context
+      - $CONTEXT
+      - --kubeconfig
+      - $KUBECONFIG
+
+  log-less-container:
+    shortCut: Shift-L
+    description: "logs|less"
+    scopes:
+      - containers
+    command: bash
+    background: false
+    args:
+      - -c
+      - '"$@" | less'
+      - dummy-arg
+      - kubectl
+      - logs
+      - -c
+      - $NAME
+      - $POD
+      - -n
+      - $NAMESPACE
+      - --context
+      - $CONTEXT
+      - --kubeconfig
+      - $KUBECONFIG
+
+  #get all resources in a namespace using the krew get-all plugin
+  get-all:
+    shortCut: g
+    confirm: false
+    description: get-all
+    scopes:
+      - all
+    command: sh
+    background: false
+    args:
+      - -c
+      - "kubectl get-all -n $NAMESPACE | less"
+
+  # View user-supplied values when the helm chart was created
+  helm-values:
+    shortCut: v
+    confirm: false
+    description: Values
+    scopes:
+      - helm
+    command: sh
+    background: false
+    args:
+      - -c
+      - "helm get values $COL-NAME -n $NAMESPACE --kube-context $CONTEXT | less"
+
+  # Issues a helm delete --purge for the resource associated with the selected pod
+  helm-purge:
+    shortCut: Ctrl-P
+    description: Helm Purge
+    scopes:
+      - po
+    command: kubectl
+    background: true
+    args:
+      - purge
+      - $NAMESPACE
+      - $NAME
+
+  # Inspect container images
+  dive:
+    shortCut: d
+    confirm: false
+    description: "Dive image"
+    scopes:
+      - containers
+    command: dive
+    background: false
+    args:
+      - $COL-IMAGE
+
+  # Sends logs over to jq for processing. This leverages kubectl plugin kubectl-jq.
+  jqlogs:
+    shortCut: Ctrl-J
+    confirm: false
+    description: "Logs (jq)"
+    scopes:
+      - po
+    command: kubectl
+    background: false
+    args:
+      - jq
+      - $NAME
+      - $NAMESPACE
+      - $CONTEXT
+
+  #--- Create debug container for selected pod in current namespace
+  # See https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/#ephemeral-container
+  debug:
+    shortCut: Shift-D
+    description: Add debug container
+    scopes:
+      - containers
+    command: bash
+    background: false
+    confirm: true
+    args:
+      - -c
+      - "kubectl debug -it -n=$NAMESPACE $POD --target=$NAME --image=nicolaka/netshoot:v0.11 --share-processes -- bash"

@@ -1,16 +1,17 @@
 k9s:
   liveViewAutoRefresh: false
-  screenDumpDir: /home/x/.local/state/k9s/screen-dumps
+  screenDumpDir: /tmp/k9s-screens
   refreshRate: 2
   maxConnRetry: 5
   readOnly: false
   noExitOnCtrlC: false
   ui:
-    enableMouse: false
+    enableMouse: true
     headless: false
     logoless: false
     crumbsless: false
     noIcons: false
+    skin: nord
   skipLatestRevCheck: false
   disablePodCounting: false
   shellPod:
@@ -25,7 +26,7 @@ k9s:
       namespaces: []
       labels: {}
   logger:
-    tail: 100
+    tail: 400
     buffer: 5000
     sinceSeconds: -1
     fullScreenLogs: false
@@ -34,7 +35,7 @@ k9s:
   thresholds:
     cpu:
       critical: 90
-      warn: 70
+      warn: 75
     memory:
       critical: 90
-      warn: 70
+      warn: 75

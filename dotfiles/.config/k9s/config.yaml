@@ -1,3 +1,4 @@
+# See https://k9scli.io/topics/config/
 k9s:
   liveViewAutoRefresh: false
   screenDumpDir: /tmp/k9s-screens

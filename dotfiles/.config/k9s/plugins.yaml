@@ -1,6 +1,6 @@
 # K9s plugins: https://github.com/derailed/k9s/tree/master/plugins
+# See https://k9scli.io/topics/plugins/
 plugins:
-  # See https://k9scli.io/topics/plugins/
   log-less:
     shortCut: Shift-L
     description: "logs|less"

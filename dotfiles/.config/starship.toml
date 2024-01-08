@@ -1,4 +1,4 @@
-
+# https://starship.rs/config/
 # Set 'nord-blue' as custom color palette
 palette = 'default'
 
@@ -213,7 +213,7 @@ style = "bg:color4"
 format = '[[ $symbol ($version) ](fg:color2 bg:color4)]($style)'
 
 [os]
-disabled = false  
+disabled = false
 format = "[$symbol]($style)"
 style = "bg:color1 fg:color5"
 
@@ -296,7 +296,7 @@ symbol = "🅢 "
 [time]
 disabled = false
 # time_format = "%R" # Hour:Minute Format
-time_format = "%T" # Hour:Minute Format
+time_format = "%T"                                    # Hour:Minute Format
 style = "bg:color5"
 format = '[[  $time ](fg:color1 bg:color5)]($style)'
 
@@ -305,4 +305,3 @@ format = "[ $user]($style)"
 show_always = true
 style_root = "bold bg:color1 fg:color4"
 style_user = "bg:color1 fg:color4"
-

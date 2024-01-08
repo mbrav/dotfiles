@@ -9,7 +9,7 @@ source "${script_dir}/_util"
 
 function dotfiles_symlink() {
 	# List conf files in .config
-	local dir_ls=($(ls "$dot_dir/dotfiles/.config"))
+	local dir_ls=($(ls -A "$dot_dir/dotfiles/.config"))
 
 	# Loop through contents
 	for item in "${dir_ls[@]}"; do
@@ -28,7 +28,7 @@ function dotfiles_symlink() {
 	done
 
 	# List conf files in home
-	local dir_ls=(".bashrc" ".gitconfig" ".stignore" ".vimrc" ".vimrc.plug")
+	local dir_ls=(".bashrc" ".gitconfig" ".stignore" ".vimrc" ".vimrc.plug" ".jqp.yaml")
 
 	for item in "${dir_ls[@]}"; do
 		local item_path="$dot_dir/dotfiles/$item"

@@ -1,3 +1,4 @@
+# See https://k9scli.io/topics/aliases/
 aliases:
   dp: apps/v1/deployments
   sec: v1/secrets

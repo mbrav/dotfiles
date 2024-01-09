@@ -27,10 +27,10 @@ k9s:
       namespaces: []
       labels: {}
   logger:
-    tail: 400
+    tail: 500
     buffer: 5000
     sinceSeconds: -1
-    fullScreenLogs: false
+    fullScreen: false
     textWrap: false
     showTime: false
   thresholds:

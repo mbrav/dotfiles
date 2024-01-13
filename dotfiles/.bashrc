@@ -13,9 +13,14 @@ PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
 
 # Add local bin to path if it exists
 [[ -d $HOME/.local/bin ]] && PATH="$PATH:$HOME/.local/bin"
+# Load tmux t-smart-tmux-session-manager
+# [[ -d $HOME/.config/tmux/plugins/t-smart-tmux-session-manager/bin ]] && PATH="$PATH:$HOME/.config/tmux/plugins/t-smart-tmux-session-manager/bin"
 
 # Load starship prompt if starship is installed:
 command -v starship >/dev/null && eval "$(starship init bash)"
+
+# Load zoxide if installed:
+command -v zoxide >/dev/null && eval "$(zoxide init bash)"
 
 # Load Mcfly history lookup plugin if installed:
 command -v mcfly >/dev/null && eval "$(mcfly init bash)"

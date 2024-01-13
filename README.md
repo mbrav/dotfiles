@@ -22,10 +22,11 @@ The configs for Bash shell ([`.bashrc`](dotfiles/.bashrc)) and Fish ([`config.fi
 
 To take the most advantage of the config, a few tools are used, which are recommended for installation given that they are setup in [`_aliases`](dotfiles/.config/scripts/_aliases), [`.bashrc`](dotfiles/.bashrc) and [`config.fish`](dotfiles/.config/fish/config.fish):
 
-- [Starship](https://starship.rs/) - A cross-shell prompt customizaion tool (Rust);
-- [McFly](https://github.com/cantino/mcfly) - A cross-shell tool for browsing through shell history (Rust);
+- [starship](https://starship.rs/) - A cross-shell prompt customizaion tool (Rust);
+- [mcfly](https://github.com/cantino/mcfly) - A cross-shell tool for browsing through shell history (Rust);
 - [fzf](https://github.com/junegunn/fzf) - A command-line fuzzy finder (Rust);
 - [eza](https://github.com/eza-community/eza) - A modern replacement for `ls`, based on `exa` (Rust);
+- [zoxide](https://github.com/ajeetdsouza/zoxide) - A modern replacement for `cd` (Rust).
 - [bat](https://github.com/sharkdp/bat) - A modern replacement for `cat` (yes, you guessed it, Rust).
 
 ### Font configuration

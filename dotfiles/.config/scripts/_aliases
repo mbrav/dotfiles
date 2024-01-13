@@ -39,6 +39,15 @@ command -v bat >/dev/null &&
 	export CAT_PREVIEW_CMD="bat --style header --style snip --style changes --style header " ||
 	export CAT_PREVIEW_CMD="cat -n "
 
+# Use z for zoxide alias
+command -v zoxide >/dev/null &&
+	alias z='zoxide' &&
+	alias za='zoxide add' &&
+	alias ze='zoxide edit' &&
+	alias zi='zoxide import' &&
+	alias zq='zoxide query' &&
+	alias zr='zoxide remove'
+
 ## MY ALIASES
 alias bashrc='source ~/.bashrc'
 alias fishrc='source ~/.config/fish/config.fish'

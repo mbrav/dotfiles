@@ -2,7 +2,11 @@
 # Hide welcome message
 set fish_greeting
 set VIRTUAL_ENV_DISABLE_PROMPT 1
-set -x MANPAGER "sh -c 'col -bx | bat -l man -p'"
+# Set trucolor
+set -x COLORTERM truecolor
+if type -q bat
+    set -x MANPAGER "sh -c 'col -bx | bat -l man -p'"
+end
 
 ## Export variable need for qt-theme
 if type qtile >>/dev/null 2>&1
@@ -12,7 +16,6 @@ end
 # Set settings for https://github.com/franciscolourenco/done
 set -U __done_min_cmd_duration 10000
 set -U __done_notification_urgency_level low
-
 
 ## Environment setup
 # Apply .profile: use this to put fish compatible .profile stuff in
@@ -27,19 +30,17 @@ if test -d ~/.local/bin
     end
 end
 
-# Add depot_tools to PATH
-if test -d ~/Applications/depot_tools
-    if not contains -- ~/Applications/depot_tools $PATH
-        set -p PATH ~/Applications/depot_tools
-    end
-end
-
+# # Load tmux t-smart-tmux-session-manager
+# if test -d ~/.config/tmux/plugins/t-smart-tmux-session-manager/bin
+#     if not contains -- ~/.config/tmux/plugins/t-smart-tmux-session-manager/bin $PATH
+#         set -p PATH ~/.config/tmux/plugins/t-smart-tmux-session-manager/bin
+#     end
+# end
 
 ## Advanced command-not-found hook
 if test -f /usr/share/doc/find-the-command/ftc.fish
     source /usr/share/doc/find-the-command/ftc.fish
 end
-
 
 ## Functions
 # Functions needed for !! and !$ https://github.com/oh-my-fish/plugin-bang-bang
@@ -81,18 +82,6 @@ function backup --argument filename
     cp $filename $filename.bak
 end
 
-# Copy DIR1 DIR2
-function copy
-    set count (count $argv | tr -d \n)
-    if test "$count" = 2; and test -d "$argv[1]"
-        set from (echo $argv[1] | trim-right /)
-        set to (echo $argv[2])
-        command cp -r $from $to
-    else
-        command cp $argv
-    end
-end
-
 ## Run fastfetch, neofetch or screenfetch if session is interactive
 if status --is-interactive
     if type -q fastfetch
@@ -103,11 +92,6 @@ if status --is-interactive
         screenfetch
     end
 end
-
-## MY MODS
-
-# Set trucolor
-set -x COLORTERM truecolor
 
 # Init custom scripts
 source ~/.config/scripts/_secrets
@@ -140,18 +124,21 @@ if test -d ~/.pyenv
     source (pyenv root)/completions/pyenv.fish
 end
 
-# init mcfly
-if type -q mcfly
-    if status --is-interactive && type -q mcfly
-        mcfly init fish | source
-    end
-end
-
 # init starship
 function load_starship
     if status --is-interactive && type -q starship
         source (starship init fish --print-full-init | psub)
     end
+end
+
+# init zoxide
+if status --is-interactive && type -q zoxide
+    zoxide init fish | source
+end
+
+# init mcfly
+if status --is-interactive && type -q mcfly
+    mcfly init fish | source
 end
 
 function start_tmux

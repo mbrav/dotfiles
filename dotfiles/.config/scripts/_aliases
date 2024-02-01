@@ -53,7 +53,8 @@ alias bashrc='source ~/.bashrc'
 alias fishrc='source ~/.config/fish/config.fish'
 
 # Common use
-alias dus='du -h -d 1 '
+alias dus='du -hd 1'
+alias duss='du -hd 1 | sort -hr'
 alias grubup='sudo update-grub'
 alias tarnow='tar -acf '
 alias untar='tar -xvf '

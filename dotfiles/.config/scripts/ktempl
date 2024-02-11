@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+cur_dir=$(pwd)
+
+# Source util functions
+source "${script_dir}/_util"
+
+ran_col_str "Utility or creating manifest templates for Kubernetes"
+
+command -v kubectl >/dev/null || error_msg "Please install kubectl" 1
+command -v fzf >/dev/null || error_msg "Please install fzf" 1
+
+templates=(
+	"clusterrole"
+	"clusterrolebinding"
+	"configmap"
+	"cronjob"
+	"deployment"
+	"ingress"
+	"job"
+	"namespace"
+	"poddisruptionbudget"
+	"priorityclass"
+	"quota"
+	"role"
+	"rolebinding"
+	"secret"
+	"service"
+	"serviceaccount"
+	"token"
+)
+
+resource_name="template"
+
+selected_resource=$(
+	echo "${templates[@]}" |
+		tr ' ' '\n' |
+		fzf \
+			--header 'Select template' \
+			--preview 'kubectl explain {1}' \
+			--preview-label 'Kubectl Explain' \
+			--preview-window 'right:80%'
+)
+
+info_msg "Selected Resource: ${selected_resource}"
+
+case $selected_resource in
+clusterrole)
+	echo "clusterrole"
+	;;
+clusterrolebinding)
+	echo "clusterrolebinding"
+	;;
+configmap)
+	echo "configmap"
+	;;
+cronjob)
+	echo "cronjob"
+	;;
+deployment)
+	# Set default variables
+	image_name="alpine:latest"
+
+	# Read variables
+	read -p "${MAGENTA}Enter resource name (default: ${resource_name}): ${CLEAR}" user_input
+	[[ -n "$user_input" ]] && resource_name=$user_input
+
+	read -p "${MAGENTA}Enter image name (default: ${image_name}): ${CLEAR}" user_input
+	[[ -n "$user_input" ]] && image_name=$user_input
+
+	# Create resource
+	file_name="${resource_name}.${selected_resource}.yaml"
+	kubectl create deployment "${resource_name}" \
+		--image ${image_name} \
+		--dry-run=client -oyaml \
+		>$file_name
+	;;
+ingress)
+	echo "ingress"
+	;;
+job)
+	echo "job"
+	;;
+namespace)
+	echo "namespace"
+	;;
+poddisruptionbudget)
+	echo "poddisruptionbudget"
+	;;
+priorityclass)
+	echo "priorityclass"
+	;;
+quota)
+	echo "quota"
+	;;
+role)
+	echo "role"
+	;;
+rolebinding)
+	echo "rolebinding"
+	;;
+secret)
+	echo "secret"
+	;;
+service)
+	echo "service"
+	;;
+serviceaccount)
+	echo "serviceaccount"
+	;;
+token)
+	echo "token"
+	;;
+*) error_msg "Unknown template $selected_resource" 1 ;;
+esac
+
+if [[ "$?" -eq 0 ]]; then
+	success_msg "Template successfully saved as ${file_name}"
+else
+	error_msg "Error saving ${file_name}" 1
+fi

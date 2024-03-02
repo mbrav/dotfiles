@@ -29,7 +29,7 @@ font:
     family: "JetbrainsMonoNL Nerd Font"
     # family: "Menlo"
     # style: Regular
-  size: 11
+  size: 12
 scrolling:
   history: 100000
   multiplier: 3
@@ -43,7 +43,7 @@ cursor:
   blink-interval: 750
 live_config_reload: true
 shell:
-  program: /opt/homebrew/bin/fish
+  program: /run/current-system/sw/bin/fish
   args:
     - --login
 mouse:

@@ -1,12 +1,13 @@
 {
     "layer": "top", // Waybar at top layer
     "position": "top", // Waybar position (top|bottom|left|right)
-    "height": 28,
+    "height": 14,
     //"width": 1350, // Waybar width
     // Choose the order of the modules idle_inhibitor
     "modules-left": ["custom/launcher","sway/workspaces", "sway/mode", "sway/window"],
-    "modules-center": ["clock", "custom/wakatime"],
-    "modules-right": ["tray", "custom/pacman", "network", "custom/ping", "custom/network_traffic", "cpu", "memory", "pulseaudio", "backlight", "custom/keyboard-layout", "idle_inhibitor", "battery", "custom/power"],
+    // "modules-center": ["clock", "custom/wakatime"],
+    //"modules-right": ["tray", "custom/pacman", "network", "custom/ping", "custom/network_traffic", "cpu", "memory", "pulseaudio", "backlight", "custom/keyboard-layout", "idle_inhibitor", "battery", "custom/power"],
+    "modules-right": ["tray", "network", "custom/network_traffic", "cpu", "memory", "pulseaudio", "backlight", "custom/keyboard-layout", "idle_inhibitor", "battery", "custom/power"],
 
  // Modules configuration
 
@@ -132,24 +133,24 @@
       	"tooltip": false,
         "on-click": "~/.config/waybar/scripts/keyhint.sh",
     },
-    "custom/launcher": {
+   "custom/launcher": {
     	"format":" ",
     	"on-click": "exec nwg-drawer -c 7 -is 70 -spacing 23",
     	"tooltip": false,
     },
-    "custom/network_traffic": {
-        "exec": "~/.config/waybar/scripts/network_traffic.sh",
-        "return-type": "json",
-        "format-ethernet": "{icon} {ifname} ⇣{bandwidthDownBytes:>4} ⇡{bandwidthUpBytes:>4}",    // optional
-    },
-    "custom/wakatime": {
-        "exec": "~/.config/waybar/scripts/wakatime.sh",
-        "format": "⧗ {}",
-        "interval": 300,
-    },
-    "custom/ping": {
-        "exec": "~/.config/waybar/scripts/ping.sh",
-        "format": "↨ {}ms",
-        "interval": 60,
-    },
+    // "custom/network_traffic": {
+    //     "exec": "~/.config/waybar/scripts/network_traffic.sh",
+    //     "return-type": "json",
+    //     "format-ethernet": "{icon} {ifname} ⇣{bandwidthDownBytes:>4} ⇡{bandwidthUpBytes:>4}",    // optional
+    // },
+    // "custom/wakatime": {
+    //     "exec": "~/.config/waybar/scripts/wakatime.sh",
+    //     "format": "⧗ {}",
+    //     "interval": 300,
+    // },
+    // "custom/ping": {
+    //     "exec": "~/.config/waybar/scripts/ping.sh",
+    //     "format": "↨ {}ms",
+    //     "interval": 60,
+    // },
 }

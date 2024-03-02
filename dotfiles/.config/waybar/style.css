@@ -45,7 +45,7 @@ nord15 #b48ead
     border: 0;
     border-radius: 0;
     padding: 0 0;
-    font-family:UbuntuMono;
+    font-family:JetBrainsMonoNLNerdFont;
     font-size: 15px;
     margin-right: 5px;
     margin-left: 5px;
@@ -189,4 +189,5 @@ window#waybar {
 #custom-ping {
     color: #ebcb8b;
 }
+
 

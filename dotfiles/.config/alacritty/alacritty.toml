@@ -123,7 +123,7 @@ ipc_socket = true         # Unix only
 
 # Shell and env settings
 [shell]
-program = "/usr/bin/fish"
+program = "/run/current-system/sw/bin/fish"
 args = ["--login"]
 
 [env]
@@ -163,7 +163,7 @@ size = 13
 builtin_box_drawing = true
 
 [font.normal]
-family = "JetbrainsMonoNL Nerd Font"
+family = "JetBrainsMonoNLNerdFont"
 
 [scrolling]
 history = 100000

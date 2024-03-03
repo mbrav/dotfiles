@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util functions
+source "${script_dir}/_util"
+
+# Check requirements
+command -v kubectl >/dev/null || error_msg "Please install kubectl" 1
+command -v openssl >/dev/null || error_msg "Please install openssl" 1
+command -v gum >/dev/null || error_msg "Please install gum CLI utility: https://github.com/charmbracelet/gum" 1
+command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
+
+check() {
+	name=$2
+	kind=$1
+	names=($(kubectl --context $CONTEXT -n $NAMESPACE get $kind --no-headers --output=jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null))
+
+	if [[ ! " ${names[*]} " =~ " ${name} " ]]; then
+		echo 0
+	else
+		echo 1
+	fi
+}
+
+CONTEXT=$(kubectl config get-contexts -o name | gum choose --header "Select Kubernetes context")
+success_msg "Context '${CONTEXT}' selected"
+
+NAMESPACE=$(kubectl --context ${CONTEXT} get ns -o json | jq -r '.items[].metadata.labels.["kubernetes.io/metadata.name"]' | gum choose --header "Select Kubernetes Namespsace for ${CONTEXT}")
+success_msg "Namespace '${NAMESPACE}' selected"
+
+USERNAME=$(gum input --placeholder="Enter a new username")
+success_msg "User '${USERNAME}' assigned"
+
+TMPD=$(mktemp -d --suffix ".${CONTEXT}.${NAMESPACE}.${USERNAME}")
+info_msg "Created tmp dir at: ${TMPD}"
+
+# Generate Key
+openssl genrsa -out "${TMPD}/${USERNAME}.key" 4096 2>/dev/null
+
+# Generate CSR
+openssl req -new -nodes -subj "/CN=$USERNAME" -key "${TMPD}/${USERNAME}.key" -out "${TMPD}/${USERNAME}.csr" 2>/dev/null
+BASE64_CSR="$(cat "${TMPD}/${USERNAME}.csr" | base64 | tr -d '\n')"
+
+cat >$TMPD/csr.yaml <<EOF
+# apiVersion: certificates.k8s.io/v1beta1
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: ${USERNAME}-csr
+  labels:
+    managed-by: k8suser-script
+spec:
+  groups:
+    - system:authenticated
+  request: ${BASE64_CSR}
+  # Field required for certificates.k8s.io/v1
+  signerName: mbrav.github.com/k8suser-script
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+    - client auth
+EOF
+
+cat >$TMPD/role.yaml <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: $NAMESPACE
+  name: ${USERNAME}-role
+  labels:
+    managed-by: k8suser-script
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+EOF
+
+cat >$TMPD/rb.yaml <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ${USERNAME}-rb
+  namespace: ${NAMESPACE}
+subjects:
+  - kind: User
+    name: ${USERNAME}
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: ${USERNAME}-role
+  apiGroup: rbac.authorization.k8s.io
+EOF
+
+cat $TMPD/rb.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
+cat $TMPD/role.yaml | kubectl --context "${CONTEXT}" -n $NAMESPACE apply -f -
+
+cat $TMPD/csr.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
+[[ $? -eq 0 ]] && success_msg "CSR create success" || error_msg "CSR create failed"
+
+if [ "$(check csr ${USERNAME}-csr)" -eq 0 ]; then
+	warning_msg "Will delete existsing CSR"
+	kubectl --context $CONTEXT -n $NAMESPACE delete csr "${USERNAME}-csr"
+fi
+
+kubectl --context $CONTEXT -n $NAMESPACE certificate approve "${USERNAME}-csr"
+[[ $? -eq 0 ]] && success_msg "CertificateSigningRequest approved" || error_msg "CertificateSigningRequest approval failed"
+kubectl --context $CONTEXT -n $NAMESPACE get csr "${USERNAME}-csr" -o jsonpath='{.status.certificate}' | base64 --decode >"${TMPD}/${USERNAME}.crt"
+
+cat $TMPD/rb.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
+[[ $? -eq 0 ]] && success_msg "Role created" || error_msg "Role creation failed"
+
+cat $TMPD/role.yaml | kubectl --context "${CONTEXT}" -n $NAMESPACE apply -f -
+[[ $? -eq 0 ]] && success_msg "RoleBinding created" || error_msg "RoleBinding creation failed"
+
+CLIENT_CERT="$(cat $TMPD/${USERNAME}.crt | base64 | tr -d "\n")"
+CLIENT_KEY="$(cat $TMPD/${USERNAME}.key | base64 | tr -d "\n")"
+
+CLUSTER_CA=$(kubectl config view --raw -o json | jq '.clusters[] | select(.name=="'$CONTEXT'").cluster."certificate-authority-data"')
+CLUSTER_EP=$(kubectl config view --raw -o json | jq '.clusters[] | select(.name=="'$CONTEXT'").cluster."server"')
+
+cat >$TMPD/kubeconfig <<EOF
+apiVersion: v1
+kind: Config
+clusters:
+  - cluster:
+      certificate-authority-data: ${CLUSTER_CA}
+      server: ${CLUSTER_EP}
+    name: ${CONTEXT}
+users:
+  - name: ${USERNAME}
+    user:
+      client-certificate-data: ${CLIENT_CERT}
+      client-key-data: ${CLIENT_KEY}
+contexts:
+  - context:
+      cluster: ${CONTEXT}
+      user: ${USERNAME}
+    name: ${CONTEXT}
+current-context: ${CONTEXT}
+EOF
+
+exit 0

@@ -12,17 +12,19 @@ command -v gum >/dev/null || error_msg "Please install gum CLI utility: https://
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
 
 check() {
+	# Check for kubernetes resource existance
 	name=$2
 	kind=$1
 	names=($(kubectl --context $CONTEXT -n $NAMESPACE get $kind --no-headers --output=jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null))
 
-	if [[ ! " ${names[*]} " =~ " ${name} " ]]; then
-		echo 0
-	else
+	if [[ " ${names[*]} " =~ " ${name} " ]]; then
 		echo 1
+	else
+		echo 0
 	fi
 }
 
+# User prompts
 CONTEXT=$(kubectl config get-contexts -o name | gum choose --header "Select Kubernetes context")
 success_msg "Context '${CONTEXT}' selected"
 
@@ -32,7 +34,11 @@ success_msg "Namespace '${NAMESPACE}' selected"
 USERNAME=$(gum input --placeholder="Enter a new username")
 success_msg "User '${USERNAME}' assigned"
 
-TMPD=$(mktemp -d --suffix ".${CONTEXT}.${NAMESPACE}.${USERNAME}")
+VALID_DAYS=$(gum input --value 365 --placeholder="Certificate validity in days")
+success_msg "Certificate will be valid for '${VALID_DAYS}' days"
+
+# Temp dir
+TMPD=$(mktemp -d)
 info_msg "Created tmp dir at: ${TMPD}"
 
 # Generate Key
@@ -42,6 +48,7 @@ openssl genrsa -out "${TMPD}/${USERNAME}.key" 4096 2>/dev/null
 openssl req -new -nodes -subj "/CN=$USERNAME" -key "${TMPD}/${USERNAME}.key" -out "${TMPD}/${USERNAME}.csr" 2>/dev/null
 BASE64_CSR="$(cat "${TMPD}/${USERNAME}.csr" | base64 | tr -d '\n')"
 
+# Template Generation
 cat >$TMPD/csr.yaml <<EOF
 # apiVersion: certificates.k8s.io/v1beta1
 apiVersion: certificates.k8s.io/v1
@@ -53,13 +60,11 @@ metadata:
 spec:
   groups:
     - system:authenticated
+  expirationSeconds: $((60 * 60 * 24 * $VALID_DAYS))
   request: ${BASE64_CSR}
   # Field required for certificates.k8s.io/v1
-  signerName: mbrav.github.com/k8suser-script
+  signerName: kubernetes.io/kube-apiserver-client
   usages:
-    - digital signature
-    - key encipherment
-    - server auth
     - client auth
 EOF
 
@@ -93,32 +98,58 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 EOF
 
-cat $TMPD/rb.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
-cat $TMPD/role.yaml | kubectl --context "${CONTEXT}" -n $NAMESPACE apply -f -
+echo "DEBUG: $(check csr ${USERNAME}-csr)"
 
-cat $TMPD/csr.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
-[[ $? -eq 0 ]] && success_msg "CSR create success" || error_msg "CSR create failed"
-
-if [ "$(check csr ${USERNAME}-csr)" -eq 0 ]; then
+# Checks
+if [ "$(check csr ${USERNAME}-csr)" -eq 1 ]; then
 	warning_msg "Will delete existsing CSR"
 	kubectl --context $CONTEXT -n $NAMESPACE delete csr "${USERNAME}-csr"
 fi
 
-kubectl --context $CONTEXT -n $NAMESPACE certificate approve "${USERNAME}-csr"
-[[ $? -eq 0 ]] && success_msg "CertificateSigningRequest approved" || error_msg "CertificateSigningRequest approval failed"
-kubectl --context $CONTEXT -n $NAMESPACE get csr "${USERNAME}-csr" -o jsonpath='{.status.certificate}' | base64 --decode >"${TMPD}/${USERNAME}.crt"
-
+# Template apply
 cat $TMPD/rb.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
-[[ $? -eq 0 ]] && success_msg "Role created" || error_msg "Role creation failed"
+[[ $? -eq 0 ]] &&
+	success_msg "RoleBinding create success" ||
+	error_msg "RoleBinding create failed" 1
 
 cat $TMPD/role.yaml | kubectl --context "${CONTEXT}" -n $NAMESPACE apply -f -
-[[ $? -eq 0 ]] && success_msg "RoleBinding created" || error_msg "RoleBinding creation failed"
+[[ $? -eq 0 ]] &&
+	success_msg "Role create success" ||
+	error_msg "Role create failed" 1
+
+cat $TMPD/csr.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
+[[ $? -eq 0 ]] &&
+	success_msg "CSR create success" ||
+	error_msg "CSR create failed" 1
+
+kubectl --context $CONTEXT -n $NAMESPACE certificate approve "${USERNAME}-csr"
+[[ $? -eq 0 ]] &&
+	success_msg "CertificateSigningRequest approved" ||
+	error_msg "CertificateSigningRequest approval failed" 1
+
+kubectl --context $CONTEXT -n $NAMESPACE get csr "${USERNAME}-csr" -o jsonpath='{.status.certificate}' | base64 --decode >"${TMPD}/${USERNAME}.crt"
+[[ -s "${TMPD}/${USERNAME}.crt" ]] &&
+	success_msg "Certificate ${TMPD}/${USERNAME}.crt Not Empty" ||
+	error_msg "Certificate ${TMPD}/${USERNAME}.crt Empty Error" 1
+
+cat $TMPD/rb.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
+[[ $? -eq 0 ]] &&
+	success_msg "Role created" ||
+	error_msg "Role creation failed" 1
+
+cat $TMPD/role.yaml | kubectl --context "${CONTEXT}" -n $NAMESPACE apply -f -
+[[ $? -eq 0 ]] &&
+	success_msg "RoleBinding created" ||
+	error_msg "RoleBinding creation failed" 1
 
 CLIENT_CERT="$(cat $TMPD/${USERNAME}.crt | base64 | tr -d "\n")"
 CLIENT_KEY="$(cat $TMPD/${USERNAME}.key | base64 | tr -d "\n")"
 
 CLUSTER_CA=$(kubectl config view --raw -o json | jq '.clusters[] | select(.name=="'$CONTEXT'").cluster."certificate-authority-data"')
-CLUSTER_EP=$(kubectl config view --raw -o json | jq '.clusters[] | select(.name=="'$CONTEXT'").cluster."server"')
+CLUSTER_EP=$(kubectl config view --raw -o json | jq '.clusters[] | select(.name=="'$CONTEXT'").cluster.server')
+
+echo "DEBUG CLUSTER_CA: $CLUSTER_CA"
+echo "DEBUG CLUSTER_EP: $CLUSTER_EP"
 
 cat >$TMPD/kubeconfig <<EOF
 apiVersion: v1
@@ -136,9 +167,14 @@ users:
 contexts:
   - context:
       cluster: ${CONTEXT}
+      namespace: ${NAMESPACE}
       user: ${USERNAME}
     name: ${CONTEXT}
 current-context: ${CONTEXT}
 EOF
+
+success_msg "Your kubeconfig: $TMPD/kubeconfig"
+
+gum pager --show-line-numbers --soft-wrap <$TMPD/kubeconfig
 
 exit 0

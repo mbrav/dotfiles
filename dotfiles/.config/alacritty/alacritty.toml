@@ -72,8 +72,8 @@ import = [
   # "~/.config/alacritty/schemes/material_theme_mod.toml",
   # "~/.config/alacritty/schemes/material_theme.toml",
   # "~/.config/alacritty/schemes/meliora.toml",
-  "~/.config/alacritty/schemes/midnight-haze.toml",
-  # "~/.config/alacritty/schemes/monokai_charcoal.toml",
+  # "~/.config/alacritty/schemes/midnight-haze.toml",
+  "~/.config/alacritty/schemes/monokai_charcoal.toml",
   # "~/.config/alacritty/schemes/monokai_pro.toml",
   # "~/.config/alacritty/schemes/moonlight_ii_vscode.toml",
   # "~/.config/alacritty/schemes/msx.toml",
@@ -136,7 +136,7 @@ decorations = "Full"
 decorations_theme_variant = "Dark"
 dynamic_padding = true
 # opacity = 0.9
-opacity = 1.0
+opacity = 0.6
 # decorations = "None"
 # decorations = "Transparent" # MacOS only
 # decorations = "Buttonless" # MacOS only
@@ -159,7 +159,7 @@ y = 0
 
 # Font config
 [font]
-size = 11
+size = 13
 builtin_box_drawing = true
 
 [font.normal]

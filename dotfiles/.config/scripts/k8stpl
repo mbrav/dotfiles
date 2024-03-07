@@ -11,6 +11,7 @@ ran_col_str "Utility or creating manifest templates for Kubernetes"
 
 command -v kubectl >/dev/null || error_msg "Please install kubectl" 1
 command -v fzf >/dev/null || error_msg "Please install fzf" 1
+command -v gum >/dev/null || error_msg "Please install gum CLI utility: https://github.com/charmbracelet/gum" 1
 
 templates=(
 	"clusterrole"
@@ -44,8 +45,6 @@ selected_resource=$(
 			--preview-window 'right:80%'
 )
 
-info_msg "Selected Resource: ${selected_resource}"
-
 case $selected_resource in
 clusterrole)
 	echo "clusterrole"
@@ -60,21 +59,27 @@ cronjob)
 	echo "cronjob"
 	;;
 deployment)
-	# Set default variables
-	image_name="alpine:latest"
-
-	# Read variables
-	read -p "${MAGENTA}Enter resource name (default: ${resource_name}): ${CLEAR}" user_input
-	[[ -n "$user_input" ]] && resource_name=$user_input
-
-	read -p "${MAGENTA}Enter image name (default: ${image_name}): ${CLEAR}" user_input
-	[[ -n "$user_input" ]] && image_name=$user_input
+	# Set input variables
+	resource_name=$(gum input --value "${resource_name}" --header="Enter resource name")
+	success_msg "Resource name '${resource_name}'"
+	image_name=$(gum input --value "alpine:latest" --header="Set Image name")
+	success_msg "Image '${image_name}'"
+	container_port=$(gum input --value="-1" --header="Container expose port (-1 = none)")
+	success_msg "Port ${container_port}"
+	replicas=$(gum input --value "1" --header="Number of replicas")
+	success_msg "Replicas ${replicas}"
+	cmd=$(gum write --char-limit=0 --show-line-numbers --value "/bin/sh -c -- echo hello" --header="Command to run")
+	success_msg "Command: ${cmd}"
 
 	# Create resource
 	file_name="${resource_name}.${selected_resource}.yaml"
 	kubectl create deployment "${resource_name}" \
 		--image ${image_name} \
-		--dry-run=client -oyaml \
+		--port ${container_port} \
+		--replicas ${replicas} \
+		--dry-run=client \
+		-oyaml \
+		-- ${cmd} \
 		>$file_name
 	;;
 ingress)
@@ -118,6 +123,8 @@ esac
 
 if [[ "$?" -eq 0 ]]; then
 	success_msg "Template successfully saved as ${file_name}"
+	sleep 1
+	gum pager --show-line-numbers --soft-wrap <${file_name}
 else
 	error_msg "Error saving ${file_name}" 1
 fi

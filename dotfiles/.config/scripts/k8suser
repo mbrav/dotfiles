@@ -31,10 +31,10 @@ success_msg "Context '${CONTEXT}' selected"
 NAMESPACE=$(kubectl --context ${CONTEXT} get ns -o json | jq -r '.items[].metadata.labels.["kubernetes.io/metadata.name"]' | gum choose --header "Select Kubernetes Namespsace for ${CONTEXT}")
 success_msg "Namespace '${NAMESPACE}' selected"
 
-USERNAME=$(gum input --placeholder="Enter a new username")
+USERNAME=$(gum input --header="Enter a new username")
 success_msg "User '${USERNAME}' assigned"
 
-VALID_DAYS=$(gum input --value 365 --placeholder="Certificate validity in days")
+VALID_DAYS=$(gum input --value 365 --header="Certificate validity in days")
 success_msg "Certificate will be valid for '${VALID_DAYS}' days"
 
 # Temp dir
@@ -68,6 +68,24 @@ spec:
     - client auth
 EOF
 
+cat >$TMPD/rb.yaml <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ${USERNAME}-rb
+  namespace: ${NAMESPACE}
+  labels:
+    managed-by: k8suser-script
+subjects:
+  - kind: User
+    name: ${USERNAME}
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: ${USERNAME}-role
+  apiGroup: rbac.authorization.k8s.io
+EOF
+
 cat >$TMPD/role.yaml <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -81,24 +99,6 @@ rules:
     resources: ["*"]
     verbs: ["*"]
 EOF
-
-cat >$TMPD/rb.yaml <<EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: ${USERNAME}-rb
-  namespace: ${NAMESPACE}
-subjects:
-  - kind: User
-    name: ${USERNAME}
-    apiGroup: rbac.authorization.k8s.io
-roleRef:
-  kind: Role
-  name: ${USERNAME}-role
-  apiGroup: rbac.authorization.k8s.io
-EOF
-
-echo "DEBUG: $(check csr ${USERNAME}-csr)"
 
 # Checks
 if [ "$(check csr ${USERNAME}-csr)" -eq 1 ]; then
@@ -147,9 +147,6 @@ CLIENT_KEY="$(cat $TMPD/${USERNAME}.key | base64 | tr -d "\n")"
 
 CLUSTER_CA=$(kubectl config view --raw -o json | jq '.clusters[] | select(.name=="'$CONTEXT'").cluster."certificate-authority-data"')
 CLUSTER_EP=$(kubectl config view --raw -o json | jq '.clusters[] | select(.name=="'$CONTEXT'").cluster.server')
-
-echo "DEBUG CLUSTER_CA: $CLUSTER_CA"
-echo "DEBUG CLUSTER_EP: $CLUSTER_EP"
 
 cat >$TMPD/kubeconfig <<EOF
 apiVersion: v1

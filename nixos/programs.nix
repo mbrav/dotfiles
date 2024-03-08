@@ -24,8 +24,55 @@
   };
 
   # XDG portal
-  xdg.portal.enable = true;
-  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+  xdg.portal = {
+    enable = true;
+    config.common.default = "*";
+    extraPortals = [pkgs.xdg-desktop-portal-gtk];
+  };
+
+  # GTK config
+  # https://www.youtube.com/watch?v=m_6eqpKrtxk
+  #qt = {
+    #enable = true;
+    # platformTheme = "gtk";
+    #style = "adwaita-dark";
+
+    #font.name = "JetBrainsMonoNLNerdFont 12";
+    # cursorTheme = {
+    #   package = pkgs.bibata-cursors;
+    #   name = "Bibata-Modern-Ice";
+    # };
+    # theme = {
+    #   package = pkgs.adw-gtk3;
+    #   name = "adw-gtk3";
+    # };
+    # iconTheme = {
+    #   package = pkgs.gruvboxPlus;
+    #   name = "GruvboxPlus";
+    # };
+  #};
+  gtk = {
+    enable = true;
+    iconTheme = {
+      name = "elementary-Xfce-dark";
+      package = pkgs.elementary-xfce-icon-theme;
+    };
+    theme = {
+      name = "zukitre-dark";
+      package = pkgs.zuki-themes;
+    };
+    gtk3.extraConfig = {
+      Settings = ''
+        gtk-application-prefer-dark-theme=1
+      '';
+    };
+    gtk4.extraConfig = {
+      Settings = ''
+        gtk-application-prefer-dark-theme=1
+      '';
+    };
+  };
+
   # File browser
   programs.thunar.enable = true;
   # Mount, trash, and other functionalities
@@ -39,8 +86,9 @@
     thunar-media-tags-plugin
   ];
 
-  # gnupg config 
+  # Gnupg config
   services.pcscd.enable = true;
+  services.gpg-agent.enable = true;
   programs.gnupg.agent = {
      enable = true;
      pinentryFlavor = "curses";
@@ -62,7 +110,7 @@
      eza
      wget
      unzip
-     # gnupg
+     gnupg
      fd
      # Fish plugins
      # fishPlugins.done
@@ -80,7 +128,7 @@
      docker
      lazygit
      #gcc
-     clang
+     #clang
      rustup
      python3
      # Nix
@@ -104,8 +152,6 @@
      networkmanagerapplet # Applet for managing network settings
      rofi-wayland # App selector
      wl-clipboard # wl-copy and wl-paste for copy/paste from stdin / stdout
-
-     nerdfonts
      # Desktop Programs
      firefox
      mpv

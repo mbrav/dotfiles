@@ -25,12 +25,9 @@ templates=(
 	"poddisruptionbudget"
 	"priorityclass"
 	"quota"
-	"role"
-	"rolebinding"
 	"secret"
 	"service"
 	"serviceaccount"
-	"token"
 )
 
 resource_name="template"
@@ -56,10 +53,36 @@ configmap)
 	echo "configmap"
 	;;
 cronjob)
-	echo "cronjob"
+	# Set input variables
+	namespace=$(gum input --value "default" --header="Enter namespace for resource")
+	success_msg "Namespace '${namespace}'"
+	resource_name=$(gum input --value "${resource_name}" --header="Enter resource name")
+	success_msg "Resource name '${resource_name}'"
+	image_name=$(gum input --value "alpine:latest" --header="Set Image name")
+	success_msg "Image '${image_name}'"
+	cron_schedule=$(gum input --value "15 * * * *" --header="Set Cron schedule")
+	success_msg "Cron schedule '${cron_schedule}'"
+	restart_policy=$(gum choose --header="Set restart policy" "OnFailure" "Never")
+	success_msg "Restart policy '${restart_policy}'"
+	cmd=$(gum write --char-limit=0 --show-line-numbers --value "/bin/sh -c -- date" --header="Command to run")
+	success_msg "Command: ${cmd}"
+
+	# Create resource
+	file_name="${resource_name}.${selected_resource}.yaml"
+	kubectl create cronjob "${resource_name}" \
+		--namespace="${namespace}" \
+		--image="${image_name}" \
+		--schedule="${cron_schedule}" \
+		--restart="${restart_policy}" \
+		--dry-run=client \
+		--output=yaml \
+		-- ${cmd} \
+		>$file_name
 	;;
 deployment)
 	# Set input variables
+	namespace=$(gum input --value "default" --header="Enter namespace for resource")
+	success_msg "Namespace '${namespace}'"
 	resource_name=$(gum input --value "${resource_name}" --header="Enter resource name")
 	success_msg "Resource name '${resource_name}'"
 	image_name=$(gum input --value "alpine:latest" --header="Set Image name")
@@ -74,11 +97,12 @@ deployment)
 	# Create resource
 	file_name="${resource_name}.${selected_resource}.yaml"
 	kubectl create deployment "${resource_name}" \
-		--image ${image_name} \
-		--port ${container_port} \
-		--replicas ${replicas} \
+		--namespace="${namespace}" \
+		--image="${image_name}" \
+		--port=${container_port} \
+		--replicas=${replicas} \
 		--dry-run=client \
-		-oyaml \
+		--output=yaml \
 		-- ${cmd} \
 		>$file_name
 	;;
@@ -89,7 +113,19 @@ job)
 	echo "job"
 	;;
 namespace)
-	echo "namespace"
+	# Set input variables
+	namespace=$(gum input --value "default" --header="Enter namespace for resource")
+	success_msg "Namespace '${namespace}'"
+	resource_name=$(gum input --value "${resource_name}" --header="Enter resource name")
+	success_msg "Resource name '${resource_name}'"
+
+	# Create resource
+	file_name="${resource_name}.${selected_resource}.yaml"
+	kubectl create namespace "${namespace}" \
+		--dry-run=client \
+		--output=yaml \
+		-- ${cmd} \
+		>$file_name
 	;;
 poddisruptionbudget)
 	echo "poddisruptionbudget"
@@ -100,12 +136,6 @@ priorityclass)
 quota)
 	echo "quota"
 	;;
-role)
-	echo "role"
-	;;
-rolebinding)
-	echo "rolebinding"
-	;;
 secret)
 	echo "secret"
 	;;
@@ -115,8 +145,6 @@ service)
 serviceaccount)
 	echo "serviceaccount"
 	;;
-token)
-	echo "token"
 	;;
 *) error_msg "Unknown template $selected_resource" 1 ;;
 esac

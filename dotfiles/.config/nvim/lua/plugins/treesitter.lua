@@ -14,6 +14,7 @@ return {
         "markdown_inline",
         "python",
         "regex",
+        "toml",
         "vim",
         "yaml",
         "terraform",

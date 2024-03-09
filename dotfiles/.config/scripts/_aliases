@@ -33,7 +33,7 @@ command -v fd >/dev/null &&
 # Set preview aliases for Fuzzy Finder alias scripts
 command -v eza >/dev/null &&
 	# --color-scale only available with eza v >0.15.0
-	export LS_PREVIEW_CMD="eza -al --color=always --color-scale --group-directories-first --icons --no-permissions " ||
+	export LS_PREVIEW_CMD="eza -al --git --color=always --color-scale --group-directories-first --icons --no-permissions " ||
 	export LS_PREVIEW_CMD="ls -lahg --color=auto "
 command -v bat >/dev/null &&
 	export CAT_PREVIEW_CMD="bat --style header --style snip --style changes --style header " ||
@@ -185,9 +185,9 @@ alias gchk="git branch --format='%(refname:short)' | fzf --header 'Select git br
 # --color-scale only available with eza v >0.15.0
 command -v eza >/dev/null &&
 	# preferred listing
-	alias ls='eza -al --color=always --color-scale --group-directories-first --icons' &&
+	alias ls='eza -al --git --color=always --color-scale --group-directories-first --icons' &&
 	# long format
-	alias ll='eza -alihgmuU --color=always --color-scale --group-directories-first --icons' &&
+	alias ll='eza -alihgmuU --git --color=always --color-scale --group-directories-first --icons' &&
 	# all files and dirs
 	alias la='eza -a --color=always --color-scale --group-directories-first --icons' &&
 	# tree listing

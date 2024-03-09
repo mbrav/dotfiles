@@ -1,30 +1,23 @@
+local logo = [[
+  ██╗      █████╗ ███████╗██╗   ██╗██╗   ██╗██╗███╗   ███╗          X
+  ██║     ██╔══██╗╚══███╔╝╚██╗ ██╔╝██║   ██║██║████╗ ████║      X
+  ██║     ███████║  ███╔╝  ╚████╔╝ ██║   ██║██║██╔████╔██║   x
+  ██║     ██╔══██║ ███╔╝    ╚██╔╝  ╚██╗ ██╔╝██║██║╚██╔╝██║ x
+  ███████╗██║  ██║███████╗   ██║    ╚████╔╝ ██║██║ ╚═╝ ██║
+  ╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝     ╚═══╝  ╚═╝╚═╝     ╚═╝
+]]
+logo = string.rep("\n", 8) .. logo .. "\n\n"
+
 return {
   -- customize alpha options
   {
-    "goolord/alpha-nvim",
+    -- "goolord/alpha-nvim",
+    "nvimdev/dashboard-nvim",
     enabled = true,
+
     opts = {
-      -- customize the dashboard header
-      -- https://www.patorjk.com/software/taag/#p=display&h=0&v=0&f=ANSI%20Regular
-      section = {
-        header = {
-          val = {
-            " ",
-            "███    ███ ██████  ██████   █████  ██    ██ ",
-            "████  ████ ██   ██ ██   ██ ██   ██ ██    ██ ",
-            "██ ████ ██ ██████  ██████  ███████ ██    ██ ",
-            "██  ██  ██ ██   ██ ██   ██ ██   ██  ██  ██  ",
-            "██      ██ ██████  ██   ██ ██   ██   ████   ",
-            "    Maximum Bit Rate Autonomous Vehicle     ",
-            " ",
-            "          ██    ██ ██ ███    ███            ",
-            "          ██    ██ ██ ████  ████            ",
-            "          ██    ██ ██ ██ ████ ██            ",
-            "           ██  ██  ██ ██  ██  ██            ",
-            "            ████   ██ ██      ██            ",
-            " ",
-          },
-        },
+      config = {
+        header = vim.split(logo, "\n")
       },
     }
   },

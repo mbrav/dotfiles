@@ -27,8 +27,8 @@ function dotfiles_symlink() {
 		fi
 	done
 
-	# List conf files in home
-	local dir_ls=(".bashrc" ".gitconfig" ".stignore" ".vimrc" ".vimrc.plug" ".jqp.yaml")
+	# List conf files in home without folders
+	local dir_ls=($(ls -Ap "$dot_dir/dotfiles" | grep -v /))
 
 	for item in "${dir_ls[@]}"; do
 		local item_path="$dot_dir/dotfiles/$item"

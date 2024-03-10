@@ -22,6 +22,7 @@ templates=(
 	"ingress"
 	"job"
 	"namespace"
+	"pod"
 	"poddisruptionbudget"
 	"priorityclass"
 	"quota"
@@ -127,6 +128,9 @@ namespace)
 		-- ${cmd} \
 		>$file_name
 	;;
+pod)
+	echo "pod"
+	;;
 poddisruptionbudget)
 	echo "poddisruptionbudget"
 	;;
@@ -144,7 +148,6 @@ service)
 	;;
 serviceaccount)
 	echo "serviceaccount"
-	;;
 	;;
 *) error_msg "Unknown template $selected_resource" 1 ;;
 esac

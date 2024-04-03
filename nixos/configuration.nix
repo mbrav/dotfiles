@@ -3,7 +3,7 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 # https://github.com/HeinzDev/Hyprland-dotfiles
-{  pkgs, ... }:
+{ pkgs, ... }:
 
 {
   imports =
@@ -17,7 +17,7 @@
   boot = {
     tmp.cleanOnBoot = true;
     # Bootloader.
-    loader ={
+    loader = {
       systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;
     };
@@ -74,13 +74,13 @@
 
   # Graphics settings
   services.xserver = {
+    enable = true;
+    # videosDrivers = ["nvidia"];
+    # videosDrivers = ["nouveau"];
+    displayManager.gdm = {
       enable = true;
-      # videosDrivers = ["nvidia"];
-      # videosDrivers = ["nouveau"];
-      displayManager.gdm = {
-          enable = true;
-          wayland = true;
-      };
+      wayland = true;
+    };
   };
 
   # Enable Pipwire
@@ -88,11 +88,11 @@
   sound.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
-      enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      pulse.enable = true;
-      jack.enable = true;
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
   };
 
   # Allow unfree packages

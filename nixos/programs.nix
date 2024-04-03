@@ -27,51 +27,43 @@
   xdg.portal = {
     enable = true;
     config.common.default = "*";
-    extraPortals = [pkgs.xdg-desktop-portal-gtk];
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
   # GTK config
   # https://www.youtube.com/watch?v=m_6eqpKrtxk
-  #qt = {
-    #enable = true;
-    # platformTheme = "gtk";
-    #style = "adwaita-dark";
-
-    #font.name = "JetBrainsMonoNLNerdFont 12";
-    # cursorTheme = {
-    #   package = pkgs.bibata-cursors;
-    #   name = "Bibata-Modern-Ice";
-    # };
-    # theme = {
-    #   package = pkgs.adw-gtk3;
-    #   name = "adw-gtk3";
-    # };
-    # iconTheme = {
-    #   package = pkgs.gruvboxPlus;
-    #   name = "GruvboxPlus";
-    # };
-  #};
-  gtk = {
+  qt = {
     enable = true;
-    iconTheme = {
-      name = "elementary-Xfce-dark";
-      package = pkgs.elementary-xfce-icon-theme;
-    };
-    theme = {
-      name = "zukitre-dark";
-      package = pkgs.zuki-themes;
-    };
-    gtk3.extraConfig = {
-      Settings = ''
-        gtk-application-prefer-dark-theme=1
-      '';
-    };
-    gtk4.extraConfig = {
-      Settings = ''
-        gtk-application-prefer-dark-theme=1
-      '';
-    };
+    platformTheme = "gtk2";
+    style = "adwaita-dark";
+
+
+    # font = {
+    #   name = "JetBrainsMonoNLNerdFont 12";
+    # };
+
   };
+  # gtk = {
+  #   enable = true;
+  #   iconTheme = {
+  #     name = "elementary-Xfce-dark";
+  #     package = pkgs.elementary-xfce-icon-theme;
+  #   };
+  #   theme = {
+  #     name = "zukitre-dark";
+  #     package = pkgs.zuki-themes;
+  #   };
+  #   gtk3.extraConfig = {
+  #     Settings = ''
+  #       gtk-application-prefer-dark-theme=1
+  #     '';
+  #   };
+  #   gtk4.extraConfig = {
+  #     Settings = ''
+  #       gtk-application-prefer-dark-theme=1
+  #     '';
+  #   };
+  # };
 
   # File browser
   programs.thunar.enable = true;
@@ -88,74 +80,73 @@
 
   # Gnupg config
   services.pcscd.enable = true;
-  services.gpg-agent.enable = true;
   programs.gnupg.agent = {
-     enable = true;
-     pinentryFlavor = "curses";
-     enableSSHSupport = true;
+    enable = true;
+    pinentryFlavor = "curses";
+    enableSSHSupport = true;
   };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-     fish
-     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-     neovim
-     tmux
-     htop
-     neofetch
-     starship
-     fzf
-     mcfly
-     eza
-     wget
-     unzip
-     gnupg
-     fd
-     # Fish plugins
-     # fishPlugins.done
-     # fishPlugins.fzf-fish
-     # fishPlugins.forgit
-     # fishPlugins.hydro
-     # fishPlugins.grc
-     grc
-     # Terminal
-     alacritty
-     kitty
-     # Dev
-     git
-     nodejs
-     docker
-     lazygit
-     #gcc
-     #clang
-     rustup
-     python3
-     # Nix
-     nixpkgs-lint
-     nixpkgs-fmt
-     nixfmt
-     # Dictionary
-     aspell
-     aspellDicts.en
-     aspellDicts.ru
-     aspellDicts.en-computers
-     hunspell
-     hunspellDicts.en-us
-     hunspellDicts.ru-ru
-     # Wayland stuff
-     waybar # Nav Bar
-     eww # Nav Bar customization with widgets
-     swww # Background manager
-     dunst # Notifications
-     libnotify # Notification dependency
-     networkmanagerapplet # Applet for managing network settings
-     rofi-wayland # App selector
-     wl-clipboard # wl-copy and wl-paste for copy/paste from stdin / stdout
-     # Desktop Programs
-     firefox
-     mpv
-     feh # Image viewer
+    fish
+    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    neovim
+    tmux
+    htop
+    neofetch
+    starship
+    fzf
+    mcfly
+    eza
+    wget
+    unzip
+    gnupg
+    fd
+    # Fish plugins
+    # fishPlugins.done
+    # fishPlugins.fzf-fish
+    # fishPlugins.forgit
+    # fishPlugins.hydro
+    # fishPlugins.grc
+    grc
+    # Terminal
+    alacritty
+    kitty
+    # Dev
+    git
+    nodejs
+    docker
+    lazygit
+    gcc
+    #clang
+    rustup
+    python3
+    # Nix
+    nixpkgs-lint
+    nixpkgs-fmt
+    nixfmt
+    # Dictionary
+    aspell
+    aspellDicts.en
+    aspellDicts.ru
+    aspellDicts.en-computers
+    hunspell
+    hunspellDicts.en-us
+    hunspellDicts.ru-ru
+    # Wayland stuff
+    waybar # Nav Bar
+    eww # Nav Bar customization with widgets
+    swww # Background manager
+    dunst # Notifications
+    libnotify # Notification dependency
+    networkmanagerapplet # Applet for managing network settings
+    rofi-wayland # App selector
+    wl-clipboard # wl-copy and wl-paste for copy/paste from stdin / stdout
+    # Desktop Programs
+    firefox
+    mpv
+    feh # Image viewer
   ];
 
   # Fonts

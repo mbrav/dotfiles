@@ -1,6 +1,6 @@
 call plug#begin()
     " Wakatime time usage
-    Plug 'wakatime/vim-wakatime'
+    " "Plug 'wakatime/vim-wakatime'
     " Lf file browser
     Plug 'ptzz/lf.vim'
     " Floating terminal

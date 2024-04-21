@@ -180,12 +180,12 @@ function start_tmux
     # Attach to tmux session on shell login if tmux is installed
     # Set default session name to a random animal icon "main"
     # set animal_icons ("🐺" "🐯" "🦁" "🐪" "🐧" "🦩" "🦆" "🦅" "🐼" "🦏" "🦀" "🦂" "🕷️" "🦍" "🦊" "🦖" "🐊" "🐉" "🐲" "🐍" "🐋" "🐬" "🐙")
-    set tmux_session_name "🐺$(whoami)"
+    set tmux_session_name 🐺(whoami)
 
     if test -n "$IN_IDE"
         # Check if term is inside an IDE or other environments
-        set folder "$(pwd)"
-        set folder_name "$(basename $folder)"
+        set folder (pwd)
+        set folder_name (basename $folder)
         set tmux_session_name "🖥️$folder_name"
     end
 

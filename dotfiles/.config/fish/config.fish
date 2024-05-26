@@ -124,11 +124,11 @@ if test -d ~/.pyenv
     source (pyenv root)/completions/pyenv.fish
 end
 
+# Init completions
+
 # init starship
-function load_starship
-    if status --is-interactive && type -q starship
-        source (starship init fish --print-full-init | psub)
-    end
+if status --is-interactive && type -q starship
+    source (starship init fish --print-full-init | psub)
 end
 
 # init zoxide
@@ -140,6 +140,22 @@ end
 if status --is-interactive && type -q mcfly
     mcfly init fish | source
 end
+
+# init talosctl
+if status --is-interactive && type -q talosctl
+    talosctl completion fish | source
+end
+
+# init cilium
+if status --is-interactive && type -q cilium
+    cilium completion fish | source
+end
+
+# init hubble
+if status --is-interactive && type -q hubble
+    hubble completion fish | source
+end
+
 
 function start_tmux
     if not type -q tmux; or not status --is-interactive
@@ -193,5 +209,4 @@ function start_tmux
     tmux -2 attach -t "$tmux_session_name"; or tmux -2 new-session -s "$tmux_session_name"
 end
 
-load_starship
 start_tmux

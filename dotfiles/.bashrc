@@ -25,6 +25,17 @@ command -v zoxide >/dev/null && eval "$(zoxide init bash)"
 # Load Mcfly history lookup plugin if installed:
 command -v mcfly >/dev/null && eval "$(mcfly init bash)"
 
+# Autocompletion
+
+# init talosctl
+command -v talosctl >/dev/null && eval "$(talosctl completion bash)"
+
+# init cilium
+command -v cilium >/dev/null && eval "$(cilium completion bash)"
+
+# init hubble
+command -v hubble >/dev/null && eval "$(hubble completion bash)"
+
 # Advanced command-not-found hook
 [[ -f /usr/share/doc/find-the-command/ftc.bash ]] && source /usr/share/doc/find-the-command/ftc.bash
 

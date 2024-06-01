@@ -152,7 +152,7 @@ function cmd_arg_help() {
 function sudo_or_mv() {
 	# mv command that checks if folder is writable by user
 	# $0 - Source
-	# $1 - definition
+	# $1 - Target
 	echo "Sudo mv"
 	if [[ -w "${2}" ]]; then
 		info_msg "Directory ${w} is writable"

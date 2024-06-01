@@ -41,6 +41,22 @@ cmd_arg_help \
 
 # Check requirements
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
+
+# PROGRAM FUNCTIONS
+function bin_install() {
+	# mv command that checks if folder is writable by user
+	# $0 - Source
+	# $1 - Target
+	if [[ -w "${2}" ]]; then
+		info_msg "Directory ${w} is writable"
+		mv -v "${1}" "${2}"
+		install -p -m 755 "${1}" "${2}"
+	else
+		warning_msg "Sudo must be used for ${w}"
+		sudo install -p --owner=root --group=root -m 755 "${1}" "${2}"
+	fi
+}
+
 # FETCH FUNCTIONS
 function fetch_version_docker_compose {
 	# Get latest Docker compose version and print result
@@ -272,8 +288,7 @@ k9s)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -304,8 +319,7 @@ eza)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -336,8 +350,7 @@ bat)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -368,8 +381,7 @@ starship)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -400,8 +412,7 @@ mcfly)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -433,8 +444,7 @@ fzf)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -491,8 +501,7 @@ jqp)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -523,8 +532,7 @@ htmlq)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -580,8 +588,7 @@ fd)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -613,8 +620,7 @@ upx)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}-${version##*v}-amd64_linux/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}-${version##*v}-amd64_linux/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}-${version##*v}-amd64_linux/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -643,8 +649,7 @@ gum)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/${1}"
-	sudo_or_mv "/tmp/${untar_dir}/${1}" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
@@ -676,8 +681,7 @@ bottom)
 	tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
 
 	# Make binary excutable and move to bin directory
-	chmod +x "/tmp/${untar_dir}/btm"
-	sudo_or_mv "/tmp/${untar_dir}/btm" "${bin_dir}/"
+	bin_install "/tmp/${untar_dir}/btm" "${bin_dir}/"
 
 	# Remove tmp files
 	rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"

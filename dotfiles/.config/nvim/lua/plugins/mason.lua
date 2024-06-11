@@ -23,6 +23,7 @@ return {
         "rust_analyzer",
         "docker_compose_language_service",
         "dockerls",
+        "harper_ls",
         "html",
       },
     },
@@ -36,11 +37,13 @@ return {
         "ansible-lint",
         "shellcheck",
         "black",
-        "pyright",
+        -- "pyright",
+        "ruff",
         "markdownlint",
         "jq",
         "jsonlint",
         "yamlfmt",
+        "yamllint",
         "sqlfmt",
         -- "rustfmt", -- Installed via rustup now
         -- "codespell"

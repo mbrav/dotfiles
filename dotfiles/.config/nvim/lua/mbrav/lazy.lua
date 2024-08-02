@@ -20,6 +20,7 @@ require("lazy").setup {
     { import = "lazyvim.plugins.extras.lsp.none-ls" },
     -- LazyVim Extras: DAP
     { import = "lazyvim.plugins.extras.dap.core" },
+    { import = "lazyvim.plugins.extras.vscode" },
     -- LazyVim Extras: Coding
     { import = "lazyvim.plugins.extras.coding.mini-comment" },
     { import = "lazyvim.plugins.extras.coding.mini-surround" },

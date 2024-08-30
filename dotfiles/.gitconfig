@@ -1,20 +1,22 @@
 [user]
-    signingkey = 5E77D86B261A4D94E47957EF6EC2645AED61DB91
-    email = mbrav@protonmail.com
-    name = mbrav
+	signingkey = /home/x/.ssh/id_github
+  email = mbrav@protonmail.com
+  name = mbrav
 [commit]
-    gpgsign = true
+  gpgsign = true
 [core]
-    editor = vim
+  editor = vim
 [web]
-    browser = firefox
+  browser = firefox
 [init]
-    defaultBranch = main
+  defaultBranch = main
 [status]
-    # The --short option added to git status gives a short formatted output
-    short = true
+  # The --short option added to git status gives a short formatted output
+  short = true
 [fetch]
-    # Pruning during fetch is a cleanup method that deletes outdated remote references in your .git directory 
-    prune = true
+  # Pruning during fetch is a cleanup method that deletes outdated remote references in your .git directory 
+  prune = true
 [color]
-    ui = true
+  ui = true
+[gpg]
+	format = ssh

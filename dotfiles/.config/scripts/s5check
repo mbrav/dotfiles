@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Install various binaries directly from GitHub
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+bin_dir=${bin_dir:-"/usr/local/bin"}
+delay=${delay:-0.5}
+
+# Source util lib
+source "${script_dir}/_util"
+
+socks5_list_url="https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/socks5/data.csv"
+
+ran_col_str "Valid SOCKS5 checker" c
+
+tmpf=$(mktemp)
+info_msg "Created tmp file at: ${tmpf}"
+
+check_urls() {
+	while read line; do
+		local url="$(echo $line | cut -d ',' -f 1)"
+		info_msg "Checking $url"
+		curl \
+			--fail \
+			--silent \
+			--proxy "${url}" \
+			--max-time 5 \
+			"ifconfig.me"
+
+		# Output status
+		if [[ $? -eq 0 ]]; then
+			success_msg "Working ${url}"
+		else
+			error_msg "Not working ${url}"
+		fi
+
+	done <"${tmpf}"
+}
+
+info_msg "Downloading proxy list"
+
+curl \
+	--silent \
+	--output "${tmpf}" \
+	"${socks5_list_url}"
+
+[[ $? -ne 0 ]] && error_msg "Failed to get SOCKS5 list from ${socks5_list_url}" 1
+
+success_msg "Got $(cat ${tmpf} | wc -l) SOCKS5 proxies"
+
+check_urls
+
+rm $tmpf
+
+exit 0

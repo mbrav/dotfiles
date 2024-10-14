@@ -15,6 +15,17 @@ ran_col_str "Utility for running mbrav dotfiles inside an ephemeral docker conta
 
 command -v docker >/dev/null || error_msg "Please install docker" 1
 
+# Detect if running on macOS
+if [[ "$(uname)" == "Darwin" ]]; then
+	info_msg "Running on macOS, adjusting GID to 1000 avoid conflicts"
+	gid="1000"
+fi
+
+info_msg "Using user: ${user}"
+info_msg "UID/GID:    ${uid}/${gid}"
+info_msg "Cur dir:    ${cur_dir}"
+info_msg "Mount to:   /home/${user}/mount"
+
 if docker image inspect "${docker_tag}" >/dev/null; then
 	info_msg "Docker container present, skipping build"
 else
@@ -52,3 +63,4 @@ docker run -it --rm \
 	$(mount_if "${HOME}/.gnupg" "/home/${user}/.gnupg") \
 	"${docker_tag}" &&
 	success_msg "Exited dotfiles container"
+

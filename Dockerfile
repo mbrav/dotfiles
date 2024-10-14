@@ -18,6 +18,10 @@ RUN apk add --upgrade --latest \
   grep \
   ripgrep \
   fzf \
+  eza \
+  mcfly \
+  upx \
+  starship \
   fd \
   bat \
   yq \
@@ -36,10 +40,6 @@ COPY ../dotfiles "$DOTFILES_ROOT/dotfiles/"
 # Setup docker user
 RUN addgroup "$DOCKER_USER" --gid "$DOCKER_GID" \
   && adduser "$DOCKER_USER" -G "$DOCKER_USER" --uid "$DOCKER_UID" --disabled-password \
-  && $DOTFILES_ROOT/dotfiles/.config/scripts/binstall eza \
-  && $DOTFILES_ROOT/dotfiles/.config/scripts/binstall mcfly \
-  && $DOTFILES_ROOT/dotfiles/.config/scripts/binstall upx \
-  && $DOTFILES_ROOT/dotfiles/.config/scripts/binstall starship \
   && $DOTFILES_ROOT/dotfiles/.config/scripts/sedchad "palette = 'default'" "palette = 'nord-tan'" $DOTFILES_ROOT/dotfiles/.config/starship.toml \
   && mkdir -p /home/$DOCKER_USER/.config \
   && mkdir -p /home/$DOCKER_USER/.local/share/fish \

@@ -5,8 +5,9 @@ script_dir="$(dirname "$(realpath "$0")")"
 docker_tag="mbrav/dotfiles:latest"
 uid=$(id -u)
 gid=$(id -g)
-user=$USER
-cur_dir=$(pwd)
+user="$USER"
+mount_from=$(pwd)
+mount_to="/home/${user}/mount"
 
 # Source util functions
 source "${script_dir}/_util"
@@ -14,6 +15,35 @@ source "${script_dir}/_util"
 ran_col_str "Utility for running mbrav dotfiles inside an ephemeral docker container"
 
 command -v docker >/dev/null || error_msg "Please install docker" 1
+
+# Function to display help message
+display_help() {
+	echo "Usage: $0 [options]"
+	echo
+	echo "Options:"
+	echo "  -h    Show this help message"
+	echo "  -u    Pass user's home directory inside the container"
+	echo
+	exit 0
+}
+
+# Parse the options using getopts
+while getopts "hu" opt; do
+	case ${opt} in
+	h)
+		display_help
+		;;
+	u)
+		info_msg "Setting mount from to ${HOME}"
+		mount_from="$HOME"
+		mount_to="/home/${user}"
+		;;
+	\?)
+		error_msg "Invalid option: -$OPTARG"
+		exit 1
+		;;
+	esac
+done
 
 # Detect if running on macOS
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -23,8 +53,8 @@ fi
 
 info_msg "Using user: ${user}"
 info_msg "UID/GID:    ${uid}/${gid}"
-info_msg "Cur dir:    ${cur_dir}"
-info_msg "Mount to:   /home/${user}/mount"
+info_msg "Mount from: ${mount_from}"
+info_msg "Mount to:   ${mount_to}"
 
 if docker image inspect "${docker_tag}" >/dev/null; then
 	info_msg "Docker container present, skipping build"
@@ -52,15 +82,12 @@ function mount_if() {
 	fi
 }
 
-info_msg "Running ${docker_tag} interactively with ${cur_dir} as mount to /root/mount and user '${uid}:${gid}'"
+info_msg "Running ${docker_tag} interactively with ${mount_from} as mount to ${mount_to} and user '${uid}:${gid}'"
 
 docker run -it --rm \
-	--name "tmp-${cur_dir##*/}" \
+	--name "tmp-${mount_from##*/}" \
 	--user "${uid}:${gid}" \
-	--volume "${cur_dir}:/home/${user}/mount:rw" \
-	$(mount_if "${HOME}/.wakatime.cfg" "/home/${user}/.wakatime.cfg") \
-	$(mount_if "${HOME}/.ssh" "/home/${user}/.ssh") \
-	$(mount_if "${HOME}/.gnupg" "/home/${user}/.gnupg") \
+	--volume "${mount_from}:${mount_to}:rw" \
+	$(mount_if "/var/log" "/var/log") \
 	"${docker_tag}" &&
 	success_msg "Exited dotfiles container"
-

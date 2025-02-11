@@ -83,10 +83,10 @@ alias jctl="journalctl -p 3 -xb"
 
 # Force tmux color
 command -v tmux >/dev/null &&
-	alias tmux='tmux -2 ' &&
-	alias tmuxn='tmux -2 new -s ' &&
+	alias t='tmux -2 ' &&
+	alias tn='tmux -2 new -s ' &&
 	# Use fuzzy finder to select what tmux session to attach to
-	alias tmuxa='tmux attach -t $(tmux list-sessions | sed "s/:.*//" | fzf --header "Select what tmux session to attach to")'
+	alias ta='tmux attach -t $(tmux list-sessions | sed "s/:.*//" | fzf --header "Select what tmux session to attach to")'
 
 # Fuzzy Finder alias scripts
 # Fuzzy find and cd from current directory
@@ -201,6 +201,10 @@ command -v eza >/dev/null &&
 command -v pygmentize >/dev/null && alias cat='pygmentize -g '
 command -v bat >/dev/null && alias cat='bat --style header --style snip --style changes --style header'
 [ ! -x /usr/bin/yay ] && [ -x /usr/bin/paru ] && alias yay='paru'
+
+# Bindings for k9s
+command -v k9s >/dev/null &&
+	export K9S_CONFIG_DIR="$HOME/.config/k9s"
 
 # Bindings for Arch
 command -v pacman >/dev/null &&

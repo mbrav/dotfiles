@@ -52,6 +52,8 @@ local options = {
 -- vim.opt.nrformats:append("alpha") -- increment letters
 vim.opt.shortmess:append "IsF"
 
+vim.g.vscode = true
+
 for option, value in pairs(options) do
   vim.opt[option] = value
 end

@@ -30,6 +30,13 @@ if test -d ~/.local/bin
     end
 end
 
+# Add /opt/homebrew/bin/to PATH
+if test -d /opt/homebrew/bin
+    if not contains -- /opt/homebrew/bin $PATH
+        set -p PATH /opt/homebrew/bin
+    end
+end
+
 # # Load tmux t-smart-tmux-session-manager
 # if test -d ~/.config/tmux/plugins/t-smart-tmux-session-manager/bin
 #     if not contains -- ~/.config/tmux/plugins/t-smart-tmux-session-manager/bin $PATH
@@ -146,6 +153,11 @@ if status --is-interactive && type -q talosctl
     talosctl completion fish | source
 end
 
+# init headscale
+if status --is-interactive && type -q headscale
+    headscale completion fish | source
+end
+
 # init cilium
 if status --is-interactive && type -q cilium
     cilium completion fish | source
@@ -210,3 +222,4 @@ function start_tmux
 end
 
 start_tmux
+export K9S_CONFIG_DIR="/Users/100375710929136833253/.config/k9s"

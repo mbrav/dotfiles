@@ -3,7 +3,7 @@
 function start_tmux -d "Start tmux session with custom icon"
     # Check if tmux is installed and shell is interactive
     if not type -q tmux; or not status --is-interactive
-        echo "🛑 Tmux not installed or shell not interactive, not starting tmux session"
+        #echo "🛑 Tmux not installed or shell not interactive, not starting tmux session"
         return
     end
 
@@ -16,7 +16,7 @@ function start_tmux -d "Start tmux session with custom icon"
     # Check if inside an SSH session or Konsole
     if test -n "$SSH_CONNECTION"; or test -n "$SSH_CLIENT"; or test -n "$SSH_TTY"; or test -n "$KONSOLE_DBUS_SESSION"
         if not test -n "$in_ide"
-            echo "🛑 Inside SSH session, not starting tmux session"
+            #echo "🛑 Inside SSH session, not starting tmux session"
             return
         end
     end

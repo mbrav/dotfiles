@@ -159,26 +159,6 @@ alias mi-display-fix='xrandr --output HDMI-0 --mode 3440x1440 --rate 60'
 
 # Git aliases
 alias g='git'
-alias gst='git status'
-alias gf='git diff'
-alias gF='git diff --staged'
-alias gl="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(auto)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)'"
-alias ga='git add '
-alias gai='git add --interactive'
-alias gA='git add -A'
-alias gcm='git commit'
-alias gcM='git commit --amend'
-alias gp='git push'
-alias gP='git push --force'
-alias gsubu='git submodule update --recursive --remote'
-# Use fuzzy finder to select a range from 1 to 20 to soft reset HEAD~N
-alias gS="seq 1 20 | fzf --header 'HEAD~n number to soft reset' --preview 'git show --color HEAD~{1}' --preview-window 'right:80%' --preview-label 'Commit info' | xargs -I % sh -c 'git reset --soft HEAD~%'"
-# Use fuzzy finder to select a range from 1 to 20 to hard reset HEAD~N
-alias gH="seq 1 20 | fzf --header 'HEAD~n number to hard reset' --preview 'git show --color HEAD~{1}' --preview-window 'right:80%' --preview-label 'Commit info' | xargs -I % sh -c 'git reset --hard HEAD~%'"
-# Use fuzzy finder to select a range from 1 to 20 to rebase HEAD~N
-alias gR="seq 1 20 | fzf --header 'HEAD~n number to rebase' --preview 'git show --color HEAD~{1}' --preview-window 'right:80%' --preview-label 'Commit info' | xargs -I % sh -c 'git rebase -i HEAD~%'"
-# Use fuzzy finder to select what git branch to checkout
-alias gchk="git branch --format='%(refname:short)' | fzf --header 'Select git branch to checkout' --preview 'git show --color {1}' --preview-window 'right:80%' --preview-label 'Commit info' | xargs -I % sh -c 'git checkout %' "
 
 ## Useful aliases
 # Replace ls with eza

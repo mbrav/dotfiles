@@ -93,5 +93,72 @@ if status --is-interactive
     end
 end
 
-# Run start_tmux function
+# Init custom scripts
+source ~/.config/scripts/_secrets
+source ~/.config/scripts/_aliases
+
+# Load exceutable scripts and add to PATH
+if test -d ~/.config/scripts
+    if not contains -- ~/.config/scripts $PATH
+        set -p PATH ~/.config/scripts
+    end
+end
+
+# Kubectl aliases based on shell 
+# Based on https://github.com/ahmetb/kubectl-aliases
+if test -d ~/.config/scripts/kubectl-aliases
+    source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases.fish"
+end
+
+# Cargo config
+if test -d "$HOME/.cargo/bin"
+    fish_add_path $HOME/.cargo/bin
+end
+
+# Init pyenv if available
+if test -d ~/.pyenv
+    set -Ux PYENV_ROOT $HOME/.pyenv
+    fish_add_path $PYENV_ROOT/bin
+    status --is-interactive; and pyenv init - | source
+    status --is-interactive; and pyenv virtualenv-init - | source
+    source (pyenv root)/completions/pyenv.fish
+end
+
+# Init completions
+
+# init starship
+if status --is-interactive && type -q starship
+    source (starship init fish --print-full-init | psub)
+end
+
+# init zoxide
+if status --is-interactive && type -q zoxide
+    zoxide init fish | source
+end
+
+# init mcfly
+if status --is-interactive && type -q mcfly
+    mcfly init fish | source
+end
+
+# init talosctl
+if status --is-interactive && type -q talosctl
+    talosctl completion fish | source
+end
+
+# init headscale
+if status --is-interactive && type -q headscale
+    headscale completion fish | source
+end
+
+# init cilium
+if status --is-interactive && type -q cilium
+    cilium completion fish | source
+end
+
+# init hubble
+if status --is-interactive && type -q hubble
+    hubble completion fish | source
+end
+
 start_tmux

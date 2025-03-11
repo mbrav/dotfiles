@@ -14,8 +14,6 @@ command -v fzf >/dev/null || error_msg "Please install fzf" 1
 command -v gum >/dev/null || error_msg "Please install gum CLI utility: https://github.com/charmbracelet/gum" 1
 
 templates=(
-	"clusterrole"
-	"clusterrolebinding"
 	"configmap"
 	"cronjob"
 	"deployment"
@@ -23,35 +21,43 @@ templates=(
 	"job"
 	"namespace"
 	"pod"
-	"poddisruptionbudget"
-	"priorityclass"
-	"quota"
 	"secret"
 	"service"
-	"serviceaccount"
 )
 
 resource_name="template"
 
+# Select template using fzf
 selected_resource=$(
-	echo "${templates[@]}" |
-		tr ' ' '\n' |
+	printf "%s\n" "${templates[@]}" |
 		fzf \
 			--header 'Select template' \
-			--preview 'kubectl explain {1}' \
+			--preview 'kubectl explain {} || echo "No explanation available"' \
 			--preview-label 'Kubectl Explain' \
 			--preview-window 'right:80%'
 )
 
 case $selected_resource in
-clusterrole)
-	echo "clusterrole"
-	;;
-clusterrolebinding)
-	echo "clusterrolebinding"
-	;;
 configmap)
-	echo "configmap"
+	# Set input variables
+	namespace=$(gum input --value "default" --header="Enter namespace for ConfigMap")
+	success_msg "Namespace '${namespace}'"
+	resource_name=$(gum input --value "${resource_name}" --header="Enter ConfigMap name")
+	success_msg "ConfigMap Name: '${resource_name}'"
+
+	# Set data for ConfigMap
+	config_key=$(gum input --placeholder "Enter key" --header "ConfigMap Key")
+	config_value=$(gum write --placeholder "Enter value" --header "ConfigMap Value")
+
+	# Create ConfigMap using kubectl
+	file_name="${resource_name}.configmap.yaml"
+	kubectl create configmap "${resource_name}" \
+		--namespace="${namespace}" \
+		--from-literal="${config_key}=${config_value}" \
+		--dry-run=client \
+		--output=yaml >"${file_name}"
+
+	success_msg "Template successfully saved as ${file_name}"
 	;;
 cronjob)
 	# Set input variables
@@ -107,11 +113,29 @@ deployment)
 		-- ${cmd} \
 		>$file_name
 	;;
-ingress)
-	echo "ingress"
-	;;
 job)
-	echo "job"
+	# Set input variables
+	namespace=$(gum input --value "default" --header="Enter namespace for Job")
+	success_msg "Namespace '${namespace}'"
+	resource_name=$(gum input --value "${resource_name}" --header="Enter Job name")
+	success_msg "Job Name: '${resource_name}'"
+	image_name=$(gum input --value "alpine:latest" --header="Set Image name")
+	success_msg "Image: '${image_name}'"
+	restart_policy=$(gum choose --header="Set restart policy" "Never" "OnFailure")
+	success_msg "Restart Policy: '${restart_policy}'"
+	cmd=$(gum write --char-limit=0 --show-line-numbers --value "/bin/sh -c -- echo 'Hello from Job'" --header="Command to run")
+	success_msg "Command: '${cmd}'"
+
+	# Create Job using kubectl
+	file_name="${resource_name}.job.yaml"
+	kubectl create job "${resource_name}" \
+		--namespace="${namespace}" \
+		--image="${image_name}" \
+		--dry-run=client \
+		--output=yaml \
+		-- /bin/sh -c "${cmd}" >"${file_name}"
+
+	success_msg "Template successfully saved as ${file_name}"
 	;;
 namespace)
 	# Set input variables
@@ -129,16 +153,41 @@ namespace)
 		>$file_name
 	;;
 pod)
-	echo "pod"
-	;;
-poddisruptionbudget)
-	echo "poddisruptionbudget"
-	;;
-priorityclass)
-	echo "priorityclass"
-	;;
-quota)
-	echo "quota"
+	# Set input variables
+	namespace=$(gum input --value "default" --header="Enter namespace for resource")
+	success_msg "Namespace '${namespace}'"
+
+	resource_name=$(gum input --value "${resource_name}" --header="Enter resource name")
+	success_msg "Resource name '${resource_name}'"
+
+	image_name=$(gum input --value "alpine:latest" --header="Set Image name")
+	success_msg "Image '${image_name}'"
+
+	container_port=$(gum input --value="-1" --header="Container expose port (-1 = none)")
+	success_msg "Container port: ${container_port}"
+
+	cmd=$(gum write --char-limit=0 --show-line-numbers --value "/bin/sh -c -- echo hello" --header="Command to run")
+	success_msg "Command: ${cmd}"
+
+	# Define output file
+	file_name="${resource_name}.${selected_resource}.yaml"
+	# Generate Pod YAML
+	if [[ "$container_port" -eq -1 ]]; then
+		kubectl run "${resource_name}" \
+			--namespace="${namespace}" \
+			--image="${image_name}" \
+			--dry-run=client \
+			--output=yaml \
+			--command -- "${cmd}" >"${file_name}"
+	else
+		kubectl run "${resource_name}" \
+			--namespace="${namespace}" \
+			--image="${image_name}" \
+			--port="${container_port}" \
+			--dry-run=client \
+			--output=yaml \
+			--command -- "${cmd}" >"${file_name}"
+	fi
 	;;
 secret)
 	echo "secret"
@@ -146,16 +195,14 @@ secret)
 service)
 	echo "service"
 	;;
-serviceaccount)
-	echo "serviceaccount"
-	;;
 *) error_msg "Unknown template $selected_resource" 1 ;;
 esac
 
-if [[ "$?" -eq 0 ]]; then
+# Check if command succeeded
+if [[ $? -eq 0 ]]; then
 	success_msg "Template successfully saved as ${file_name}"
 	sleep 1
-	gum pager --show-line-numbers --soft-wrap <${file_name}
+	gum pager --show-line-numbers --soft-wrap <"${file_name}"
 else
 	error_msg "Error saving ${file_name}" 1
 fi

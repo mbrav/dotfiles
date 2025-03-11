@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util"
+
+ran_col_str "Utility for recursively deleting resources from Terraform/Tofu"
+
+command -v fzf >/dev/null || error_msg "Please install fzf" 1
+
+# Define the command for Terraform or Tofu
+tf_command="terraform"
+
+if command -v "$tf_command" >/dev/null; then
+	tf_command="tofu"
+	info_msg "Setting command to Tofu"
+fi
+
+command -v "$tf_command" >/dev/null || error_msg "Please install terraform or tofu" 1
+
+# Allow multiple selections and create an array
+resources=($(tofu state list | fzf --header "Specify pattern command" --preview-window "down:50%" --multi))
+
+# Main script execution
+if [ ${#resources[@]} -eq 0 ]; then
+	echo "No resources selected."
+	exit 0
+fi
+
+# Confirm deletion of matched resources
+echo "The following resources will be deleted:"
+printf '%s\n' "${resources[@]}"
+
+# Use the yes_no_prompt function for confirmation
+yes_no_prompt "Are you sure you want to delete these resources?"
+if [ $? -ne 0 ]; then
+	echo "Deletion canceled."
+	exit 0
+fi
+
+# Delete the matched resources
+for resource in "${resources[@]}"; do
+	echo "Deleting: $resource"
+	# Uncomment the following line to actually delete the resource
+	tofu state rm "$resource"
+done
+
+echo "Deletion completed."

@@ -2,3 +2,4 @@ scripts/secrets.ini
 dotfiles/.config/fish/fish_variables
 dotfiles/.config/k9s/clusters
 dotfiles/.config/k9s/*.log
+dotfiles/.config/nvim/lazy-lock.json

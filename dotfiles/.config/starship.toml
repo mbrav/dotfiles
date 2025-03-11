@@ -84,6 +84,62 @@ color3 = '#1A0707'
 color4 = '#300D0D'
 color5 = '#3F1612'
 
+[palettes.ocean-breeze]
+color1 = '#A0D8E1' # Light cyan
+color2 = '#007B8A' # Teal
+color3 = '#005B5C' # Dark teal
+color4 = '#003B3C' # Darker teal
+color5 = '#001F20' # Very dark teal
+
+[palettes.sunset-glow]
+color1 = '#FFB74D' # Light orange
+color2 = '#FF8C00' # Orange
+color3 = '#D76D00' # Dark orange
+color4 = '#A65E00' # Darker orange
+color5 = '#7A3E00' # Very dark orange
+
+[palettes.forest-green]
+color1 = '#A8D5BA' # Light green
+color2 = '#4CAF50' # Green
+color3 = '#388E3C' # Dark green
+color4 = '#2E7D32' # Darker green
+color5 = '#1B5E20' # Very dark green
+
+[palettes.desert-sand]
+color1 = '#F5E1A4' # Light beige
+color2 = '#D6B65A' # Beige
+color3 = '#BFAF4D' # Dark beige
+color4 = '#A68A3A' # Darker beige
+color5 = '#7A5B2A' # Very dark beige
+
+[palettes.midnight-blue]
+color1 = '#A4C8E1' # Light blue
+color2 = '#1E3A5F' # Blue
+color3 = '#1A2A4D' # Dark blue
+color4 = '#0D1B2A' # Darker blue
+color5 = '#0A0E15' # Very dark blue
+
+[palettes.berry-blast]
+color1 = '#EAB8D1' # Light pink
+color2 = '#D5006D' # Pink
+color3 = '#A5004D' # Dark pink
+color4 = '#7A003A' # Darker pink
+color5 = '#4D002A' # Very dark pink
+
+[palettes.steel-gray]
+color1 = '#B0BEC5' # Light gray
+color2 = '#78909C' # Gray
+color3 = '#546E7A' # Dark gray
+color4 = '#37474F' # Darker gray
+color5 = '#263238' # Very dark gray
+
+[palettes.lavender-dream]
+color1 = '#E1BEE7' # Light lavender
+color2 = '#AB47BC' # Lavender
+color3 = '#8E24AA' # Dark lavender
+color4 = '#6A1B9A' # Darker lavender
+color5 = '#4A148C' # Very dark lavender
+
 [directory]
 style = "fg:color5 bg:color2"
 format = "[ $path ]($style)"

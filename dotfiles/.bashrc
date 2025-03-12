@@ -27,7 +27,7 @@ export HISTCONTROL="ignoredups:ignorespace"
 export HISTIGNORE="ls *:history"
 
 # Set the format for timestamps in the history
-#export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S"
+export HISTTIMEFORMAT="%F %T: "
 
 # Automatically append the current session's history to the history file
 # and read the history from the file before displaying the prompt

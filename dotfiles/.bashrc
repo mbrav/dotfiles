@@ -5,11 +5,33 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-# TODO: Fix
-# # Bash options
-# shopt -s histappend
-# # Auto append history
-# PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
+# BASH OPTIONS
+# Enable appending to the history file instead of overwriting it
+shopt -s histappend
+
+# Set the file where the command history is saved
+export HISTFILE=~/.bash_history
+
+# Set the number of commands to remember in the current session
+export HISTSIZE=10000
+
+# Set the maximum number of commands to remember in the history file
+export HISTFILESIZE=20000
+
+# Control how history entries are stored
+# ignoredups: do not record an entry that is the same as the last command
+# ignorespace: do not record commands that begin with a space
+export HISTCONTROL="ignoredups:ignorespace"
+
+# Ignore specific commands in the history
+export HISTIGNORE="ls *:history"
+
+# Set the format for timestamps in the history
+#export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S"
+
+# Automatically append the current session's history to the history file
+# and read the history from the file before displaying the prompt
+export PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
 
 # Add local bin to path if it exists
 [[ -d $HOME/.local/bin ]] && PATH="$PATH:$HOME/.local/bin"

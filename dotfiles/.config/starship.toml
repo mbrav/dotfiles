@@ -13,6 +13,7 @@ $directory\
 [](fg:color2 bg:color3)\
 $git_branch\
 $git_status\
+$git_metrics\
 [](fg:color3 bg:color4)\
 $kubernetes\
 $python\
@@ -178,6 +179,7 @@ symbol = " "
 disabled = false
 format = "⏱  [$duration]($style)"
 style = "fg:color2"
+show_milliseconds = true
 min_time = 1
 
 [dart]
@@ -204,7 +206,13 @@ format = '[[ $symbol $branch ](fg:color2 bg:color3)]($style)'
 style = "bg:color3"
 format = '[[($all_status$ahead_behind )](fg:color2 bg:color3)]($style)'
 
+[git_metrics]
+disabled = false
+format = '[+$added/-$deleted](fg:color2 bg:color3)'
+# format = '[[($all_status$ahead_behind )](fg:color2 bg:color3)]($style)'
+
 [golang]
+disabled = false
 symbol = "ﳑ"
 style = "bg:color4"
 format = '[[ $symbol ($version) ](fg:color2 bg:color4)]($style)'
@@ -226,7 +234,7 @@ disabled = false
 ssh_only = false
 format = "[$hostname ]($style)"
 style = "bold bg:color1 fg:color4"
-# trim_at = "-"
+trim_at = ""
 
 [localip]
 ssh_only = true
@@ -246,7 +254,7 @@ symbol = "☸ "
 #format = '[ $symbol ($user on )($cluster in )$context \($namespace\)](fg:color2 bg:color4)'
 format = '[ $symbol ($context) ](fg:color2 bg:color4)'
 style = "bg:color4"
-detect_folders = ['k8s', 'kubernetes', 'k9s', 'kube*', '.kube']
+detect_folders = ['k8s', 'kubernetes', 'k9s', 'kube*']
 
 [lua]
 symbol = " "

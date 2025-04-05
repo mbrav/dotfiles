@@ -18,20 +18,22 @@ export HISTSIZE=10000
 # Set the maximum number of commands to remember in the history file
 export HISTFILESIZE=20000
 
-# Control how history entries are stored
-# ignoredups: do not record an entry that is the same as the last command
-# ignorespace: do not record commands that begin with a space
-export HISTCONTROL="ignoredups:ignorespace"
+# History control
+# ignoredups: skip duplicates
+# ignorespace: skip lines starting with a space
+export HISTCONTROL=ignoredups:ignorespace
 
-# Ignore specific commands in the history
-export HISTIGNORE="ls *:history"
+# Ignore specific trivial commands
+export HISTIGNORE="ls *:history:cd:cd -:exit"
 
-# Set the format for timestamps in the history
+# Add timestamp to each entry
 export HISTTIMEFORMAT="%F %T: "
 
-# Automatically append the current session's history to the history file
-# and read the history from the file before displaying the prompt
-export PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
+# Ensure history is updated immediately after each command
+# `history -a` => append new lines to history file
+# `history -c` and `history -r` aren't needed unless you're doing something fancy
+# Use a custom PROMPT_COMMAND to avoid overwriting anything pre-existing
+PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
 
 # Add local bin to path if it exists
 [[ -d $HOME/.local/bin ]] && PATH="$PATH:$HOME/.local/bin"

@@ -2,10 +2,10 @@
 [user]
   email = mbrav@protonmail.com
   name = mbrav
-	signingkey = ~/.ssh/id_spectral.pub
+	signingkey = ~/.ssh/id_github_2025.pub
 [core]
   editor = vim
 [gpg]
 	format = ssh
 [commit]
-  gpgsign = false
+  gpgsign = true

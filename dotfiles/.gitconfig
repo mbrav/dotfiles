@@ -111,7 +111,7 @@
 	g = grep -p
 	#############
 	l = log --oneline
-	lg = log --oneline --graph --decorate
+  lg = log --oneline --graph --decorate --pretty=format:'%C(auto)%h %C(bold blue)%ad%C(reset) %C(green)(%an)%C(reset) %C(yellow)%d%C(reset) %s' --date=short --color=always
 	#############
 	ls = ls-files
 	lsf = !git ls-files | grep -i

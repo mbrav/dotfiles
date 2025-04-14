@@ -7,8 +7,11 @@ return {
     opts = {
       ensure_installed = {
         "bash",
+        "c",
+        "cpp",
         "rust",
         "html",
+        "http",
         "json",
         "lua",
         "markdown",
@@ -20,7 +23,6 @@ return {
         "yaml",
         "terraform",
         "hcl",
-        "c",
       },
     },
   },

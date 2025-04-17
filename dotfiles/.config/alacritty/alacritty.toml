@@ -19,8 +19,7 @@ title = "Alacritty"
 decorations = "Full"
 decorations_theme_variant = "Dark"
 dynamic_padding = true
-# opacity = 0.9
-opacity = 0.7
+opacity = 1.0
 # decorations = "None"
 # decorations = "Transparent" # MacOS only
 # decorations = "Buttonless" # MacOS only
@@ -98,7 +97,7 @@ import = [
   # "~/.config/alacritty/schemes/ashes_dark.toml",
   # "~/.config/alacritty/schemes/ashes_light.toml",
   # "~/.config/alacritty/schemes/atom_one_light.toml",
-  # "~/.config/alacritty/schemes/aura.toml",
+  ##"~/.config/alacritty/schemes/aura.toml",
   # "~/.config/alacritty/schemes/autumn.toml",
   # "~/.config/alacritty/schemes/ayu_dark.toml",
   # "~/.config/alacritty/schemes/ayu_light.toml",
@@ -134,7 +133,7 @@ import = [
   # "~/.config/alacritty/schemes/enfocado_light.toml",
   # "~/.config/alacritty/schemes/everforest_dark.toml",
   # "~/.config/alacritty/schemes/everforest_light.toml",
-  # "~/.config/alacritty/schemes/falcon.toml",
+  "~/.config/alacritty/schemes/falcon.toml",
   # "~/.config/alacritty/schemes/flat_remix.toml",
   # "~/.config/alacritty/schemes/flexoki.toml",
   # "~/.config/alacritty/schemes/github_dark.toml",
@@ -247,5 +246,3 @@ import = [
   # "~/.config/alacritty/schemes/xterm.toml",
   # "~/.config/alacritty/schemes/zenburn.toml",
 ]
-
-

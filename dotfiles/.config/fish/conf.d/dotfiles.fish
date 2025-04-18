@@ -12,5 +12,5 @@ end
 # Kubectl aliases based on shell 
 # Based on https://github.com/ahmetb/kubectl-aliases
 if test -d ~/.config/scripts/kubectl-aliases
-    source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases.fish"
+    source ~/.config/scripts/kubectl-aliases/.kubectl_aliases.fish
 end

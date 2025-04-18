@@ -34,7 +34,7 @@ for pair in "${currencies[@]}"; do
 
 	# Output the current date and the exchange rate
 	if [[ -f "${tmp_file}" ]]; then
-		exchnang_rate=$(cat "$tmp_file" | jq -r ".rates.${cur_to}")
+		exchnang_rate=$(jq -r ".rates.${cur_to}" "$tmp_file")
 		result="${result}${txt_display}${exchnang_rate} "
 	else
 		result="error"

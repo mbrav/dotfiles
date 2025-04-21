@@ -52,6 +52,7 @@ require("lazy").setup {
     { import = "lazyvim.plugins.extras.lang.nix" },
     { import = "lazyvim.plugins.extras.lang.cmake" },
     { import = "lazyvim.plugins.extras.lang.tailwind" },
+    { import = "lazyvim.plugins.extras.lang.typescript" },
     -- { import = "lazyvim.plugins.extras.lang.clangd" },
     -- Import/override with your plugins
     -- LazyVim Extras: Utilities

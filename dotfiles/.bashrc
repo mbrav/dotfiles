@@ -9,25 +9,32 @@
 # Enable appending to the history file instead of overwriting it
 shopt -s histappend
 
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# If set, the pattern "**" used in a pathname expansion context will
+# match all files and zero or more directories and subdirectories.
+shopt -s globstar
+
 # Set the file where the command history is saved
-export HISTFILE=~/.bash_history
+HISTFILE=~/.bash_history
 
-# Set the number of commands to remember in the current session
-export HISTSIZE=10000
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=999999
+HISTFILESIZE=999999
 
-# Set the maximum number of commands to remember in the history file
-export HISTFILESIZE=20000
-
-# History control
+# don't put duplicate lines or lines starting with space in the history.
+# See bash(1) for more options
 # ignoredups: skip duplicates
 # ignorespace: skip lines starting with a space
-export HISTCONTROL=ignoredups:ignorespace
+HISTCONTROL=ignoreboth
 
 # Ignore specific trivial commands
-export HISTIGNORE="ls *:history:cd:cd -:exit"
+HISTIGNORE="ls *:history:cd:cd -:exit"
 
 # Add timestamp to each entry
-export HISTTIMEFORMAT="%F %T: "
+HISTTIMEFORMAT="%F %T: "
 
 # Ensure history is updated immediately after each command
 # `history -a` => append new lines to history file
@@ -80,6 +87,9 @@ command -v pyenv >/dev/null && eval "$(pyenv virtualenv-init -)"
 
 # Cargo config
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+
+# Go config
+[[ -d "$HOME/go/bin" ]] && PATH="$PATH:$HOME/go/bin"
 
 # Init custom scripts
 [[ -f "$HOME/.config/scripts/_aliases" ]] && source "$HOME/.config/scripts/_aliases"

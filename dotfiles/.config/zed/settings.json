@@ -1,0 +1,116 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run the `open default settings` command
+// from the command palette or from `Zed` application menu.
+{
+  "assistant": {
+    "default_model": {
+      "provider": "zed.dev",
+      "model": "claude-3-7-sonnet-latest"
+    },
+    "version": "2"
+  },
+  "project_panel": {
+    "dock": "left"
+  },
+  "toolbar": {
+    "breadcrumbs": true,
+    "quick_actions": true,
+    "selections_menu": false
+  },
+  "ui_font_family": "JetbrainsMonoNL Nerd Font",
+  "buffer_font_family": "JetbrainsMonoNL Nerd Font",
+  "features": {
+    "edit_prediction_provider": "zed",
+    "copilot": false
+  },
+  // Disabling linked edits because of: https://github.com/zed-industries/zed/issues/25586
+  "linked_edits": false,
+  "hide_mouse": "on_typing_and_movement",
+  // Will be triggered manually with `ctrl-x ctrl-c`.
+  "show_edit_predictions": true,
+  "inlay_hints": {
+    "enabled": false
+  },
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "Ayu Dark"
+  },
+  "telemetry": {
+    "metrics": false,
+    "diagnostics": false
+  },
+  "vim_mode": true,
+  "ui_font_size": 16,
+  "buffer_font_size": 18,
+  "cursor_blink": true,
+  "relative_line_numbers": true,
+  "tab_bar": {
+    "show": true
+  },
+  "scrollbar": {
+    "show": "never"
+  },
+  // Rainbow indentation
+  "indent_guides": {
+    "enabled": true,
+    "coloring": "indent_aware"
+  },
+  "preview_tabs": {
+    "enabled": false
+  },
+  "git": {
+    "git_gutter": "tracked_files",
+    "inline_blame": {
+      "enabled": true
+    }
+  },
+  "vim": {
+    "use_system_clipboard": "always"
+  },
+  "languages": {
+    "LaTeX": {
+      "soft_wrap": "preferred_line_length"
+    }
+  },
+  "wrap_guides": [90],
+  "show_wrap_guides": true
+  // "experimental.theme_overrides": {
+  //   // Colors are taken from GitHub theme: https://github.com/PyaeSoneAungRgn/github-zed-theme/blob/main/themes/github_theme.json
+  //   "background.appearance": "blurred",
+  //   "background": "#0d1117b0",
+  //   "editor.background": "#0d111730",
+  //   "editor.gutter.background": "#0d111730",
+  //   "tab_bar.background": "#01040940",
+  //   "terminal.background": "#01040930",
+  //   "toolbar.background": "#0d111730",
+  //   "tab.active_background": "#0d111720",
+  //   "tab.inactive_background": "#01040900",
+  //   "status_bar.background": "#010409f0",
+  //   "title_bar.background": "#010409f0",
+  //   "panel.background": "#01040930",
+  //   "border.variant": "#3d444db3",
+  //   "scrollbar.track.border": "#00000000",
+  //   "editor.active_line.background": "#151b230f"
+  // }
+  // YouTube Use:
+  // "show_wrap_guides": false,
+  // "show_edit_predictions": false,
+  // "ui_font_size": 26,
+  // "buffer_font_size": 26,
+  // "preferred_line_length": 75,
+  // "soft_wrap": "preferred_line_length",
+  // "show_wrap_guides": false,
+  // "git": {
+  //   "git_gutter": "hide",
+  //   "inline_blame": {
+  //     "enabled": false
+  //   }
+  // },
+  // "format_on_save": "off"
+}

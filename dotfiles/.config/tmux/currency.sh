@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-#if [[ -z $DEBUG ]]; then
-#	echo "dbg"
-#	exit 0
-#fi
-
+# if [[ -z $DEBUG ]]; then
+# 	echo "dbg"
+# 	exit 0
+# fi
+#
 # Define currency config dynamically
-currency_config="USD RUB $,EUR RUB €,CNY RUB ¥"
+currency_config="USD RUB $,EUR RUB €,CNY RUB ¥,USD EUR $"
 
 # Loop through the currency_config
 IFS=',' read -r -a currencies <<<"$currency_config"
@@ -26,7 +26,7 @@ for pair in "${currencies[@]}"; do
 	tmp_file="/tmp/${cur_from}.json"
 
 	# Check if the temporary file exists and if it's older than 1 hour
-	if [[ ! -f "${tmp_file}" ]] || [[ $(find "${tmp_file}" -mmin +60) ]]; then
+	if [[ ! -f "${tmp_file}" ]] || [[ $(find "${tmp_file}" -mmin +10) ]]; then
 		# Call the API and save the result to the temporary file
 		curl -s "${api_url}" >"${tmp_file}"
 		echo "${api_url} ${tmp_file}"

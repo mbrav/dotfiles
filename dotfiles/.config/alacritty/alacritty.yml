@@ -1,0 +1,244 @@
+# Copyright (c) 2017-present Arctic Ice Studio <development@arcticicestudio.com>
+# Copyright (c) 2017-present Sven Greb <code@svengreb.de>
+
+# Project:    Nord Alacritty
+# Version:    0.1.0
+# Repository: https://github.com/arcticicestudio/nord-alacritty
+# License:    MIT
+# References:
+#   https://github.com/alacritty/alacritty
+
+window:
+  dimensions:
+    columns: 180
+    lines: 42
+  padding:
+    x: 0
+    y: 0
+  dynamic_padding: true
+  decorations: full
+  decorations_theme_variant: Dark
+  title: Alacritty
+  # opacity: 0.95
+  opacity: 0.87
+  class:
+    instance: Alacritty
+    general: Alacritty
+font:
+  normal:
+    family: "JetbrainsMonoNL Nerd Font"
+    # family: "Menlo"
+    # style: Regular
+  size: 11
+scrolling:
+  history: 100000
+  multiplier: 3
+draw_bold_text_with_bright_colors: true
+save_to_clipboard: true
+dynamic_padding: true
+window.dynamic_title: true
+cursor:
+  style: Underline
+  blinking: Always
+  blink-interval: 750
+live_config_reload: true
+shell:
+  program: /opt/homebrew/bin/fish
+  args:
+    - --login
+mouse:
+  hide_when_typing: true
+  launcher:
+    program: firefox
+selection:
+  save_to_clipboard: true
+key_bindings:
+  # (Windows, Linux, and BSD only)
+  - { key: V, mods: Control|Shift, action: Paste }
+  - { key: C, mods: Control|Shift, action: Copy }
+  - { key: N, mods: Command, action: SpawnNewInstance }
+  - { key: Insert, mods: Shift, action: PasteSelection }
+  - { key: Key0, mods: Control, action: ResetFontSize }
+  - { key: Equals, mods: Control, action: IncreaseFontSize }
+  - { key: Plus, mods: Control, action: IncreaseFontSize }
+  - { key: Minus, mods: Control, action: DecreaseFontSize }
+  - { key: Minus, mods: Control, action: DecreaseFontSize }
+  - { key: Return, mods: Control|Shift, action: SpawnNewInstance }
+  # - { key: PageUp, mods: Shift, action: ScrollPageUp }
+  # - { key: PageDown, mods: Shift, action: ScrollPageDown }
+  # - { key: Home, mods: Shift, action: ScrollToTop }
+  # - { key: End, mods: Shift, action: ScrollToBottom }
+schemes:
+  # Tokyo Night theme, based on both:
+  #   https://github.com/ghifarit53/tokyonight-vim
+  #   https://github.com/enkia/tokyo-night-vscode-theme
+  tokyo-night:
+    # Default colors
+    &tokyo-night
+    primary:
+      background: "#1a1b26"
+      foreground: "#a9b1d6"
+    # Normal colors
+    normal:
+      black: "#32344a"
+      red: "#f7768e"
+      green: "#9ece6a"
+      yellow: "#e0af68"
+      blue: "#7aa2f7"
+      magenta: "#ad8ee6"
+      cyan: "#449dab"
+      white: "#787c99"
+    # Bright colors
+    bright:
+      black: "#444b6a"
+      red: "#ff7a93"
+      green: "#b9f27c"
+      yellow: "#ff9e64"
+      blue: "#7da6ff"
+      magenta: "#bb9af7"
+      cyan: "#0db9d7"
+      white: "#acb0d0"
+  tokyo-night-storm:
+    # Default colors
+    &tokyo-night-storm
+    primary:
+      background: "#24283b"
+      foreground: "#a9b1d6"
+    # Normal colors
+    normal:
+      black: "#32344a"
+      red: "#f7768e"
+      green: "#9ece6a"
+      yellow: "#e0af68"
+      blue: "#7aa2f7"
+      magenta: "#ad8ee6"
+      cyan: "#449dab"
+      white: "#9699a8"
+    # Bright colors
+    bright:
+      black: "#444b6a"
+      red: "#ff7a93"
+      green: "#b9f27c"
+      yellow: "#ff9e64"
+      blue: "#7da6ff"
+      magenta: "#bb9af7"
+      cyan: "#0db9d7"
+      white: "#acb0d0"
+  monokai-pro:
+    # Default colors
+    &monokai-pro
+    primary:
+      background: "#2D2A2E"
+      foreground: "#fff1f3"
+    # Normal colors
+    normal:
+      black: "#2c2525"
+      red: "#fd6883"
+      green: "#adda78"
+      yellow: "#f9cc6c"
+      blue: "#f38d70"
+      magenta: "#a8a9eb"
+      cyan: "#85dacc"
+      white: "#fff1f3"
+    # Bright colors
+    bright:
+      black: "#72696a"
+      red: "#fd6883"
+      green: "#adda78"
+      yellow: "#f9cc6c"
+      blue: "#f38d70"
+      magenta: "#a8a9eb"
+      cyan: "#85dacc"
+      white: "#fff1f3"
+# github Alacritty Colors
+github-dark: &github-dark
+  primary:
+    background: "#0d1117"
+    foreground: "#b3b1ad"
+  # Normal colors
+  normal:
+    black: "#484f58"
+    red: "#ff7b72"
+    green: "#3fb950"
+    yellow: "#d29922"
+    blue: "#58a6ff"
+    magenta: "#bc8cff"
+    cyan: "#39c5cf"
+    white: "#b1bac4"
+  # Bright colors
+  bright:
+    black: "#6e7681"
+    red: "#ffa198"
+    green: "#56d364"
+    yellow: "#e3b341"
+    blue: "#79c0ff"
+    magenta: "#d2a8ff"
+    cyan: "#56d4dd"
+    white: "#f0f6fc"
+  indexed_colors:
+    - { index: 16, color: "#d18616" }
+    - { index: 17, color: "#ffa198" }
+# github Alacritty Colors
+github-dimmed:
+  # Default colors
+  &github-dimmed
+  primary:
+    background: "#22272e"
+    foreground: "#768390"
+  # Normal colors
+  normal:
+    black: "#22272e"
+    red: "#f47067"
+    green: "#57ab5a"
+    yellow: "#c69026"
+    blue: "#539bf5"
+    magenta: "#b083f0"
+    cyan: "#39c5cf"
+    white: "#909dab"
+  # Bright colors
+  bright:
+    black: "#22272e"
+    red: "#ff938a"
+    green: "#6bc46d"
+    yellow: "#daaa3f"
+    blue: "#6cb6ff"
+    magenta: "#dcbdfb"
+    cyan: "#56d4dd"
+    white: "#cdd9e5"
+  indexed_colors:
+    - { index: 16, color: "#d18616" }
+    - { index: 17, color: "#ff938a" }
+# Midnight Haze theme
+midnight-haze:
+  # Default colors
+  &midnight-haze
+  primary:
+    background: "0x0c0c16"
+    foreground: "0xd8dee9"
+  # Normal colors
+  normal:
+    black: "0x2c2c3d"
+    red: "0xff6e6e"
+    green: "0x9ec875"
+    yellow: "0xffa759"
+    blue: "0x70a7d4"
+    magenta: "0xd291e0"
+    cyan: "0x96e0e0"
+    white: "0xd8dee9"
+  # Bright colors
+  bright:
+    black: "0x414166"
+    red: "0xff8d8d"
+    green: "0xb3d987"
+    yellow: "0xffc57f"
+    blue: "0x9bb3d3"
+    magenta: "0xffa1ff"
+    cyan: "0x9cd8d8"
+    white: "0xffffff"
+# colors: *tokyo-night
+# colors: *tokyo-night-storm
+# colors: *monokai-pro
+# colors: *github-dark
+# colors: *github-dimmed
+# colors: *my
+colors: *midnight-haze

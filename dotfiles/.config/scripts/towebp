@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Input and output directories
+input_dir="$(pwd)"
+out_dir="$input_dir/webp"
+
+# Quality and compression method (override via env vars)
+quality="${quality:-85}"
+webp_method="${webp_method:-6}" # 0 = fastest, 6 = best compression
+
+command -v magick >/dev/null || error_msg "❌ ImageMagick ('magick') is not installed or not in your PATH." 1
+
+# Create output directory if it doesn't exist
+mkdir -p "$out_dir"
+
+# Manually build array to handle filenames with spaces
+images=()
+while IFS= read -r -d '' file; do
+	images+=("$file")
+done < <(find "$input_dir" -maxdepth 1 -type f \( \
+	-iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.heic" \
+	\) -print0)
+
+# Loop through the array
+for img in "${images[@]}"; do
+	filename=$(basename "$img")
+	base="${filename%.*}"
+	output_file="$out_dir/$base.webp"
+
+	# Skip if the .webp already exists
+	if [ -f "$output_file" ]; then
+		echo "⏭️  Skipping existing: $base.webp"
+		continue
+	fi
+
+	echo "⚙️  Converting: $filename → $base.webp (quality=${quality}, webp:method=${webp_method})"
+	magick convert "$img" \
+		-strip \
+		-quality "${quality}" \
+		-define "webp:method=${webp_method}" \
+		"$output_file"
+done
+
+echo "✅ Conversion complete."

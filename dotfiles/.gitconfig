@@ -4,6 +4,9 @@
 [includeIf "gitdir:~/dev/Personal/"]
   path = ~/.config/gitconfig.d/mbrav
 
+[url "git@git.sib.team:"]
+  insteadOf = https://git.sib.team/
+
 ## Git config
 [core]
 	editor = nvim

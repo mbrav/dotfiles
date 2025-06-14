@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util functions
+source "${script_dir}/_util"
+
+ran_col_str "Utility for updating mbrav dotfiles modules"
+
+# Change to the script directory
+cd "$script_dir" || { error_msg "Failed to change directory to $script_dir" 1; }
+
+# Update all submodules
+if git submodule update --remote; then
+	success_msg "Submodules updated successfully."
+else
+	error_msg "Failed to update submodules." 1
+fi

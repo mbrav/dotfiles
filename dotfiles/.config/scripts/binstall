@@ -33,7 +33,7 @@ binaries=(
 	"bottom"
 )
 
-bin_list="${binaries[@]}"
+bin_list="${binaries[*]}"
 cmd_arg_help \
 	"Program name. Available: ${GREEN}${bin_list}${CLEAR}" \
 	"Bin path. Set: ${GREEN}${bin_dir}${CLEAR}" \
@@ -220,7 +220,7 @@ function fetch_version_bottom {
 
 case $1 in
 all)
-	warning_msg "Installing all binaries: ${binaries[@]}"
+	warning_msg "Installing all binaries: ${bin_list}"
 	# Create an array from string
 	for b in "${binaries[@]}"; do
 		# Execute self with all binaries and bin path
@@ -690,6 +690,6 @@ bottom)
 	;;
 *)
 	error_msg "Unknown program: ${CLEAR}${UNDERLINE}${1}"
-	error_msg "List of available binaries: ${CLEAR}${UNDERLINE}${binaries[@]}" 1
+	error_msg "List of available binaries: ${CLEAR}${UNDERLINE}${binaries[*]}" 1
 	;;
 esac

@@ -66,10 +66,17 @@ function r_color() {
 	fi
 }
 
+# ran_col_str
+# Print a string with each character in a random color.
+# Arguments:
+#   $1 - The string to randomize colors for. (Required)
+#   $2 - If non-empty, apply a random style to each character in addition to color. (Optional)
+# Output:
+#   Prints the input string with each character colored (and optionally styled) randomly.
+# Usage:
+#   ran_col_str "Hello World"
+#   ran_col_str "Hello World" 1
 function ran_col_str() {
-	# Print a string with random color characaters
-	# $1 - String to randomize characters
-	# $2 - If non empty set characters with a random style
 	[[ -z "${1}" ]] && echo "${RED}Please provide a string to randomize colors:" && exit 1
 	result=""
 	for ((i = 0; i < ${#1}; i++)); do
@@ -106,12 +113,12 @@ function info_msg() {
 	echo -e "${CYAN}[i] ${*}${CLEAR}"
 }
 
+# Prompts the user with a yes/no question.
+# Arguments:
+#   $1 - The question to display to the user.
+# Returns:
+#   0 if the user answers yes, 1 if the user answers no.
 function yes_no_prompt() {
-	# Yes no prompt
-	# $1 - Space separated string for prompt
-	# Return
-	# 0 - yes
-	# 1 - no
 	local yes_no_finish=1
 	local y_n=1
 	while [ $yes_no_finish -ne 0 ]; do
@@ -122,7 +129,7 @@ function yes_no_prompt() {
 		*) echo "${RED}${BOLD}[X] ${y_n} is not a yes/no option!" ;;
 		esac
 	done
-	return $y_n
+	return "${y_n}"
 }
 
 function check_url() {
@@ -155,10 +162,10 @@ function sudo_or_mv() {
 	# $1 - Target
 	echo "Sudo mv"
 	if [[ -w "${2}" ]]; then
-		info_msg "Directory ${w} is writable"
+		info_msg "Directory ${2} is writable"
 		mv -v "${1}" "${2}"
 	else
-		warning_msg "Sudo must be used for ${w}"
+		warning_msg "Sudo must be used for ${2}"
 		sudo mv -v "${1}" "${2}"
 	fi
 }

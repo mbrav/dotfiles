@@ -17,8 +17,9 @@ tmpf=$(mktemp)
 info_msg "Created tmp file at: ${tmpf}"
 
 check_urls() {
-	while read line; do
-		local url="$(echo $line | cut -d ',' -f 1)"
+	while read -r line; do
+		local url
+		url="$(echo "$line" | cut -d ',' -f 1)"
 		info_msg "Checking $url"
 		curl \
 			--fail \
@@ -46,10 +47,10 @@ curl \
 
 [[ $? -ne 0 ]] && error_msg "Failed to get SOCKS5 list from ${socks5_list_url}" 1
 
-success_msg "Got $(cat ${tmpf} | wc -l) SOCKS5 proxies"
+success_msg "Got $(wc -l <"${tmpf}") SOCKS5 proxies"
 
 check_urls
 
-rm $tmpf
+rm "${tmpf}"
 
 exit 0

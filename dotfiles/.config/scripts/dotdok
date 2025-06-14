@@ -78,7 +78,7 @@ function mount_if() {
 	# $1 - Source mount
 	# $2 - Destination mount
 	if [ -f "$1" ] || [ -d "$1" ]; then
-		echo "--mount type=bind,source="${1}",target="${2}",readonly"
+		echo "--mount type=bind,source=\"${1}\",target=\"${2}\",readonly"
 	fi
 }
 

@@ -2,7 +2,6 @@
 
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
-cur_dir=$(pwd)
 
 # Source util functions
 source "${script_dir}/_util"

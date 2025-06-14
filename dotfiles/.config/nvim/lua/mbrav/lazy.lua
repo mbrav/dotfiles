@@ -4,7 +4,7 @@ if not vim.loop.fs_stat(lazypath) then
     "git",
     "clone",
     "--filter=blob:none",
-    "https://github.com/folke/lazy.nvim.git",
+    "https://github.com/LazyVim/LazyVim.git",
     "--branch=stable", -- latest stable release
     lazypath,
   }
@@ -24,7 +24,7 @@ require("lazy").setup {
     -- LazyVim Extras: Coding
     { import = "lazyvim.plugins.extras.coding.mini-comment" },
     { import = "lazyvim.plugins.extras.coding.mini-surround" },
-    -- LazyVim Extras: Editor
+    -- LazyVim Extras: Editor%
     { import = "lazyvim.plugins.extras.editor.mini-diff" },
     { import = "lazyvim.plugins.extras.editor.mini-move" },
     { import = "lazyvim.plugins.extras.editor.inc-rename" },
@@ -53,7 +53,10 @@ require("lazy").setup {
     { import = "lazyvim.plugins.extras.lang.cmake" },
     { import = "lazyvim.plugins.extras.lang.tailwind" },
     { import = "lazyvim.plugins.extras.lang.typescript" },
-    -- { import = "lazyvim.plugins.extras.lang.clangd" },
+    { import = "lazyvim.plugins.extras.lang.clangd" },
+    -- LazyVim Extras: AI
+    { import = "lazyvim.plugins.extras.ai.copilot" },
+    { import = "lazyvim.plugins.extras.ai.copilot-chat" },
     -- Import/override with your plugins
     -- LazyVim Extras: Utilities
     -- { import = "lazyvim.plugins.extras.util.gitui" },

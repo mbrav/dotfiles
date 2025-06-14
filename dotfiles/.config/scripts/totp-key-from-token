@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+
+import base64
+import sys
+from google.protobuf.message import DecodeError
+
+# Import Google's OTP migration protobuf definition
+from google.authenticator.migration import otp_pb2
+
+
+def decode_otpauth_migration(data):
+    try:
+        # Decode Base64
+        decoded_data = base64.urlsafe_b64decode(data + "==")  # Add padding if needed
+        # Parse protobuf data
+        migration_payload = otp_pb2.MigrationPayload()
+        migration_payload.ParseFromString(decoded_data)
+
+        # Extract OTP secrets
+        for otp in migration_payload.otp_parameters:
+            print(f"Account: {otp.name}")
+            print(f"Issuer: {otp.issuer}")
+            print(f"Secret: {base64.b32encode(otp.secret).decode()}")
+            print("-" * 40)
+    except DecodeError:
+        print(
+            "Error: Could not decode OTP migration data. Make sure it's a valid Google Authenticator export."
+        )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print(
+            "Usage: python decode_totp_migration.py '<otpauth-migration://offline?data=...>'"
+        )
+        sys.exit(1)
+
+    otpauth_url = sys.argv[1]
+
+    # Extract the Base64-encoded data from the URL
+    if "otpauth-migration://offline?data=" in otpauth_url:
+        encoded_data = otpauth_url.split("data=")[1]
+        decode_otpauth_migration(encoded_data)
+    else:
+        print(
+            "Invalid URL format. Ensure it's an 'otpauth-migration://offline?data=...' URL."
+        )

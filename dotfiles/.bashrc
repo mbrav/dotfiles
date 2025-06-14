@@ -40,7 +40,7 @@ HISTTIMEFORMAT="%F %T: "
 # `history -a` => append new lines to history file
 # `history -c` and `history -r` aren't needed unless you're doing something fancy
 # Use a custom PROMPT_COMMAND to avoid overwriting anything pre-existing
-PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
+#PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
 
 # Add local bin to path if it exists
 [[ -d $HOME/.local/bin ]] && PATH="$PATH:$HOME/.local/bin"

@@ -1,4 +1,5 @@
 # Init pyenv if available
+
 if test -d ~/.pyenv
     set -Ux PYENV_ROOT $HOME/.pyenv
     fish_add_path $PYENV_ROOT/bin

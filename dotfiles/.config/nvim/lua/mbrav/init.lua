@@ -1,3 +1,3 @@
 require "mbrav.lazy"
-require "mbrav.mappings"
+require "mbrav.keymaps"
 require "mbrav.options"

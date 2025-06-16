@@ -1,45 +1,66 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # Set script_dir
-script_dir="$(dirname "$(realpath "$0")")"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 docker_tag="mbrav/dotfiles:latest"
-uid=$(id -u)
-gid=$(id -g)
-user="$USER"
-mount_from=$(pwd)
+uid="$(id -u)"
+gid="$(id -g)"
+user="${USER:-mbrav}"
+mount_from="$(pwd)"
 mount_to="/home/${user}/mount"
+container_runtime="docker"
+build_opts=()
+pass_home=false
 
-# Source util functions
-source "${script_dir}/_util"
+# Source util functions if present
+if [[ -f "${script_dir}/_util" ]]; then
+	source "${script_dir}/_util"
+else
+	echo "Missing _util file. Please ensure it exists in ${script_dir}." >&2
+	exit 1
+fi
 
-ran_col_str "Utility for running mbrav dotfiles inside an ephemeral docker container"
+ran_col_str "Utility for running mbrav dotfiles inside an ephemeral container"
 
-command -v docker >/dev/null || error_msg "Please install docker" 1
+for ((i = 0; i <= 100; i++)); do
+	# Pure bash micro sleeps (for the example).
+	sleep 0.1
 
-# Function to display help message
+	# Print the bar.
+	progress_bar "$i"
+done
+
+exit 0
+
+# Display help
 display_help() {
-	echo "Usage: $0 [options]"
-	echo
-	echo "Options:"
-	echo "  -h    Show this help message"
-	echo "  -u    Pass user's home directory inside the container"
-	echo
+	cat <<EOF
+Usage: $0 [options]
+
+Options:
+  -h         Show this help message
+  -u         Mount user's home directory instead of current working dir
+  -p         Use Podman instead of Docker
+  -n         No cache during image build (force rebuild)
+EOF
 	exit 0
 }
 
-# Parse the options using getopts
-while getopts "hu" opt; do
-	case ${opt} in
-	h)
-		display_help
-		;;
+# Parse CLI options
+while getopts "hupn" opt; do
+	case "${opt}" in
+	h) display_help ;;
 	u)
-		info_msg "Setting mount from to ${HOME}"
-		mount_from="$HOME"
+		pass_home=true
+		mount_from="${HOME}"
 		mount_to="/home/${user}"
 		;;
-	\?)
-		error_msg "Invalid option: -$OPTARG"
+	p) container_runtime="podman" ;;
+	n) build_opts+=(--no-cache) ;;
+	*)
+		error_msg "Unknown option: -${OPTARG}"
 		exit 1
 		;;
 	esac
@@ -47,20 +68,33 @@ done
 
 # Detect if running on macOS
 if [[ "$(uname)" == "Darwin" ]]; then
-	info_msg "Running on macOS, adjusting GID to 1000 avoid conflicts"
+	info_msg "Running on macOS. Adjusting GID to avoid permission issues."
 	gid="1000"
 fi
 
+# Determine available runtime if not explicitly set
+if ! command -v "${container_runtime}" >/dev/null; then
+	if command -v docker >/dev/null; then
+		container_runtime="docker"
+	elif command -v podman >/dev/null; then
+		container_runtime="podman"
+	else
+		error_msg "Neither docker nor podman found. Please install one of them."
+		exit 1
+	fi
+fi
+
+info_msg "Container runtime: ${container_runtime}"
 info_msg "Using user: ${user}"
 info_msg "UID/GID:    ${uid}/${gid}"
 info_msg "Mount from: ${mount_from}"
 info_msg "Mount to:   ${mount_to}"
 
-if docker image inspect "${docker_tag}" >/dev/null; then
-	info_msg "Docker container present, skipping build"
-else
-	info_msg "No docker container, building..."
-	docker build \
+# Build the image if it doesn't exist
+if ! "${container_runtime}" image inspect "${docker_tag}" >/dev/null 2>&1; then
+	info_msg "Image not found. Building container image..."
+
+	"${container_runtime}" build "${build_opts[@]}" \
 		--progress=plain \
 		-f "${script_dir}/../../../Dockerfile" \
 		--build-arg DOCKER_USER="${user}" \
@@ -68,26 +102,22 @@ else
 		--build-arg DOCKER_GID="${gid}" \
 		--tag "${docker_tag}" \
 		"${script_dir}/../../../." &&
-		success_msg "Container ${docker_tag} built"
+		success_msg "Image ${docker_tag} built successfully"
+else
+	info_msg "Container image already exists, skipping build."
 fi
 
-[[ $? -ne 0 ]] && error_msg "Failed to build image" 1
-
 # Print mount if source exists
-function mount_if() {
-	# $1 - Source mount
-	# $2 - Destination mount
-	if [ -f "$1" ] || [ -d "$1" ]; then
-		echo "--mount type=bind,source=\"${1}\",target=\"${2}\",readonly"
-	fi
+mount_if() {
+	[[ -e "$1" ]] && echo "--mount type=bind,source=${1},target=${2},readonly"
 }
 
-info_msg "Running ${docker_tag} interactively with ${mount_from} as mount to ${mount_to} and user '${uid}:${gid}'"
+info_msg "Running ${docker_tag} with user ${uid}:${gid}"
 
-docker run -it --rm \
+"${container_runtime}" run -it --rm \
 	--name "tmp-${mount_from##*/}" \
 	--user "${uid}:${gid}" \
-	--volume "${mount_from}:${mount_to}:rw" \
-	$(mount_if "/var/log" "/var/log") \
+	--mount type=bind,source="${mount_from}",target="${mount_to}" \
+	"$(mount_if "/var/log" "/var/log")" \
 	"${docker_tag}" &&
-	success_msg "Exited dotfiles container"
+	success_msg "Exited container ${docker_tag}"

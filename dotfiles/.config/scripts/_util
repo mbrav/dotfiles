@@ -3,7 +3,7 @@
 
 # COLORS
 ncolors=$(command -v tput >/dev/null && tput colors) # supports color
-if [[ -n $ncolors && -z $NO_COLOR ]]; then
+if [[ -n $ncolors && -z "${NO_COLOR:-}" ]]; then
 	TERMCOLS=$(tput cols)
 	CLEAR="$(tput sgr0)"
 
@@ -57,7 +57,7 @@ function r_color() {
 	# Set a random color
 	# $1 - If non empty set with style
 
-	if [[ -z "${1}" ]]; then
+	if [[ -z "${1:-}" ]]; then
 		# Set a random color
 		echo -e -n "${COLORS[RANDOM % ${#COLORS[@]}]}"
 	else
@@ -80,7 +80,7 @@ function ran_col_str() {
 	[[ -z "${1}" ]] && echo "${RED}Please provide a string to randomize colors:" && exit 1
 	result=""
 	for ((i = 0; i < ${#1}; i++)); do
-		if [[ -z "${2}" ]]; then
+		if [[ -z "${2:-}" ]]; then
 			# Set string with a random color
 			result="${result}$(r_color)${1:$i:1}${CLEAR}"
 		else
@@ -168,6 +168,49 @@ function sudo_or_mv() {
 		warning_msg "Sudo must be used for ${2}"
 		sudo mv -v "${1}" "${2}"
 	fi
+}
+
+# Get terminal width, default to 80 if unknown
+function get_terminal_width() {
+	local cols
+	if command -v tput &>/dev/null; then
+		cols=$(tput cols)
+	elif command -v stty &>/dev/null && [ -t 1 ]; then
+		cols=$(stty size | awk '{print $2}')
+	else
+		cols=80
+	fi
+	echo "${cols}"
+}
+
+# Display a progress bar with a spinner in the terminal.
+# Arguments:
+#   $1 - Percentage complete (integer 0-100)
+#   $2 - Step for spinner animation (optional, default: 0)
+# The progress bar adapts to terminal width and uses color variables.
+function progress_bar() {
+	local percent=$1
+	local step=${2:-0}
+	local chars=("/" "-" "\\" "|") # spinner
+
+	# Get terminal width and reserve space
+	local term_width=$(get_terminal_width)
+	local reserved_width=10 # space for " 100% |"
+	local bar_width=$((term_width - reserved_width))
+	((bar_width < 10)) && bar_width=10
+
+	# Compute segments
+	local filled=$((percent * bar_width / 100))
+	local empty=$((bar_width - filled))
+
+	local bar_filled bar_empty
+	bar_filled=$(printf "%${filled}s" | tr " " "=")
+	bar_empty=$(printf "%${empty}s" | tr " " " ")
+
+	local spinner="${chars[step % ${#chars[@]}]}"
+
+	printf "\r${BLUE}[%-${bar_width}s]${CLEAR} ${BOLD}%3d%%${CLEAR} ${spinner}" \
+		"${bar_filled}${bar_empty}" "${percent}"
 }
 
 # CHECK FUNCTIONS

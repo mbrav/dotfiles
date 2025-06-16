@@ -13,29 +13,37 @@ end
 vim.opt.rtp:prepend(vim.env.LAZY or lazypath)
 require("lazy").setup {
   spec = {
-    -- Add LazyVim and import its plugins
+    -- add lazyvim and import its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },
-    -- Import any extras modules here
-    -- LazyVim Extras: LSP
+
+    -- import any extras modules here
+    -- lazyvim extras: lsp
     { import = "lazyvim.plugins.extras.lsp.none-ls" },
-    -- LazyVim Extras: DAP
+
+    -- lazyvim extras: dap
     { import = "lazyvim.plugins.extras.dap.core" },
+
+    -- lazyvim extras: vscode
     { import = "lazyvim.plugins.extras.vscode" },
-    -- LazyVim Extras: Coding
+
+    -- lazyvim extras: coding
     { import = "lazyvim.plugins.extras.coding.mini-comment" },
     { import = "lazyvim.plugins.extras.coding.mini-surround" },
-    -- LazyVim Extras: Editor%
+
+    -- lazyvim extras: ui
+    { import = "lazyvim.plugins.extras.ui.alpha" },
+    { import = "lazyvim.plugins.extras.ui.edgy" },
+    { import = "lazyvim.plugins.extras.ui.treesitter-context" },
+    { import = "lazyvim.plugins.extras.ui.mini-indentscope" },
+
+    -- lazyvim extras: editor
     { import = "lazyvim.plugins.extras.editor.mini-diff" },
     { import = "lazyvim.plugins.extras.editor.mini-move" },
     { import = "lazyvim.plugins.extras.editor.inc-rename" },
     { import = "lazyvim.plugins.extras.editor.illuminate" },
-    -- LazyVim Extras: UI
-    { import = "lazyvim.plugins.extras.ui.alpha" },
-    { import = "lazyvim.plugins.extras.ui.edgy" },
     { import = "lazyvim.plugins.extras.editor.outline" },
-    { import = "lazyvim.plugins.extras.ui.treesitter-context" },
-    { import = "lazyvim.plugins.extras.ui.mini-indentscope" },
-    -- LazyVim Extras: Languages
+
+    -- lazyvim extras: languages (enabled)
     { import = "lazyvim.plugins.extras.lang.git" },
     { import = "lazyvim.plugins.extras.lang.python" },
     { import = "lazyvim.plugins.extras.lang.ansible" },
@@ -49,21 +57,51 @@ require("lazy").setup {
     { import = "lazyvim.plugins.extras.lang.toml" },
     { import = "lazyvim.plugins.extras.lang.terraform" },
     { import = "lazyvim.plugins.extras.lang.sql" },
-    { import = "lazyvim.plugins.extras.lang.nix" },
     { import = "lazyvim.plugins.extras.lang.cmake" },
-    { import = "lazyvim.plugins.extras.lang.tailwind" },
-    { import = "lazyvim.plugins.extras.lang.typescript" },
-    { import = "lazyvim.plugins.extras.lang.clangd" },
-    -- LazyVim Extras: AI
+    -- { import = "lazyvim.plugins.extras.lang.tailwind" },
+    -- { import = "lazyvim.plugins.extras.lang.typescript" },
+
+    -- lazyvim extras: languages (commented/optional)
+    -- { import = "lazyvim.plugins.extras.lang.angular" },
+    -- { import = "lazyvim.plugins.extras.lang.astro" },
+    -- { import = "lazyvim.plugins.extras.lang.clojure" },
+    -- { import = "lazyvim.plugins.extras.lang.elixir" },
+    -- { import = "lazyvim.plugins.extras.lang.elm" },
+    -- { import = "lazyvim.plugins.extras.lang.erlang" },
+    -- { import = "lazyvim.plugins.extras.lang.gleam" },
+    -- { import = "lazyvim.plugins.extras.lang.haskell" },
+    -- { import = "lazyvim.plugins.extras.lang.helm" },
+    -- { import = "lazyvim.plugins.extras.lang.java" },
+    -- { import = "lazyvim.plugins.extras.lang.kotlin" },
+    -- { import = "lazyvim.plugins.extras.lang.lean" },
+    -- { import = "lazyvim.plugins.extras.lang.nix" },
+    -- { import = "lazyvim.plugins.extras.lang.nushell" },
+    -- { import = "lazyvim.plugins.extras.lang.ocaml" },
+    -- { import = "lazyvim.plugins.extras.lang.omnisharp" },
+    -- { import = "lazyvim.plugins.extras.lang.php" },
+    -- { import = "lazyvim.plugins.extras.lang.prisma" },
+    -- { import = "lazyvim.plugins.extras.lang.r" },
+    -- { import = "lazyvim.plugins.extras.lang.rego" },
+    -- { import = "lazyvim.plugins.extras.lang.ruby" },
+    -- { import = "lazyvim.plugins.extras.lang.scala" },
+    -- { import = "lazyvim.plugins.extras.lang.svelte" },
+    -- { import = "lazyvim.plugins.extras.lang.tex" },
+    -- { import = "lazyvim.plugins.extras.lang.thrift" },
+    -- { import = "lazyvim.plugins.extras.lang.vue" },
+    -- { import = "lazyvim.plugins.extras.lang.zig" },
+
+    -- lazyvim extras: ai
     { import = "lazyvim.plugins.extras.ai.copilot" },
     { import = "lazyvim.plugins.extras.ai.copilot-chat" },
-    -- Import/override with your plugins
-    -- LazyVim Extras: Utilities
+
+    -- lazyvim extras: utilities
     -- { import = "lazyvim.plugins.extras.util.gitui" },
     { import = "lazyvim.plugins.extras.util.rest" },
     { import = "lazyvim.plugins.extras.util.startuptime" },
     -- { import = "lazyvim.plugins.extras.ui.mini-animate" },
     -- { import = "lazyvim.plugins.extras.linting.eslint" },
+
+    -- your custom plugins
     { import = "plugins" },
   },
   defaults = {

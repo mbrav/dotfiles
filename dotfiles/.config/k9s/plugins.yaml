@@ -1,6 +1,78 @@
 # K9s plugins: https://github.com/derailed/k9s/tree/master/plugins
 # See https://k9scli.io/topics/plugins/
 plugins:
+  start-alpine-pod:
+    shortCut: Ctrl-T
+    confirm: true
+    description: "Start an alpine:latest pod in current context/namespace"
+    scopes:
+      - pods
+      - deployments
+    command: bash
+    background: true
+    args:
+      - -c
+      - |
+        echo '{"apiVersion": "apps/v1", "kind": "Deployment", "metadata": {"name": "alpine", "labels": {"app": "alpine", "debug": "1"}}, "spec": {"selector": {"matchLabels": {"app": "alpine"}}, "replicas": 1, "template": {"metadata": {"labels": {"app": "alpine", "debug": "1"}, "annotations": {"kubectl.kubernetes.io/default-container": "alpine"}}, "spec": {"containers": [{"name": "alpine", "image": "alpine:latest", "imagePullPolicy": "Always", "securityContext": {"runAsUser": 0, "runAsGroup": 0}, "stdin": true, "tty": true, "stdinOnce": true, "terminationMessagePath": "/dev/termination-log", "terminationMessagePolicy": "File", "resources": {"requests": {"cpu": "100m", "memory": "100Mi"}, "limits": {"cpu": "100m", "memory": "100Mi"}}}], "restartPolicy": "Always"}}}}' | kubectl apply -f - --context $CONTEXT --namespace $NAMESPACE
+
+  node-root-shell:
+    shortCut: a
+    description: Run root shell on node
+    dangerous: true
+    scopes:
+      - nodes
+    command: bash
+    background: false
+    confirm: true
+    args:
+      - -c
+      - |
+        host="$1"
+        json='
+        {
+          "apiVersion": "v1",
+          "spec": {
+            "hostIPC": true,
+            "hostNetwork": true,
+            "hostPID": true
+        '
+        if ! [[ -z "$host" ]]; then
+          json+=",
+          \"nodeSelector\" : {
+            \"kubernetes.io/hostname\" : \"$host\"
+          }
+          ";
+        fi
+        json+='
+          }
+        }
+        '
+        kubectl run -ti --image alpine:3.8 --rm --privileged --restart=Never --overrides="$json" root --command -- nsenter -t 1 -m -u -n -i -- bash -l
+
+  secret-openssl-ca:
+    shortCut: Ctrl-O
+    confirm: false
+    description: Openssl ca.crt
+    scopes:
+      - secrets
+    command: bash
+    background: false
+    args:
+      - -c
+      - kubectl get secret --context $CONTEXT -n $NAMESPACE $NAME -o jsonpath='{.data.ca\.crt}' | base64 -d | openssl storeutl -noout -text -certs /dev/stdin |& less
+
+  secret-openssl-tls:
+    shortCut: Shift-O
+    confirm: false
+    description: Openssl tls.crt
+    scopes:
+      - secrets
+    command: bash
+    background: false
+    args:
+      - -c
+      - kubectl get secret --context $CONTEXT -n $NAMESPACE $NAME -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl storeutl -noout -text -certs /dev/stdin |& less
+
   # remove finalizers from a stuck namespace
   rm-ns:
     shortCut: n
@@ -8,12 +80,12 @@ plugins:
     dangerous: true
     description: Remove NS Finalizers
     scopes:
-    - namespace
+      - namespace
     command: sh
     background: false
     args:
-    - -c
-    - "kubectl get namespace $NAME -o json | jq '.spec.finalizers=[]' | kubectl replace --raw /api/v1/namespaces/$NAME/finalize -f - > /dev/null"
+      - -c
+      - "kubectl get namespace $NAME -o json | jq '.spec.finalizers=[]' | kubectl replace --raw /api/v1/namespaces/$NAME/finalize -f - > /dev/null"
 
   # View user-supplied values when the helm chart was created
   helm-values:
@@ -86,8 +158,6 @@ plugins:
         LATEST_REVISION=$(helm history -n $NAMESPACE --kube-context $CONTEXT $RELEASE_NAME | grep deployed | cut -d$'\t' -f1 | tr -d ' \t');
         helm diff revision $RELEASE_NAME $LATEST_REVISION $COL-REVISION --kube-context $CONTEXT --namespace $NAMESPACE --color | less -RK
 
-
-
   # Issues a helm delete --purge for the resource associated with the selected pod
   helm-purge:
     shortCut: Ctrl-P
@@ -122,12 +192,12 @@ plugins:
     scopes:
       - application
     command: argocd
-    args: 
-    - app
-    - sync
-    - $NAME
-    - --app-namespace
-    - $NAMESPACE
+    args:
+      - app
+      - sync
+      - $NAME
+      - --app-namespace
+      - $NAMESPACE
     background: true
     confirm: true
 

@@ -11,6 +11,7 @@ export MCFLY_RESULTS=30
 export MCFLY_PROMPT="❯"
 export MCFLY_FUZZY=5
 
+
 # MY ALIASES BEGIN
 
 # vi < vim < nvim substituton
@@ -186,22 +187,26 @@ command -v bat >/dev/null && alias cat='bat --style header --style snip --style 
 command -v k9s >/dev/null &&
 	export K9S_CONFIG_DIR="$HOME/.config/k9s"
 
+# Alias for chatgpt-cli
+command -v chatgpt >/dev/null &&
+	alias ai='chatgpt '
+
 # Bindings for Arch
 command -v pacman >/dev/null &&
-	alias rmpkg='sudo pacman -Rdd' &&
-	# Sort installed packages according to size in MB
-	alias big='expac -H M "%m\t%n" | sort -h | nl' &&
-	# List amount of -git packages
-	alias gitpkg='pacman -Q | grep -i "\-git" | wc -l' &&
-	# Get fastest mirrors
-	alias mirror="sudo reflector -f 30 -l 30 --number 10 --verbose --save /etc/pacman.d/mirrorlist" &&
-	alias mirrord="sudo reflector --latest 50 --number 20 --sort delay --save /etc/pacman.d/mirrorlist" &&
-	alias mirrors="sudo reflector --latest 50 --number 20 --sort score --save /etc/pacman.d/mirrorlist" &&
-	alias mirrora="sudo reflector --latest 50 --number 20 --sort age --save /etc/pacman.d/mirrorlist" &&
-	# Help people new to Arch
-	alias apt='echo "Bruh, you are using Arch, btw" ' &&
-	alias apt-get='echo "Bruh" ' &&
-	# Cleanup orphaned packages
-	alias cleanup='sudo pacman -Rns (pacman -Qtdq)' &&
-	# Recent installed packages
-	alias rip="expac --timefmt='%Y-%m-%d %T' '%l\t%n %v' | sort | tail -200 | nl"
+alias rmpkg='sudo pacman -Rdd' &&
+# Sort installed packages according to size in MB
+alias big='expac -H M "%m\t%n" | sort -h | nl' &&
+# List amount of -git packages
+alias gitpkg='pacman -Q | grep -i "\-git" | wc -l' &&
+# Get fastest mirrors
+alias mirror="sudo reflector -f 30 -l 30 --number 10 --verbose --save /etc/pacman.d/mirrorlist" &&
+alias mirrord="sudo reflector --latest 50 --number 20 --sort delay --save /etc/pacman.d/mirrorlist" &&
+alias mirrors="sudo reflector --latest 50 --number 20 --sort score --save /etc/pacman.d/mirrorlist" &&
+alias mirrora="sudo reflector --latest 50 --number 20 --sort age --save /etc/pacman.d/mirrorlist" &&
+# Help people new to Arch
+alias apt='echo "Bruh, you are using Arch, btw" ' &&
+alias apt-get='echo "Bruh" ' &&
+# Cleanup orphaned packages
+alias cleanup='sudo pacman -Rns (pacman -Qtdq)' &&
+# Recent installed packages
+alias rip="expac --timefmt='%Y-%m-%d %T' '%l\t%n %v' | sort | tail -200 | nl"

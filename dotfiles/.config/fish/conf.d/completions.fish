@@ -35,4 +35,10 @@ if status --is-interactive
     if type -q hubble
         hubble completion fish | source
     end
+
+    # init chatgpt-cli
+    if type -q chatgpt
+        chatgpt --set-completions fish | source
+    end
+
 end

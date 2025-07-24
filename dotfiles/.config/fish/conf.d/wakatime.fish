@@ -30,7 +30,7 @@ function __register_wakatime_fish_before_exec -e fish_postexec
         set wakatime_path (type -p ~/.wakatime/wakatime-cli)
     else
         echo "wakatime command not found. Please read \"https://wakatime.com/terminal\" and install wakatime."
-        return 1
+        return 0
     end
 
     if git rev-parse --is-inside-work-tree &>/dev/null

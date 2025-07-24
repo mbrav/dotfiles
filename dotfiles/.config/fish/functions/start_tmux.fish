@@ -1,5 +1,19 @@
-
-
+# start_tmux.fish
+#
+# Function: start_tmux
+# Description: Starts a tmux session with a custom icon as the session name.
+#              Handles various edge cases such as running inside an IDE, SSH, or Konsole.
+#              Attaches to an existing "main" session if available, otherwise creates a new one.
+#
+# Usage: start_tmux
+#
+# Steps:
+#   1. Checks if tmux is installed and shell is interactive.
+#   2. Detects if running inside an IDE or floating terminal.
+#   3. Skips starting tmux if inside SSH/Konsole unless also in IDE.
+#   4. Skips if already inside tmux.
+#   5. Sets a random animal icon for the session name, or uses folder name if in IDE.
+#   6. Attaches to existing "main" session or creates a new one.
 function start_tmux -d "Start tmux session with custom icon"
     # Check if tmux is installed and shell is interactive
     if not type -q tmux; or not status --is-interactive

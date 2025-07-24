@@ -40,5 +40,4 @@ if status --is-interactive
     if type -q chatgpt
         chatgpt --set-completions fish | source
     end
-
 end

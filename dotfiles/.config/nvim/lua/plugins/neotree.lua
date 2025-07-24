@@ -3,6 +3,12 @@ return {
     "nvim-neo-tree/neo-tree.nvim",
     enabled = true,
     opts = {
+      event_handlers = {
+        {
+          event = "neo_tree_buffer_enter",
+          handler = function() vim.cmd "setlocal rnu" end,
+        },
+      },
       filesystem = {
         filtered_items = {
           visible = true,

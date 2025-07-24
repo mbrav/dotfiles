@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 # Install various binaries directly from GitHub
-
-# Set script_dir
+# Set script_dir to the directory of this script
 script_dir="$(dirname "$(realpath "$0")")"
-bin_dir=${bin_dir:-"/usr/local/bin"}
-delay=${delay:-0.5}
+
+# Set default bin_dir and delay, allow override via script args
+bin_dir="${2:-${bin_dir:-/usr/local/bin}}"
+delay="${3:-${delay:-0.5}}"
 
 # Source util lib
 source "${script_dir}/_util"
-
-# Overide script args if present
-[[ -n "${2}" ]] && bin_dir="${2}"
-[[ -n "${3}" ]] && delay="${3}"
 
 ran_col_str "Binary install utility" c
 

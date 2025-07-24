@@ -1,7 +1,7 @@
 ## Include config
 [includeIf "gitdir:~/dev/"]
   path = ~/.config/gitconfig.d/work
-[includeIf "gitdir:~/dev/Personal/"]
+[includeIf "gitdir:~/dev/github.com/"]
   path = ~/.config/gitconfig.d/mbrav
 
 [url "git@git.sib.team:"]
@@ -261,3 +261,5 @@
   R = "!seq 1 20 | fzf --header 'HEAD~n number to rebase' --preview 'git show --color HEAD~{1}' --preview-window 'right:80%' --preview-label 'Commit info' | xargs -I % sh -c 'git rebase -i HEAD~%'"
   chk = "!git branch --format='%(refname:short)' | fzf --header 'Select git branch to checkout' --preview 'git show --color {1}' --preview-window 'right:80%' --preview-label 'Commit info' | xargs -I % sh -c 'git checkout %'"
 
+[pager]
+	log = false

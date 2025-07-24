@@ -1,16 +1,20 @@
-# Init custom scripts
-source ~/.config/scripts/_secrets
-source ~/.config/scripts/_aliases
+# dotfiles.fish - Initialize custom scripts and kubectl aliases
 
-# Load exceutable scripts and add to PATH
-if test -d ~/.config/scripts
-    if not contains -- ~/.config/scripts $PATH
-        set -p PATH ~/.config/scripts
-    end
+# Source secrets and aliases if scripts exist
+if test -f ~/.config/scripts/_secrets
+    source ~/.config/scripts/_secrets
 end
 
-# Kubectl aliases based on shell 
-# Based on https://github.com/ahmetb/kubectl-aliases
-if test -d ~/.config/scripts/kubectl-aliases
+if test -f ~/.config/scripts/_aliases
+    source ~/.config/scripts/_aliases
+end
+
+# Add ~/.config/scripts to PATH if it exists and isn't already present
+if test -d ~/.config/scripts
+    fish_add_path ~/.config/scripts
+end
+
+# Source kubectl aliases if available
+if test -f ~/.config/scripts/kubectl-aliases/.kubectl_aliases.fish
     source ~/.config/scripts/kubectl-aliases/.kubectl_aliases.fish
 end

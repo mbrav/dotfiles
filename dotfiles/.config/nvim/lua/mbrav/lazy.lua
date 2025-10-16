@@ -98,8 +98,9 @@ require("lazy").setup {
     -- { import = "lazyvim.plugins.extras.lang.zig" },
 
     -- lazyvim extras: ai
-    { import = "lazyvim.plugins.extras.ai.copilot" },
-    { import = "lazyvim.plugins.extras.ai.copilot-chat" },
+    { import = "lazyvim.plugins.extras.ai.sidekick" },
+    -- { import = "lazyvim.plugins.extras.ai.copilot" },
+    -- { import = "lazyvim.plugins.extras.ai.copilot-chat" },
 
     -- lazyvim extras: utilities
     -- { import = "lazyvim.plugins.extras.util.gitui" },

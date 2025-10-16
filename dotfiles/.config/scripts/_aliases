@@ -49,6 +49,10 @@ command -v zoxide >/dev/null &&
 	alias zq='zoxide query' &&
 	alias zr='zoxide remove'
 
+alias rss='rsync -avzh --progress --stats'
+alias rssum='rsync -avzh --progress --stats --checksum'
+alias rssumd='rsync -avzh --progress --stats --checksum --delete'
+
 ## MY ALIASES
 alias bashrc='source ~/.bashrc'
 alias fishrc='source ~/.config/fish/config.fish'

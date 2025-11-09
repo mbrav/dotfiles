@@ -1,4 +1,3 @@
-
 " MY VIM CONF
 
 " With a map leader it's possible to do extra key combinations
@@ -41,11 +40,8 @@ endif
 " Enable 256 colors palette
 set t_Co=256
 
-" Try loading theme
-try
-    colorscheme habamax
-catch
-endtry
+" Load theme
+colorscheme wildcharm
 
 set background=dark
 
@@ -90,17 +86,16 @@ endif
 " Use Unix as the standard file type
 set ffs=unix,dos,mac
 
+" --- Syntax highlighting and colors ---
+if has("termguicolors")
+    set termguicolors
+endif
+
 " Set to auto read when a file is changed from the outside
 set autoread
-au FocusGained,BufEnter * checktime
-" Return to last edit position when opening files
-au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 
 " Set indent line
 set autoindent
-
-" Auto intent on file write for some files
-autocmd BufRead,BufWritePre *.sh normal gg=G
 
 " Set 7 lines to the cursor - when moving vertically using j/k
 set so=7
@@ -168,13 +163,18 @@ set wrap "Wrap lines
 
 " Enable syntax highlighting
 syntax enable
+syntax on
 
 " Enable filetype plugins
-filetype plugin on
-filetype indent on
+filetype plugin indent on
+
+au FocusGained,BufEnter * checktime
+" Return to last edit position when opening files
+au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 
 " Language settings
 autocmd FileType yaml setlocal ts=2 sts=2 sw=2
+autocmd FileType sh setlocal expandtab tabstop=4 shiftwidth=4 softtabstop=4 autoindent
 
 """"""""""""""""""""""""""""""
 " => Visual mode related
@@ -341,8 +341,8 @@ if filereadable(expand("~/.vimrc.plug"))
     " Source plug file
     source ~/.vimrc.plug
 
-    " Set plugin theme
-    colorscheme nord
+    " " Set plugin theme
+    " colorscheme nord
 
     " Load plugin settings
     " Integrate airline with ale

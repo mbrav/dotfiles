@@ -6,7 +6,7 @@ call plug#begin()
     " Floating terminal
     Plug 'voldikss/vim-floaterm'
     " Nord Theme
-    Plug 'nordtheme/vim'
+    "Plug 'nordtheme/vim'
     " Navbar
     Plug 'vim-airline/vim-airline'
     " ALE (Asynchronous Lint Engine) is a plugin providing linting
@@ -15,5 +15,7 @@ call plug#begin()
     Plug 'tpope/vim-surround'
     " Git changes
     Plug 'airblade/vim-gitgutter'
+    " Go formatter
+    Plug 'darrikonn/vim-gofmt', { 'do': ':GoUpdateBinaries' }
 call plug#end()
 

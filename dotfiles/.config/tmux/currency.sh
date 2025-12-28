@@ -6,7 +6,7 @@
 # fi
 #
 # Define currency config dynamically
-currency_config="USD RUB $,EUR RUB €,CNY RUB ¥,USD EUR $"
+currency_config="USD RUB $,EUR RUB €,CNY RUB ¥,EUR USD $"
 
 # Loop through the currency_config
 IFS=',' read -r -a currencies <<<"$currency_config"

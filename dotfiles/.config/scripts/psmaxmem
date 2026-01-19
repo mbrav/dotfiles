@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Interval command
+# $1 - interval in seconds
+# $2-n - command and any number of arguments to execute
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util"
+
+PID="$1"
+poll="${poll:-0.1}"
+
+if [[ -z "$PID" ]]; then
+	error_msg "Usage: $0 <pid>" 1
+fi
+
+if ! ps -p "$PID" >/dev/null 2>&1; then
+	error_msg "PID $PID not found" 1
+fi
+
+max_rss=0 # KB
+max_vsz=0 # KB
+max_mem=0 # %
+
+info_msg "Tracking memory for PID $PID (polling every 0.1s)..."
+
+while ps -p "$PID" >/dev/null 2>&1; do
+	read -r rss vsz mem <<<"$(ps -p "$PID" -o rss=,vsz=,%mem=)"
+
+	rss=${rss:-0}
+	vsz=${vsz:-0}
+	mem=${mem:-0}
+
+	((rss > max_rss)) && max_rss=$rss
+	((vsz > max_vsz)) && max_vsz=$vsz
+
+	# floating-point compare for %MEM
+	awk -v m="$mem" -v max="$max_mem" 'BEGIN { exit !(m > max) }' &&
+		max_mem="$mem"
+
+	sleep "$poll"
+done
+
+info_msg "Process $PID exited.\nPeak memory usage:"
+printf "${BLUE}Max RSS:   \t${MAGENTA}%.2f MB\n" "$(awk "BEGIN { print $max_rss / 1024 }")"
+printf "${BLUE}Max VSZ:   \t${MAGENTA}%.2f MB\n" "$(awk "BEGIN { print $max_vsz / 1024 }")"
+printf "${BLUE}Max %%MEM: \t${MAGENTA}%s %%\n" "$max_mem"

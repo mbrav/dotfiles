@@ -1,34 +1,27 @@
-#!/bin/bash
-# ~/.bashrc
-#
+# ~/.bashrc: executed by bash(1) for non-login shells.
+# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
+# for examples
 
 # If not running interactively, don't do anything
-[[ $- != *i* ]] && return
+[ -z "$PS1" ] && return
 
-# BASH OPTIONS
-# Enable appending to the history file instead of overwriting it
+# don't put duplicate lines in the history. See bash(1) for more options
+# ... or force ignoredups and ignorespace
+HISTCONTROL=ignoredups:ignorespace
+
+# Ignore specific trivial commands
+HISTIGNORE="ls *:history:cd:cd -:exit"
+
+# append to the history file, don't overwrite it
 shopt -s histappend
-
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
-shopt -s checkwinsize
-
-# If set, the pattern "**" used in a pathname expansion context will
-# match all files and zero or more directories and subdirectories.
-shopt -s globstar
-
-# Set the file where the command history is saved
-HISTFILE=~/.bash_history
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=999999
 HISTFILESIZE=999999
 
-# don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
-# ignoredups: skip duplicates
-# ignorespace: skip lines starting with a space
-HISTCONTROL=ignoreboth
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
 
 # Ignore specific trivial commands
 HISTIGNORE="ls *:history:cd:cd -:exit"
@@ -36,54 +29,82 @@ HISTIGNORE="ls *:history:cd:cd -:exit"
 # Add timestamp to each entry
 HISTTIMEFORMAT="%F %T: "
 
-# Ensure history is updated immediately after each command
-# `history -a` => append new lines to history file
-# `history -c` and `history -r` aren't needed unless you're doing something fancy
-# Use a custom PROMPT_COMMAND to avoid overwriting anything pre-existing
-#PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    *color) color_prompt=yes;;
+    alacritty) color_prompt=yes;;
+esac
+
+# uncomment for a colored prompt, if the terminal has the capability; turned
+# off by default to not distract the user: the focus in a terminal window
+# should be on the output of commands, not on the prompt
+#force_color_prompt=yes
+
+if [ -n "$force_color_prompt" ]; then
+    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+	# We have color support; assume it's compliant with Ecma-48
+	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+	# a case would tend to support setf rather than setaf.)
+	color_prompt=yes
+    else
+	color_prompt=
+    fi
+fi
+
+
+# Set color prompt
+if [ "$color_prompt" = yes ]; then
+    # Load starship prompt if starship is installed:
+    command -v starship >/dev/null \
+        && eval "$(starship init bash)" \
+        || PS1='\[\033[90m\]\D{%Y-%m-%d %H:%M:%S} \[\033[32m\]\u@\h \[\033[34m\]\w\[\033[33m\]$(b=$(git branch --show-current 2>/dev/null); [ -n "$b" ] && printf " [%s]" "$b")\[\033[00m\]\$ ' 
+else
+    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+fi
+unset color_prompt force_color_prompt
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+*)
+    ;;
+esac
+
+# Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
+
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+    . /etc/bash_completion
+fi
+
 
 # Add local bin to path if it exists
 [[ -d $HOME/.local/bin ]] && PATH="$PATH:$HOME/.local/bin"
-# Load tmux t-smart-tmux-session-manager
-# [[ -d $HOME/.config/tmux/plugins/t-smart-tmux-session-manager/bin ]] && PATH="$PATH:$HOME/.config/tmux/plugins/t-smart-tmux-session-manager/bin"
 
-# Load starship prompt if starship is installed:
-command -v starship >/dev/null && eval "$(starship init bash)"
+# Add go bin to path if it exists
+[[ -d /usr/local/go/bin ]] && PATH="$PATH:/usr/local/go/bin"
 
-# Load zoxide if installed:
-command -v zoxide >/dev/null && eval "$(zoxide init bash)"
-
-# Load Mcfly history lookup plugin if installed:
-command -v mcfly >/dev/null && eval "$(mcfly init bash)"
-
-# Autocompletion
-
-# init talosctl
-command -v talosctl >/dev/null && eval "$(talosctl completion bash)"
-
-# init cilium
-command -v cilium >/dev/null && eval "$(cilium completion bash)"
-
-# init hubble
-command -v hubble >/dev/null && eval "$(hubble completion bash)"
-
-# Advanced command-not-found hook
-[[ -f /usr/share/doc/find-the-command/ftc.bash ]] && source /usr/share/doc/find-the-command/ftc.bash
-
-## Run fastfetch, neofetch or screenfetch
-if command -v fastfetch &>/dev/null; then
-	fastfetch --load-config neofetch.jsonc
-elif command -v neofetch &>/dev/null; then
-	neofetch
-elif command -v screenfetch &>/dev/null; then
-	screenfetch
-fi
-
-# Pyenv config
-[[ -d "$HOME/.pyenv" ]] && export PYENV_ROOT="$HOME/.pyenv"
-command -v pyenv >/dev/null && export PATH="$PYENV_ROOT/bin:$PATH"
-command -v pyenv >/dev/null && eval "$(pyenv init -)"
-command -v pyenv >/dev/null && eval "$(pyenv virtualenv-init -)"
+# Go config
+[[ -d "$HOME/go/bin" ]] && PATH="$PATH:$HOME/go/bin"
 
 # Cargo config
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
@@ -102,29 +123,29 @@ command -v pyenv >/dev/null && eval "$(pyenv virtualenv-init -)"
 # Based on https://github.com/ahmetb/kubectl-aliases
 [[ -f "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases" ]] && source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases"
 
+
+# Autocompletion
+
+# Load zoxide if installed:
+command -v zoxide >/dev/null && eval "$(zoxide init bash)"
+
+# Load Mcfly history lookup plugin if installed:
+command -v mcfly >/dev/null && eval "$(mcfly init bash)"
+
+
+# init talosctl
+command -v talosctl >/dev/null && eval "$(talosctl completion bash)"
+
+# init cilium
+command -v cilium >/dev/null && eval "$(cilium completion bash)"
+
+# init hubble
+command -v hubble >/dev/null && eval "$(hubble completion bash)"
+
+
+
+
 # Set trucolor
-export COLORTERM=truecolor
-
-# wakatime for bash
-#
-# include this file in your "~/.bashrc" file with this command:
-#   . path/to/bash-wakatime.sh
-#
-# or this command:
-#   source path/to/bash-wakatime.sh
-#
-# Don't forget to create and configure your "~/.wakatime.cfg" file.
-
-# hook function to send wakatime a tick
-pre_prompt_command() {
-	version="1.0.0"
-	entity=$(echo $(fc -ln -0) | cut -d ' ' -f1)
-	[ -z "$entity" ] && return # $entity is empty or only whitespace
-	$(git rev-parse --is-inside-work-tree 2>/dev/null) && local project="$(basename $(git rev-parse --show-toplevel))" || local project="Bash"
-	(wakatime-cli --write --plugin "bash-wakatime/$version" --entity-type app --project "$project" --entity "$entity" 2>&1 >/dev/null &)
-}
-
-command -v wakatime-cli >/dev/null && PROMPT_COMMAND="pre_prompt_command; $PROMPT_COMMAND"
 
 function start_tmux() {
 	if ! command -v tmux &>/dev/null; then
@@ -174,4 +195,5 @@ function start_tmux() {
 	tmux -2 attach -t "$tmux_session_name" || tmux -2 new-session -s "$tmux_session_name"
 }
 
-start_tmux
+#start_tmux
+

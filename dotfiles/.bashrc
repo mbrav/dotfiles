@@ -34,13 +34,13 @@ HISTTIMEFORMAT="%F %T: "
 
 # set variable identifying the chroot you work in (used in the prompt below)
 if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
-    debian_chroot=$(cat /etc/debian_chroot)
+	debian_chroot=$(cat /etc/debian_chroot)
 fi
 
 # set a fancy prompt (non-color, unless we know we "want" color)
 case "$TERM" in
-    *color) color_prompt=yes;;
-    alacritty) color_prompt=yes;;
+*color) color_prompt=yes ;;
+alacritty) color_prompt=yes ;;
 esac
 
 # uncomment for a colored prompt, if the terminal has the capability; turned
@@ -49,35 +49,33 @@ esac
 #force_color_prompt=yes
 
 if [ -n "$force_color_prompt" ]; then
-    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	# We have color support; assume it's compliant with Ecma-48
-	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-	# a case would tend to support setf rather than setaf.)
-	color_prompt=yes
-    else
-	color_prompt=
-    fi
+	if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+		# We have color support; assume it's compliant with Ecma-48
+		# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+		# a case would tend to support setf rather than setaf.)
+		color_prompt=yes
+	else
+		color_prompt=
+	fi
 fi
-
 
 # Set color prompt
 if [ "$color_prompt" = yes ]; then
-    # Load starship prompt if starship is installed:
-    command -v starship >/dev/null \
-        && eval "$(starship init bash)" \
-        || PS1='\[\033[90m\]\D{%Y-%m-%d %H:%M:%S} \[\033[32m\]\u@\h \[\033[34m\]\w\[\033[33m\]$(b=$(git branch --show-current 2>/dev/null); [ -n "$b" ] && printf " [%s]" "$b")\[\033[00m\]\$ ' 
+	# Load starship prompt if starship is installed:
+	command -v starship >/dev/null &&
+		eval "$(starship init bash)" ||
+		PS1='\[\033[90m\]\D{%Y-%m-%d %H:%M:%S} \[\033[32m\]\u@\H \[\033[34m\]\w\[\033[33m\]$(b=$(git branch --show-current 2>/dev/null); [ -n "$b" ] && printf " [%s]" "$b")\[\033[00m\]\$ '
 else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+	PS1='${debian_chroot:+($debian_chroot)}\u@\H:\w\$ '
 fi
 unset color_prompt force_color_prompt
 
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
+xterm* | rxvt*)
+	PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+	;;
+*) ;;
 esac
 
 # Alias definitions.
@@ -86,16 +84,15 @@ esac
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
 if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
+	source ~/.bash_aliases
 fi
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
-    . /etc/bash_completion
+	source /etc/bash_completion
 fi
-
 
 # Add local bin to path if it exists
 [[ -d $HOME/.local/bin ]] && PATH="$PATH:$HOME/.local/bin"
@@ -123,7 +120,6 @@ fi
 # Based on https://github.com/ahmetb/kubectl-aliases
 [[ -f "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases" ]] && source "$HOME/.config/scripts/kubectl-aliases/.kubectl_aliases"
 
-
 # Autocompletion
 
 # Load zoxide if installed:
@@ -131,7 +127,6 @@ command -v zoxide >/dev/null && eval "$(zoxide init bash)"
 
 # Load Mcfly history lookup plugin if installed:
 command -v mcfly >/dev/null && eval "$(mcfly init bash)"
-
 
 # init talosctl
 command -v talosctl >/dev/null && eval "$(talosctl completion bash)"
@@ -141,11 +136,6 @@ command -v cilium >/dev/null && eval "$(cilium completion bash)"
 
 # init hubble
 command -v hubble >/dev/null && eval "$(hubble completion bash)"
-
-
-
-
-# Set trucolor
 
 function start_tmux() {
 	if ! command -v tmux &>/dev/null; then
@@ -196,4 +186,3 @@ function start_tmux() {
 }
 
 #start_tmux
-

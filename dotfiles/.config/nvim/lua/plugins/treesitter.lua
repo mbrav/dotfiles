@@ -19,6 +19,7 @@ return {
         "tsx",
         "vim",
         "yaml",
+        "hcl",
       },
     },
   },

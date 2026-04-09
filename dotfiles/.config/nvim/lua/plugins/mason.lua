@@ -10,6 +10,7 @@ return {
         "isort",
         "yamlfmt",
         "yamllint",
+        "tflint",
       },
     },
   },

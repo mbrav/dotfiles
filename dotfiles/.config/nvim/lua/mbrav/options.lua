@@ -57,3 +57,10 @@ vim.g.vscode = true
 for option, value in pairs(options) do
   vim.opt[option] = value
 end
+
+-- Map .alloy files to HCL filetype
+vim.filetype.add({
+  extension = {
+    alloy = "hcl",
+  },
+})

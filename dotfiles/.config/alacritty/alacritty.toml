@@ -1,14 +1,7 @@
 # Alacritty toml config 
 # https://alacritty.org/config-alacritty.html
 
-live_config_reload = true
-ipc_socket = true         # Unix only
 # working_directory = "~/"
-
-# Shell and env settings
-[shell]
-program = "/usr/bin/fish"
-args = ["--login"]
 
 [env]
 IN_ALACRITTY = "true"
@@ -19,14 +12,14 @@ title = "Alacritty"
 decorations = "Full"
 decorations_theme_variant = "Dark"
 dynamic_padding = true
-opacity = 1.0
+opacity = 0.8
 # decorations = "None"
 # decorations = "Transparent" # MacOS only
 # decorations = "Buttonless" # MacOS only
 blur = true              # works on macOS/KDE Wayland
 resize_increments = true
 #"OnlyLeft" | "OnlyRight" | "Both" | "None" # (macos only)
-# option_as_alt = "None"
+option_as_alt = "Both"
 
 [window.class]
 general = "Alacritty"
@@ -46,10 +39,20 @@ size = 14
 builtin_box_drawing = true
 
 [font.normal]
-family = "JetbrainsMonoNL Nerd Font"
-# family = "Menlo"
-# family = "Iosevka Nerd Font"
+family = "Iosevka Nerd Font"
 style = "Regular"
+
+[font.bold]
+family = "Iosevka Nerd Font"
+style = "Bold"
+
+[font.italic]
+family = "Iosevka Nerd Font"
+style = "Italic"
+
+[font.bold_italic]
+family = "Iosevka Nerd Font"
+style = "Bold Italic"
 
 [scrolling]
 history = 100000
@@ -65,6 +68,7 @@ unfocused_hollow = true
 thickness = 0.2
 
 [cursor.style]
+shape = "Beam"
 blinking = "Always"
 
 [mouse]
@@ -87,6 +91,12 @@ regex = "(ipfs:|ipns:|magnet:|mailto:|gemini://|gopher://|https://|http://|news:
 [colors]
 draw_bold_text_with_bright_colors = true
 
+[general]
+live_config_reload = true
+ipc_socket = true         # Unix only
+
+# Alacritty toml config 
+# https://alacritty.org/config-alacritty.html
 import = [
   "~/.config/alacritty/keybindings.toml",
   # "~/.config/alacritty/schemes/Cobalt2.toml",

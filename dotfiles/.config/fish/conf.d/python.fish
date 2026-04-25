@@ -12,3 +12,7 @@ if test -d ~/.pyenv
         source (pyenv root)/completions/pyenv.fish
     end
 end
+
+if test -d ~/.venv/bin
+    source ~/.venv/bin/activate.fish
+end

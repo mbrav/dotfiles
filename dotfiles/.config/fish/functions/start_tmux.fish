@@ -42,7 +42,7 @@ function start_tmux -d "Start tmux session with custom icon"
 
     # Set default session name with a random animal icon and "main"
     set -l animal_icons "🐺" "🐯" "🦁" "🐪" "🐧" "🦩" "🦆" "🦅" "🐼" "🦏" "🦀" "🦂" "🕷️" "🦍" "🦊" "🦖" "🐊" "🐉" "🐲" "🐍" "🐋" "🐬" "🐙"
-    set -l random_icon (echo $animal_icons | tr ' ' '\n' | shuf -n 1)
+    set -l random_icon (random choice $animal_icons)
     set -l default_session_name "$random_icon main"
 
     # Override session name if inside IDE

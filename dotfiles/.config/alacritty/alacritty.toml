@@ -62,13 +62,13 @@ multiplier = 3
 save_to_clipboard = true
 
 [cursor]
-blink_interval = 500
+blink_interval = 400
 blink_timeout = 10
 unfocused_hollow = true
 thickness = 0.2
 
 [cursor.style]
-shape = "Beam"
+shape = "Block"
 blinking = "Always"
 
 [mouse]

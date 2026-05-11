@@ -14,5 +14,5 @@ if test -d ~/.pyenv
 end
 
 if test -d ~/.venv/bin
-    source ~/.venv/bin/activate.fish
+    fish_add_path --path ~/.venv/bin
 end

@@ -8,9 +8,9 @@ script_dir="$(dirname "$(realpath "$0")")"
 source "${script_dir}/_util"
 
 if [[ $PWD == *"$USER/dev/work"* ]]; then
-	git-cred-mbrav
+  git-cred-mbrav
 else
-	git-cred-mbrav
+  git-cred-mbrav
 fi
 
 echo "User:  $(git config user.name)"

@@ -3,11 +3,13 @@
 import sys
 import pyotp
 
+
 def generate_totp_code(secret_key):
     # Initialize the TOTP generator with the secret key
     totp = pyotp.TOTP(secret_key)
     # Generate the current one-time password
     return totp.now()
+
 
 if __name__ == "__main__":
     # Check if the user provided an argument

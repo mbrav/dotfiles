@@ -34,7 +34,7 @@ HISTTIMEFORMAT="%F %T: "
 
 # set variable identifying the chroot you work in (used in the prompt below)
 if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
-	debian_chroot=$(cat /etc/debian_chroot)
+  debian_chroot=$(cat /etc/debian_chroot)
 fi
 
 # set a fancy prompt (non-color, unless we know we "want" color)
@@ -49,32 +49,32 @@ esac
 #force_color_prompt=yes
 
 if [ -n "$force_color_prompt" ]; then
-	if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-		# We have color support; assume it's compliant with Ecma-48
-		# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-		# a case would tend to support setf rather than setaf.)
-		color_prompt=yes
-	else
-		color_prompt=
-	fi
+  if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+    # We have color support; assume it's compliant with Ecma-48
+    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+    # a case would tend to support setf rather than setaf.)
+    color_prompt=yes
+  else
+    color_prompt=
+  fi
 fi
 
 # Set color prompt
 if [ "$color_prompt" = yes ]; then
-	# Load starship prompt if starship is installed:
-	command -v starship >/dev/null &&
-		eval "$(starship init bash)" ||
-		PS1='\[\033[90m\]\D{%Y-%m-%d %H:%M:%S} \[\033[32m\]\u@\H \[\033[34m\]\w\[\033[33m\]$(b=$(git branch --show-current 2>/dev/null); [ -n "$b" ] && printf " [%s]" "$b")\[\033[00m\]\$ '
+  # Load starship prompt if starship is installed:
+  command -v starship >/dev/null &&
+    eval "$(starship init bash)" ||
+    PS1='\[\033[90m\]\D{%Y-%m-%d %H:%M:%S} \[\033[32m\]\u@\H \[\033[34m\]\w\[\033[33m\]$(b=$(git branch --show-current 2>/dev/null); [ -n "$b" ] && printf " [%s]" "$b")\[\033[00m\]\$ '
 else
-	PS1='${debian_chroot:+($debian_chroot)}\u@\H:\w\$ '
+  PS1='${debian_chroot:+($debian_chroot)}\u@\H:\w\$ '
 fi
 unset color_prompt force_color_prompt
 
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in
 xterm* | rxvt*)
-	PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-	;;
+  PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+  ;;
 *) ;;
 esac
 
@@ -84,14 +84,14 @@ esac
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
 if [ -f ~/.bash_aliases ]; then
-	source ~/.bash_aliases
+  source ~/.bash_aliases
 fi
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
-	source /etc/bash_completion
+  source /etc/bash_completion
 fi
 
 # Add local bin to path if it exists
@@ -137,52 +137,55 @@ command -v cilium >/dev/null && eval "$(cilium completion bash)"
 # init hubble
 command -v hubble >/dev/null && eval "$(hubble completion bash)"
 
+# init netbird
+command -v netbird >/dev/null && eval "$(netbird completion bash)"
+
 function start_tmux() {
-	if ! command -v tmux &>/dev/null; then
-		# Check if tmux is installed
-		# if not, exit function
-		return
-	fi
+  if ! command -v tmux &>/dev/null; then
+    # Check if tmux is installed
+    # if not, exit function
+    return
+  fi
 
-	if [[ "$TERM_PROGRAM" = @(vscode) || -n "$NVIM" || -n "$FLOATERM" ]]; then
-		# Check if terminal inside an IDE
-		IN_IDE=1
-	fi
+  if [[ "$TERM_PROGRAM" = @(vscode) || -n "$NVIM" || -n "$FLOATERM" ]]; then
+    # Check if terminal inside an IDE
+    IN_IDE=1
+  fi
 
-	if [[ -n "$SSH_CONNECTION" || -n "$SSH_CLIENT" || -n "$SSH_TTY" || -n "$KONSOLE_DBUS_SESSION" ]]; then
-		# $SSH_* - Check if inside a SSH session
-		# If so, do not enter a tmux session and exit function
+  if [[ -n "$SSH_CONNECTION" || -n "$SSH_CLIENT" || -n "$SSH_TTY" || -n "$KONSOLE_DBUS_SESSION" ]]; then
+    # $SSH_* - Check if inside a SSH session
+    # If so, do not enter a tmux session and exit function
 
-		# $KONSOLE_DBUS_SESSION - Check if inside a Konsole session
-		# Since Konsole is assumed to not be the default terminal app
-		# Whenever a integrated terminal opens within a KDE framework app
-		# exit function
-		if [[ -z "$IN_IDE" ]]; then
-			# If inside IDE, ignore
-			return
-		fi
-		# echo "🛑 Inside SSH session, not starting tmux session"
-	fi
+    # $KONSOLE_DBUS_SESSION - Check if inside a Konsole session
+    # Since Konsole is assumed to not be the default terminal app
+    # Whenever a integrated terminal opens within a KDE framework app
+    # exit function
+    if [[ -z "$IN_IDE" ]]; then
+      # If inside IDE, ignore
+      return
+    fi
+    # echo "🛑 Inside SSH session, not starting tmux session"
+  fi
 
-	if [[ -n "$TMUX" || "$TERM" = "screen" ]]; then
-		# Check if already inside tmux or custom variable
-		# if so, exit function
-		return
-	fi
+  if [[ -n "$TMUX" || "$TERM" = "screen" ]]; then
+    # Check if already inside tmux or custom variable
+    # if so, exit function
+    return
+  fi
 
-	# Attach to tmux session on shell login if tmux is installed
-	# Set default session name to "main"
-	tmux_session_name="🐺$(whoami)"
+  # Attach to tmux session on shell login if tmux is installed
+  # Set default session name to "main"
+  tmux_session_name="🐺$(whoami)"
 
-	if [[ -n "$IN_IDE" ]]; then
-		# Check if term is inside an IDE or other environments
-		folder="$(pwd)"
-		folder_name="$(basename $folder)"
-		tmux_session_name="🖥️$folder_name"
-	fi
+  if [[ -n "$IN_IDE" ]]; then
+    # Check if term is inside an IDE or other environments
+    folder="$(pwd)"
+    folder_name="$(basename $folder)"
+    tmux_session_name="🖥️$folder_name"
+  fi
 
-	# Attach to existing or create a new tmux session
-	tmux -2 attach -t "$tmux_session_name" || tmux -2 new-session -s "$tmux_session_name"
+  # Attach to existing or create a new tmux session
+  tmux -2 attach -t "$tmux_session_name" || tmux -2 new-session -s "$tmux_session_name"
 }
 
 #start_tmux

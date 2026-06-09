@@ -26,33 +26,9 @@ if test -d ~/.local/bin
     end
 end
 
-# Add /opt/homebrew/bin/to PATH
-if test -d /opt/homebrew/bin
-    if not contains -- /opt/homebrew/bin $PATH
-        set -p PATH /opt/homebrew/bin
-    end
-end
-
 ## Advanced command-not-found hook
 if test -f /usr/share/doc/find-the-command/ftc.fish
     source /usr/share/doc/find-the-command/ftc.fish
-end
-
-# Fish command history
-function history
-    # builtin history --show-time='%F %T '
-    builtin history
-end
-
-## Run fastfetch, neofetch or screenfetch if session is interactive
-if status --is-interactive
-    if type -q fastfetch
-        fastfetch --load-config neofetch.jsonc
-    else if type -q neofetch
-        neofetch
-    else if type -q screenfetch
-        screenfetch
-    end
 end
 
 start_tmux

@@ -12,16 +12,16 @@ command -v gum >/dev/null || error_msg "Please install gum CLI utility: https://
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
 
 check() {
-	# Check for kubernetes resource existance
-	name=$2
-	kind=$1
-	names=($(kubectl --context $CONTEXT -n $NAMESPACE get $kind --no-headers --output=jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null))
+  # Check for kubernetes resource existance
+  name=$2
+  kind=$1
+  names=($(kubectl --context $CONTEXT -n $NAMESPACE get $kind --no-headers --output=jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null))
 
-	if [[ " ${names[*]} " =~ " ${name} " ]]; then
-		echo 1
-	else
-		echo 0
-	fi
+  if [[ " ${names[*]} " =~ " ${name} " ]]; then
+    echo 1
+  else
+    echo 0
+  fi
 }
 
 # User prompts
@@ -102,45 +102,45 @@ EOF
 
 # Checks
 if [ "$(check csr ${USERNAME}-csr)" -eq 1 ]; then
-	warning_msg "Will delete existsing CSR"
-	kubectl --context $CONTEXT -n $NAMESPACE delete csr "${USERNAME}-csr"
+  warning_msg "Will delete existsing CSR"
+  kubectl --context $CONTEXT -n $NAMESPACE delete csr "${USERNAME}-csr"
 fi
 
 # Template apply
 cat $TMPD/rb.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
 [[ $? -eq 0 ]] &&
-	success_msg "RoleBinding create success" ||
-	error_msg "RoleBinding create failed" 1
+  success_msg "RoleBinding create success" ||
+  error_msg "RoleBinding create failed" 1
 
 cat $TMPD/role.yaml | kubectl --context "${CONTEXT}" -n $NAMESPACE apply -f -
 [[ $? -eq 0 ]] &&
-	success_msg "Role create success" ||
-	error_msg "Role create failed" 1
+  success_msg "Role create success" ||
+  error_msg "Role create failed" 1
 
 cat $TMPD/csr.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
 [[ $? -eq 0 ]] &&
-	success_msg "CSR create success" ||
-	error_msg "CSR create failed" 1
+  success_msg "CSR create success" ||
+  error_msg "CSR create failed" 1
 
 kubectl --context $CONTEXT -n $NAMESPACE certificate approve "${USERNAME}-csr"
 [[ $? -eq 0 ]] &&
-	success_msg "CertificateSigningRequest approved" ||
-	error_msg "CertificateSigningRequest approval failed" 1
+  success_msg "CertificateSigningRequest approved" ||
+  error_msg "CertificateSigningRequest approval failed" 1
 
 kubectl --context $CONTEXT -n $NAMESPACE get csr "${USERNAME}-csr" -o jsonpath='{.status.certificate}' | base64 --decode >"${TMPD}/${USERNAME}.crt"
 [[ -s "${TMPD}/${USERNAME}.crt" ]] &&
-	success_msg "Certificate ${TMPD}/${USERNAME}.crt Not Empty" ||
-	error_msg "Certificate ${TMPD}/${USERNAME}.crt Empty Error" 1
+  success_msg "Certificate ${TMPD}/${USERNAME}.crt Not Empty" ||
+  error_msg "Certificate ${TMPD}/${USERNAME}.crt Empty Error" 1
 
 cat $TMPD/rb.yaml | kubectl --context $CONTEXT -n $NAMESPACE apply -f -
 [[ $? -eq 0 ]] &&
-	success_msg "Role created" ||
-	error_msg "Role creation failed" 1
+  success_msg "Role created" ||
+  error_msg "Role creation failed" 1
 
 cat $TMPD/role.yaml | kubectl --context "${CONTEXT}" -n $NAMESPACE apply -f -
 [[ $? -eq 0 ]] &&
-	success_msg "RoleBinding created" ||
-	error_msg "RoleBinding creation failed" 1
+  success_msg "RoleBinding created" ||
+  error_msg "RoleBinding creation failed" 1
 
 CLIENT_CERT="$(cat $TMPD/${USERNAME}.crt | base64 | tr -d "\n")"
 CLIENT_KEY="$(cat $TMPD/${USERNAME}.key | base64 | tr -d "\n")"

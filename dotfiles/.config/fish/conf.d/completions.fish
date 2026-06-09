@@ -26,6 +26,11 @@ if status --is-interactive
         headscale completion fish | source
     end
 
+    # init netbird
+    if type -q netbird
+        netbird completion fish | source
+    end
+
     # init cilium
     if type -q cilium
         cilium completion fish | source
@@ -36,8 +41,4 @@ if status --is-interactive
         hubble completion fish | source
     end
 
-    # init chatgpt-cli
-    if type -q chatgpt
-        chatgpt --set-completions fish | source
-    end
 end

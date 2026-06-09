@@ -16,29 +16,29 @@ mkdir -p "$out_dir"
 # Manually build array to handle filenames with spaces
 images=()
 while IFS= read -r -d '' file; do
-	images+=("$file")
+  images+=("$file")
 done < <(find "$input_dir" -maxdepth 1 -type f \( \
-	-iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.heic" \
-	\) -print0)
+  -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.heic" \
+  \) -print0)
 
 # Loop through the array
 for img in "${images[@]}"; do
-	filename=$(basename "$img")
-	base="${filename%.*}"
-	output_file="$out_dir/$base.webp"
+  filename=$(basename "$img")
+  base="${filename%.*}"
+  output_file="$out_dir/$base.webp"
 
-	# Skip if the .webp already exists
-	if [ -f "$output_file" ]; then
-		echo "⏭️  Skipping existing: $base.webp"
-		continue
-	fi
+  # Skip if the .webp already exists
+  if [ -f "$output_file" ]; then
+    echo "⏭️  Skipping existing: $base.webp"
+    continue
+  fi
 
-	echo "⚙️  Converting: $filename → $base.webp (quality=${quality}, webp:method=${webp_method})"
-	magick convert "$img" \
-		-strip \
-		-quality "${quality}" \
-		-define "webp:method=${webp_method}" \
-		"$output_file"
+  echo "⚙️  Converting: $filename → $base.webp (quality=${quality}, webp:method=${webp_method})"
+  magick convert "$img" \
+    -strip \
+    -quality "${quality}" \
+    -define "webp:method=${webp_method}" \
+    "$output_file"
 done
 
 echo "✅ Conversion complete."

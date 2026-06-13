@@ -39,19 +39,19 @@ size = 14
 builtin_box_drawing = true
 
 [font.normal]
-family = "Iosevka Nerd Font"
+family = "IosevkaTerm Nerd Font"
 style = "Regular"
 
 [font.bold]
-family = "Iosevka Nerd Font"
+family = "IosevkaTerm Nerd Font"
 style = "Bold"
 
 [font.italic]
-family = "Iosevka Nerd Font"
+family = "IosevkaTerm Nerd Font"
 style = "Italic"
 
 [font.bold_italic]
-family = "Iosevka Nerd Font"
+family = "IosevkaTerm Nerd Font"
 style = "Bold Italic"
 
 [scrolling]
@@ -127,7 +127,7 @@ import = [
   # "~/.config/alacritty/schemes/catppuccin_latte.toml",
   # "~/.config/alacritty/schemes/catppuccin_macchiato.toml",
   # "~/.config/alacritty/schemes/catppuccin_mocha.toml",
-  "~/.config/alacritty/schemes/challenger_deep.toml",
+  # "~/.config/alacritty/schemes/challenger_deep.toml",
   # "~/.config/alacritty/schemes/chicago95.toml",
   # "~/.config/alacritty/schemes/citylights.toml",
   # "~/.config/alacritty/schemes/cyber_punk_neon.toml",
@@ -259,7 +259,7 @@ import = [
   # "~/.config/alacritty/schemes/terminal_app.toml",
   # "~/.config/alacritty/schemes/thelovelace.toml",
   # "~/.config/alacritty/schemes/tokyo_night.toml",
-  # "~/.config/alacritty/schemes/tokyo_night_enhanced.toml",
+  "~/.config/alacritty/schemes/tokyo_night_enhanced.toml",
   # "~/.config/alacritty/schemes/tokyo_night_light.toml",
   # "~/.config/alacritty/schemes/tokyo_night_storm.toml",
   # "~/.config/alacritty/schemes/tomorrow.toml",

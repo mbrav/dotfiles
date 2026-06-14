@@ -1,6 +1,10 @@
 # https://starship.rs/config/
-# Set 'nord-blue' as custom color palette
-palette = 'default'
+"$schema" = 'https://starship.rs/config-schema.json'
+
+palette = 'steel-gray'
+add_newline = false
+scan_timeout = 10
+command_timeout = 1000
 
 format = """
 [░▒▓](color1)\
@@ -14,6 +18,7 @@ $directory\
 $git_branch\
 $git_status\
 $git_metrics\
+$git_state\
 [](fg:color3 bg:color4)\
 $kubernetes\
 $python\
@@ -146,6 +151,7 @@ style = "fg:color5 bg:color2"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
+home_symbol = " ~"
 
 [directory.substitutions]
 "Documents" = "🗁 "
@@ -208,8 +214,11 @@ format = '[[($all_status$ahead_behind )](fg:color2 bg:color3)]($style)'
 
 [git_metrics]
 disabled = false
-format = '[+$added/-$deleted](fg:color2 bg:color3)'
-# format = '[[($all_status$ahead_behind )](fg:color2 bg:color3)]($style)'
+format = '([+$added ](bold green bg:color3)[-$deleted ](bold red bg:color3))'
+
+[git_state]
+style = "bg:color3"
+format = '[[($state( $progress_current/$progress_total) )](fg:color1 bg:color3)]($style)'
 
 [golang]
 disabled = false
@@ -254,7 +263,7 @@ symbol = "☸ "
 #format = '[ $symbol ($user on )($cluster in )$context \($namespace\)](fg:color2 bg:color4)'
 format = '[ $symbol ($context) ](fg:color2 bg:color4)'
 style = "bg:color4"
-detect_folders = ['k8s', 'kubernetes', 'k9s', 'kube*']
+detect_folders = ['k8s', 'kubernetes', 'k9s', 'kubeconfig']
 
 [lua]
 symbol = " "
@@ -281,49 +290,9 @@ disabled = false
 format = "[$symbol]($style)"
 style = "bg:color1 fg:color5"
 
-[os.symbols]
-Alpaquita = " "
-Alpine = " "
-Amazon = " "
-Android = " "
-Arch = " "
-Artix = " "
-CentOS = " "
-Debian = " "
-DragonFly = " "
-Emscripten = " "
-EndeavourOS = " "
-Fedora = " "
-FreeBSD = " "
-Garuda = " "
-Gentoo = " "
-HardenedBSD = "ﲊ "
-Illumos = " "
-Linux = " "
-Mabox = " "
-Macos = " "
-Manjaro = " "
-Mariner = " "
-MidnightBSD = " "
-Mint = " "
-NetBSD = " "
-NixOS = " "
-OpenBSD = " "
-openSUSE = " "
-OracleLinux = " "
-Pop = " "
-Raspbian = " "
-Redhat = " "
-RedHatEnterprise = " "
-Redox = " "
-Solus = "ﴱ "
-SUSE = " "
-Ubuntu = " "
-Unknown = " "
-Windows = " "
-
 [package]
 symbol = " "
+disabled = true
 
 [php]
 symbol = ""
@@ -337,7 +306,7 @@ symbol = "🪺 "
 disabled = false
 pyenv_version_name = false
 symbol = " "
-format = '[ $symbol ($virtualenv) ($version) ](fg:color2 bg:color4)'
+format = '[[ $symbol ($virtualenv) ($version) ](fg:color2 bg:color4)]($style)'
 style = "bg:color4"
 
 [rlang]

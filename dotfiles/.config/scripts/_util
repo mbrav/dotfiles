@@ -94,23 +94,61 @@ function ran_col_str() {
 # SCRIPT HELPER FUNCTIONS
 
 function error_msg() {
-  # Error message
-  # $1            - Message string argument
+  # $1            - Message string
   # $2 (optional) - exit code
-  echo -e "${RED}${BOLD}[X] ${1}${CLEAR}"
-  [[ -n $2 ]] && echo "${RED}Program exiting with code: ${2}${CLEAR}" && exit "${2}"
+  # $3 (optional) - prefix override: omit=[X], ""=none, string=custom
+  local prefix
+  if [[ -z "${3+x}" ]]; then
+    prefix="[X] "
+  elif [[ -n "$3" ]]; then
+    prefix="${3} "
+  else
+    prefix=""
+  fi
+  echo -e "${RED}${BOLD}${prefix}${1}${CLEAR}"
+  [[ -n "${2:-}" ]] && echo "${RED}Program exiting with code: ${2}${CLEAR}" && exit "${2}"
 }
 
 function warning_msg() {
-  echo -e "${YELLOW}${BOLD}[!] ${*}${CLEAR}"
+  # $1            - Message string
+  # $2 (optional) - prefix override: omit=[!], ""=none, string=custom
+  local prefix
+  if [[ -z "${2+x}" ]]; then
+    prefix="[!] "
+  elif [[ -n "$2" ]]; then
+    prefix="${2} "
+  else
+    prefix=""
+  fi
+  echo -e "${YELLOW}${BOLD}${prefix}${1}${CLEAR}"
 }
 
 function success_msg() {
-  echo -e "${GREEN}${BOLD}[✓] ${*}${CLEAR}"
+  # $1            - Message string
+  # $2 (optional) - prefix override: omit=[✓], ""=none, string=custom
+  local prefix
+  if [[ -z "${2+x}" ]]; then
+    prefix="[✓] "
+  elif [[ -n "$2" ]]; then
+    prefix="${2} "
+  else
+    prefix=""
+  fi
+  echo -e "${GREEN}${BOLD}${prefix}${1}${CLEAR}"
 }
 
 function info_msg() {
-  echo -e "${CYAN}[i] ${*}${CLEAR}"
+  # $1            - Message string
+  # $2 (optional) - prefix override: omit=[i], ""=none, string=custom
+  local prefix
+  if [[ -z "${2+x}" ]]; then
+    prefix="[i] "
+  elif [[ -n "$2" ]]; then
+    prefix="${2} "
+  else
+    prefix=""
+  fi
+  echo -e "${CYAN}${prefix}${1}${CLEAR}"
 }
 
 # Prompts the user with a yes/no question.

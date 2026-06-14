@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Rename the current tmux window.
+# $1 - current window name (passed from tmux via #{window_name})
+# If new name is left empty, falls back to the current directory basename.
+
+script_dir="$(dirname "$(realpath "$0")")"
+source "${script_dir}/_util"
+
+current="${1:-}"
+
+read -rp "${CYAN}Rename window${CLEAR} ${YELLOW}[${current}]${CLEAR}${CYAN} (empty = dir name)${CLEAR}: " win_name
+
+if [[ -z "$win_name" ]]; then
+  win_name="$(basename "$PWD")"
+  info_msg "Using directory name: ${BOLD}${win_name}${CLEAR}" ""
+fi
+
+tmux rename-window "$win_name"
+success_msg "Renamed to: ${win_name}"

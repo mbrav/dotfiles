@@ -15,4 +15,7 @@ end
 
 if test -d ~/.venv/bin
     fish_add_path --path ~/.venv/bin
+    if test -f ~/.venv/bin/activate.fish
+        source ~/.venv/bin/activate.fish
+    end
 end

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Pick a tmux pane layout for the current window via fzf.
+
+script_dir="$(dirname "$(realpath "$0")")"
+source "${script_dir}/_util"
+
+command -v fzf >/dev/null || error_msg "Please install fzf" 1
+
+pane_count=$(tmux list-panes | wc -l)
+if [[ "$pane_count" -lt 2 ]]; then
+  warning_msg "Only one pane — split first before changing layout"
+  exit 0
+fi
+
+selection=$(printf '%s\n' \
+  "even-horizontal  │  All panes side by side" \
+  "even-vertical    │  All panes stacked" \
+  "main-horizontal  │  One large pane on top, rest below" \
+  "main-vertical    │  One large pane left, rest right" \
+  "tiled            │  Grid" |
+  fzf --prompt="  layout: " \
+    --header="Select pane layout" \
+    --layout=reverse \
+    --no-preview)
+
+[[ -z "$selection" ]] && exit 0
+
+layout=$(echo "$selection" | awk '{print $1}')
+tmux select-layout "$layout"
+success_msg "Layout set to: ${layout}"

@@ -373,20 +373,23 @@ def cmd_resurrect(args: argparse.Namespace) -> None:
 def cmd_status(args: argparse.Namespace) -> None:
     """List pane IDs and titles in the current agents window."""
     win = get_win()
-    lines = subprocess.check_output(
-        [
-            "tmux",
-            "list-panes",
-            "-t",
-            f"agents:{win}",
-            "-F",
-            "#{pane_id}  #{pane_title}",
-        ],
-        text=True,
-        stderr=subprocess.DEVNULL,
-    ).strip()
-    if lines:
-        print(lines)
+    try:
+        lines = subprocess.check_output(
+            [
+                "tmux",
+                "list-panes",
+                "-t",
+                f"agents:{win}",
+                "-F",
+                "#{pane_id}  #{pane_title}",
+            ],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        if lines:
+            print(lines)
+    except subprocess.CalledProcessError:
+        print(f"no agents window: agents:{win}", file=sys.stderr)
 
 
 def cmd_capture(args: argparse.Namespace) -> None:

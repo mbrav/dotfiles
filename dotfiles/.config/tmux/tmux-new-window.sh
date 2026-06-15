@@ -34,5 +34,5 @@ while tmux list-windows -F '#{window_name}' | grep -qx "$win_name"; do
 done
 [[ "$win_name" != "$base_name" ]] && info_msg "Renamed to avoid duplicate: ${BOLD}${win_name}${CLEAR}" ""
 
-tmux new-window -n "$win_name" -c "$selected_dir"
+tmux new-window -n "$win_name" -c "$selected_dir" -e "TMUX_WIN=$win_name"
 success_msg "Opened: ${win_name}"

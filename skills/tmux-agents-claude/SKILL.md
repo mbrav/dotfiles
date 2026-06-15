@@ -38,7 +38,6 @@ Call multiple times to run agents in parallel.
 
 | Option | Description |
 |--------|-------------|
-| `--dangerously-skip-permissions` | Pass `--dangerously-skip-permissions` to claude — no permission prompts |
 | `--model MODEL` | Use a specific model (e.g. `claude-opus-4-7`, `claude-sonnet-4-6`) |
 | `--tools TOOLS` | Comma-separated allowed tools passed via `--allowedTools` (e.g. `Read,Edit,Bash`) |
 | `--effort LEVEL` | Thinking effort: `low`, `medium`, `high`, `xhigh`, `max`, `auto` |

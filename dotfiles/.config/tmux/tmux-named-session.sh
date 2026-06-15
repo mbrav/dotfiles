@@ -11,10 +11,10 @@ session="${1:?Session name required}"
 win="${2:-main}"
 
 if ! tmux has-session -t "$session" 2>/dev/null; then
-  tmux new-session -d -s "$session" -n "$win"
+  tmux new-session -d -s "$session" -n "$win" -e "TMUX_WIN=$win"
   info_msg "Created session ${BOLD}${session}${CLEAR} with window: ${BOLD}${win}${CLEAR}" ""
 elif ! tmux list-windows -t "$session" -F '#{window_name}' | grep -qx "$win"; then
-  tmux new-window -t "$session" -n "$win"
+  tmux new-window -t "$session" -n "$win" -e "TMUX_WIN=$win"
   info_msg "Created window ${BOLD}${win}${CLEAR} in session: ${BOLD}${session}${CLEAR}" ""
 fi
 

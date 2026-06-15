@@ -43,10 +43,7 @@ EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max", "auto"]
 
 
 def get_win() -> str:
-    """Return current tmux window name from env or tmux query."""
-    win = os.environ.get("TMUX_WIN")
-    if win:
-        return win
+    """Return current tmux window name via tmux query."""
     return subprocess.check_output(
         ["tmux", "display-message", "-p", "#{window_name}"], text=True
     ).strip()

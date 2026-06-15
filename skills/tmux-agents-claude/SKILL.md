@@ -50,6 +50,14 @@ Lightweight poll — reads only timestamps, never loads response text. Use this 
 
 `ready` means a new response has arrived since the last `spawn` or `send`. Call `result` once ping returns `ready`.
 
+## Resurrect a Cleaned-Up Agent
+
+Brings back an agent after `cleanup --all` has killed its pane. Requires the session UUID from the original `spawn` output. Opens a new pane and resumes the conversation from where it left off.
+
+```bash
+./scripts/agent.py resurrect <task-name> <session-uuid>
+```
+
 ## Send Follow-Up Prompt
 
 ```bash

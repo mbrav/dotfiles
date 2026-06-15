@@ -187,8 +187,8 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     }
     statefile(win, args.task).write_text(json.dumps(state))
 
-    # Tile layout
-    tmux("select-layout", "-t", target, "tiled")
+    # Side-by-side horizontal layout: | Agent 1 | Agent 2 | Agent 3 |
+    tmux("select-layout", "-t", target, "even-horizontal")
 
     # Launch Claude with the pre-generated session ID
     tmux(
@@ -210,7 +210,8 @@ def cmd_pane_id(args: argparse.Namespace) -> None:
 def cmd_prompt(args: argparse.Namespace) -> None:
     win = get_win()
     pane_id = resolve_pane_id(win, args.task)
-    tmux("send-keys", "-t", pane_id, args.text, "Enter")
+    tmux("send-keys", "-t", pane_id, "-l", args.text)
+    tmux("send-keys", "-t", pane_id, "Enter")
     # Update sent_at so ping knows to wait for a fresh response
     sf = statefile(win, args.task)
     if sf.exists():
@@ -268,6 +269,40 @@ def cmd_ping(args: argparse.Namespace) -> None:
         print("ready")
     else:
         print("thinking")
+
+
+def cmd_resurrect(args: argparse.Namespace) -> None:
+    """Bring back a cleaned-up agent using its known session UUID."""
+    win = get_win()
+    target = f"agents:{win}"
+    session_id = args.session_id
+
+    # Ensure agents session and window exist
+    try:
+        existing = subprocess.check_output(
+            ["tmux", "list-windows", "-t", "agents", "-F", "#{window_name}"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        if win not in existing.splitlines():
+            tmux("new-window", "-t", "agents", "-n", win)
+    except subprocess.CalledProcessError:
+        tmux("new-session", "-d", "-s", "agents", "-n", win)
+
+    pane_id = tmux_out("split-window", "-t", target, "-d", "-P", "-F", "#{pane_id}")
+    tmux("select-pane", "-t", pane_id, "-T", args.task)
+    tmux("select-layout", "-t", target, "even-horizontal")
+
+    tmux("send-keys", "-t", pane_id, f"claude --session-id '{session_id}'", "Enter")
+
+    state = {
+        "pane_id": pane_id,
+        "session_id": session_id,
+        "cwd": os.getcwd(),
+        "sent_at": now_iso(),
+    }
+    statefile(win, args.task).write_text(json.dumps(state))
+    print(f"Resurrected '{args.task}' in pane {pane_id} (session: {session_id})")
 
 
 def cmd_status(args: argparse.Namespace) -> None:
@@ -339,6 +374,12 @@ def main() -> None:
         "--wait", action="store_true", help="poll until response arrives"
     )
 
+    p_resurrect = sub.add_parser(
+        "resurrect", help="bring back a cleaned-up agent by session UUID"
+    )
+    p_resurrect.add_argument("task", help="task name to restore")
+    p_resurrect.add_argument("session_id", help="session UUID from the original spawn")
+
     sub.add_parser("status", help="list pane IDs and titles in current agents window")
 
     p_ping = sub.add_parser(
@@ -360,6 +401,7 @@ def main() -> None:
         "pane-id": cmd_pane_id,
         "prompt": cmd_prompt,
         "result": cmd_result,
+        "resurrect": cmd_resurrect,
         "status": cmd_status,
         "ping": cmd_ping,
         "cleanup": cmd_cleanup,

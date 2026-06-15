@@ -18,7 +18,6 @@ import subprocess
 import sys
 import time
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -109,40 +108,6 @@ def jsonl_path(state: dict) -> Path:
     )
 
 
-def now_iso() -> str:
-    """Return current UTC time as millisecond-precision ISO 8601 string."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-
-
-def parse_iso(ts: str) -> datetime:
-    """Parse an ISO 8601 timestamp string into a timezone-aware datetime."""
-    return datetime.fromisoformat(ts.replace("Z", "+00:00"))
-
-
-def last_end_turn_timestamp(jsonl: Path) -> datetime | None:
-    """Return the timestamp of the last end_turn assistant record, or None."""
-    if not jsonl.exists():
-        return None
-    last_ts = None
-    with open(jsonl) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if record.get("type") != "assistant":
-                continue
-            if record.get("message", {}).get("stop_reason") != "end_turn":
-                continue
-            ts = record.get("timestamp")
-            if ts:
-                last_ts = parse_iso(ts)
-    return last_ts
-
-
 def extract_last_response(jsonl: Path) -> str | None:
     """Return text of the last end_turn assistant message in the JSONL log, or None."""
     if not jsonl.exists():
@@ -173,6 +138,70 @@ def extract_last_response(jsonl: Path) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Helpers: agents window management
+# ---------------------------------------------------------------------------
+
+
+def agents_window_id(win: str) -> str | None:
+    """Return the window ID (@N) for an exact-named window in the agents session, or None."""
+    try:
+        for line in tmux_out(
+            "list-windows", "-t", "agents", "-F", "#{window_id} #{window_name}"
+        ).splitlines():
+            parts = line.split(None, 1)
+            if len(parts) == 2 and parts[1] == win:
+                return parts[0]
+    except subprocess.CalledProcessError:
+        pass
+    return None
+
+
+def ensure_agents_window(win: str) -> tuple[str, bool, str]:
+    """Ensure agents session and exact window exist.
+
+    Returns (target, fresh_window, initial_pane_id).
+    initial_pane_id is only meaningful when fresh_window=True.
+    """
+    r = subprocess.run(
+        [
+            "tmux",
+            "new-session",
+            "-d",
+            "-s",
+            "agents",
+            "-n",
+            win,
+            "-P",
+            "-F",
+            "#{window_id} #{pane_id}",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if r.returncode == 0:
+        win_id, pane_id = r.stdout.strip().split()
+        return f"agents:{win_id}", True, pane_id
+    elif "duplicate session" in r.stderr:
+        win_id = agents_window_id(win)
+        if win_id is None:
+            out = tmux_out(
+                "new-window",
+                "-t",
+                "agents",
+                "-n",
+                win,
+                "-P",
+                "-F",
+                "#{window_id} #{pane_id}",
+            )
+            win_id, pane_id = out.split()
+            return f"agents:{win_id}", True, pane_id
+        return f"agents:{win_id}", False, ""
+    else:
+        raise subprocess.CalledProcessError(r.returncode, r.args, r.stdout, r.stderr)
+
+
+# ---------------------------------------------------------------------------
 # Subcommands
 # ---------------------------------------------------------------------------
 
@@ -180,31 +209,10 @@ def extract_last_response(jsonl: Path) -> str | None:
 def cmd_spawn(args: argparse.Namespace) -> None:
     """Spawn a new Claude subagent pane in the agents session."""
     win = get_win()
-    target = f"agents:{win}"
+    target, fresh_window, initial_pane = ensure_agents_window(win)
 
-    # Ensure the agents session and target window exist
-    session_exists = (
-        subprocess.run(
-            ["tmux", "has-session", "-t", "agents"], capture_output=True
-        ).returncode
-        == 0
-    )
-    fresh_window = False
-    if not session_exists:
-        tmux("new-session", "-d", "-s", "agents", "-n", win)
-        fresh_window = True
-    elif (
-        win
-        not in tmux_out(
-            "list-windows", "-t", "agents", "-F", "#{window_name}"
-        ).splitlines()
-    ):
-        tmux("new-window", "-t", "agents", "-n", win)
-        fresh_window = True
-
-    # Use the initial pane if the window was just created, otherwise split
     if fresh_window:
-        pane_id = tmux_out("list-panes", "-t", target, "-F", "#{pane_id}")
+        pane_id = initial_pane  # captured atomically at session/window creation
     else:
         pane_id = tmux_out("split-window", "-t", target, "-d", "-P", "-F", "#{pane_id}")
 
@@ -217,7 +225,6 @@ def cmd_spawn(args: argparse.Namespace) -> None:
         "pane_id": pane_id,
         "session_id": session_id,
         "cwd": os.getcwd(),
-        "sent_at": now_iso(),
     }
     statefile(win, args.task).write_text(json.dumps(state))
 
@@ -282,12 +289,6 @@ def cmd_prompt(args: argparse.Namespace) -> None:
     pane_id = resolve_pane_id(win, args.task)
     tmux("send-keys", "-t", pane_id, "-l", args.text)
     tmux("send-keys", "-t", pane_id, "Enter")
-    # Update sent_at so ping knows to wait for a fresh response
-    sf = statefile(win, args.task)
-    if sf.exists():
-        state = json.loads(sf.read_text())
-        state["sent_at"] = now_iso()
-        sf.write_text(json.dumps(state))
 
 
 def cmd_result(args: argparse.Namespace) -> None:
@@ -319,49 +320,46 @@ def cmd_result(args: argparse.Namespace) -> None:
         print(result)
 
 
-def active_claude_session_ids() -> set[str]:
-    """Return session IDs currently tracked in ~/.claude/sessions/."""
+def claude_session_statuses() -> dict[str, str]:
+    """Return {sessionId: status} for all running claude sessions in ~/.claude/sessions/."""
     sessions_dir = Path.home() / ".claude" / "sessions"
-    ids: set[str] = set()
+    statuses: dict[str, str] = {}
     if sessions_dir.exists():
         for f in sessions_dir.glob("*.json"):
             try:
-                sid = json.loads(f.read_text()).get("sessionId")
+                data = json.loads(f.read_text())
+                sid = data.get("sessionId")
+                status = data.get("status", "idle")
                 if sid:
-                    ids.add(sid)
+                    statuses[sid] = status
             except (json.JSONDecodeError, OSError):
                 pass
-    return ids
+    return statuses
 
 
 def cmd_ping(args: argparse.Namespace) -> None:
-    """Print a status table of all agent sessions in the current window."""
-    win = get_win()
-    state_files = sorted(Path("/tmp").glob(f"tmux-claude-{win}-*.json"))
+    """Print a status table of agent sessions."""
+    if getattr(args, "all", False):
+        state_files = sorted(Path("/tmp").glob("tmux-claude-*.json"))
+        prefix_strip = "tmux-claude-"
+    else:
+        win = get_win()
+        state_files = sorted(Path("/tmp").glob(f"tmux-claude-{win}-*.json"))
+        prefix_strip = f"tmux-claude-{win}-"
+
     if not state_files:
         print("no sessions")
         return
 
-    active_ids = active_claude_session_ids()
+    session_statuses = claude_session_statuses()
     rows = []
     for sf in state_files:
-        task = sf.stem.removeprefix(f"tmux-claude-{win}-")
+        label = sf.stem.removeprefix(prefix_strip)
         state = json.loads(sf.read_text())
         session_id = state.get("session_id", "?")
         pane_id = state.get("pane_id", "?")
-        if session_id not in active_ids:
-            rows.append((pane_id, task, session_id, "dead"))
-            continue
-        sent_at_str = state.get("sent_at")
-        if not sent_at_str:
-            status = "thinking"
-        else:
-            sent_at = parse_iso(sent_at_str)
-            last_ts = last_end_turn_timestamp(jsonl_path(state))
-            status = (
-                "ready" if (last_ts is not None and last_ts > sent_at) else "thinking"
-            )
-        rows.append((pane_id, task, session_id, status))
+        status = session_statuses.get(session_id, "dead")
+        rows.append((pane_id, label, session_id, status))
 
     col_w = [max(len(r[i]) for r in rows) for i in range(4)]
     col_w[0] = max(col_w[0], len("PANE"))
@@ -371,34 +369,20 @@ def cmd_ping(args: argparse.Namespace) -> None:
     fmt = f"{{:<{col_w[0]}}}  {{:<{col_w[1]}}}  {{:<{col_w[2]}}}  {{:<{col_w[3]}}}"
     print(fmt.format("PANE", "TASK", "SESSION-ID", "STATUS"))
     print(fmt.format("-" * col_w[0], "-" * col_w[1], "-" * col_w[2], "-" * col_w[3]))
-    for pane_id, task, session_id, status in rows:
-        print(fmt.format(pane_id, task, session_id, status))
+    for pane_id, label, session_id, status in rows:
+        print(fmt.format(pane_id, label, session_id, status))
 
 
 def cmd_resurrect(args: argparse.Namespace) -> None:
     """Bring back a cleaned-up agent using its known session UUID."""
     win = get_win()
-    target = f"agents:{win}"
     session_id = args.session_id
 
-    # Ensure agents session and window exist
-    session_exists = (
-        subprocess.run(
-            ["tmux", "has-session", "-t", "agents"], capture_output=True
-        ).returncode
-        == 0
-    )
-    if not session_exists:
-        tmux("new-session", "-d", "-s", "agents", "-n", win)
-    elif (
-        win
-        not in tmux_out(
-            "list-windows", "-t", "agents", "-F", "#{window_name}"
-        ).splitlines()
-    ):
-        tmux("new-window", "-t", "agents", "-n", win)
-
-    pane_id = tmux_out("split-window", "-t", target, "-d", "-P", "-F", "#{pane_id}")
+    target, fresh_window, initial_pane = ensure_agents_window(win)
+    if fresh_window:
+        pane_id = initial_pane
+    else:
+        pane_id = tmux_out("split-window", "-t", target, "-d", "-P", "-F", "#{pane_id}")
     tmux("select-pane", "-t", pane_id, "-T", args.task)
     tmux("select-layout", "-t", target, "even-horizontal")
 
@@ -414,7 +398,6 @@ def cmd_resurrect(args: argparse.Namespace) -> None:
         "pane_id": pane_id,
         "session_id": session_id,
         "cwd": os.getcwd(),
-        "sent_at": now_iso(),
     }
     statefile(win, args.task).write_text(json.dumps(state))
     print(f"Resurrected '{args.task}' in pane {pane_id} (session: {session_id})")
@@ -450,21 +433,34 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
             state = json.loads(sf.read_text())
             pane_id = state["pane_id"]
             task = sf.stem.removeprefix(f"tmux-claude-{win}-")
-            result = subprocess.run(["tmux", "kill-pane", "-t", pane_id])
+            result = subprocess.run(
+                ["tmux", "kill-pane", "-t", pane_id], capture_output=True
+            )
             if result.returncode == 0:
                 print(f"Killed pane {pane_id} ({task})")
+            else:
+                print(f"Pane {pane_id} already gone ({task})")
             sf.unlink()
-        # Also purge stale state files across all windows
-        active_ids = active_claude_session_ids()
+        # Purge stale state files across all windows:
+        # remove if pane is dead (not in live tmux panes) OR session is dead
+        active_ids = set(claude_session_statuses().keys())
+        try:
+            live_panes = set(
+                tmux_out("list-panes", "-a", "-F", "#{pane_id}").splitlines()
+            )
+        except subprocess.CalledProcessError:
+            live_panes = set()
         removed = 0
         for sf in Path("/tmp").glob("tmux-claude-*.json"):
             try:
-                sid = json.loads(sf.read_text()).get("session_id")
+                data = json.loads(sf.read_text())
+                sid = data.get("session_id")
+                pid = data.get("pane_id")
             except (json.JSONDecodeError, OSError):
-                sid = None
-            if sid not in active_ids:
+                sid = pid = None
+            if pid not in live_panes or sid not in active_ids:
                 sf.unlink(missing_ok=True)
-                print(f"removed stale: {sf.name}")
+                print(f"Removed stale: {sf.name}")
                 removed += 1
         if removed:
             print(f"{removed} stale file(s) removed")
@@ -542,8 +538,11 @@ def main() -> None:
     p_resurrect.add_argument("task", help="task name to restore")
     p_resurrect.add_argument("session_id", help="session UUID from the original spawn")
 
-    sub.add_parser(
+    p_ping = sub.add_parser(
         "ping", help="list pane IDs, tasks, session IDs and status for current window"
+    )
+    p_ping.add_argument(
+        "--all", action="store_true", help="show sessions across all windows"
     )
 
     p_capture = sub.add_parser("capture", help="capture or stream pane terminal output")

@@ -77,13 +77,13 @@ Shows pane IDs, task names, session IDs, and ready/thinking/dead status. Use ins
 
 ```
 PANE  TASK      SESSION-ID                            STATUS
-----  --------  ------------------------------------  -------
-%23   research  3f2a1b4c-...                          ready
-%24   writer    9d0e7f8a-...                          thinking
+----  --------  ------------------------------------  ------
+%23   research  3f2a1b4c-...                          idle
+%24   writer    9d0e7f8a-...                          busy
 ```
 
-`ready` — new response arrived since last `spawn` or `prompt`. `dead` — session no longer active, run `cleanup --all`.
-Call `result <task>` once its row shows `ready`.
+`idle` — agent is waiting for input. `busy` — agent is actively processing. `dead` — session no longer running, run `cleanup --all`.
+Call `result <task>` once its row shows `idle`.
 
 ## Resurrect a Cleaned-Up Agent
 

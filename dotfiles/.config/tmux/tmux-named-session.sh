@@ -2,13 +2,12 @@
 # Attach to (or create) a named tmux session, navigating to the window that
 # matches the invoking window name. Creates the window if it doesn't exist.
 # $1 - session name (e.g. "scratch", "agents")
-# $2 - window name to select (e.g. #{window_name} from the calling binding)
 
 script_dir="$(dirname "$(realpath "$0")")"
 source "${script_dir}/../scripts/_util"
 
 session="${1:?Session name required}"
-win="${2:-main}"
+win="$(tmux display-message -p '#{window_name}')"
 
 if ! tmux has-session -t "$session" 2>/dev/null; then
   tmux new-session -d -s "$session" -n "$win"

@@ -2,7 +2,7 @@
 # Pick a tmux pane layout for the current window via fzf.
 
 script_dir="$(dirname "$(realpath "$0")")"
-source "${script_dir}/_util"
+source "${script_dir}/../scripts/_util"
 
 command -v fzf >/dev/null || error_msg "Please install fzf" 1
 

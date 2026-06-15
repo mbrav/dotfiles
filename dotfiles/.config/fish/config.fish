@@ -19,6 +19,15 @@ if test -f ~/.fish_profile
     source ~/.fish_profile
 end
 
+# Treat the home venv as a user tools directory, not an active shell venv.
+if test "$VIRTUAL_ENV" = "$HOME/.venv"
+    set -e VIRTUAL_ENV
+    set -e VIRTUAL_ENV_PROMPT
+    set -e _OLD_VIRTUAL_PATH
+    set -e _OLD_VIRTUAL_PYTHONHOME
+    set -e _OLD_FISH_PROMPT_OVERRIDE
+end
+
 # Add ~/.local/bin to PATH
 if test -d ~/.local/bin
     if not contains -- ~/.local/bin $PATH

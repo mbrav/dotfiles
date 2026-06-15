@@ -4,7 +4,7 @@
 # If new name is left empty, falls back to the current directory basename.
 
 script_dir="$(dirname "$(realpath "$0")")"
-source "${script_dir}/_util"
+source "${script_dir}/../scripts/_util"
 
 current="${1:-}"
 

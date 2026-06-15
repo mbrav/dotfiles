@@ -175,13 +175,15 @@ function start_tmux() {
 
   # Attach to tmux session on shell login if tmux is installed
   # Set default session name to "main"
-  tmux_session_name="🐺$(whoami)"
+  #tmux_session_name="🐺$(whoami)"
+  tmux_session_name="$(whoami)"
 
   if [[ -n "$IN_IDE" ]]; then
     # Check if term is inside an IDE or other environments
     folder="$(pwd)"
     folder_name="$(basename $folder)"
-    tmux_session_name="🖥️$folder_name"
+    # tmux_session_name="🖥️$folder_name"
+    tmux_session_name="$folder_name"
   fi
 
   # Attach to existing or create a new tmux session

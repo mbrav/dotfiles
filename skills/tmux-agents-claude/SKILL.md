@@ -7,7 +7,18 @@ description: Orchestrate Claude Code subagents via tmux panes. Use when you need
 
 Spawn, monitor, and collect results from Claude Code subagents. Each subagent runs as a **pane** inside `agents:<current-window>`, keeping all agents visible in one place.
 
-All operations go through `scripts/agent.py`. Status listing uses `scripts/status.sh`.
+All operations go through `scripts/agent.py`.
+
+## Help
+
+```bash
+./scripts/agent.py --help                  # list all subcommands
+./scripts/agent.py spawn --help            # options for spawn
+./scripts/agent.py result --help           # options for result
+./scripts/agent.py capture --help          # options for capture
+./scripts/agent.py cleanup --help          # options for cleanup
+./scripts/agent.py resurrect --help        # options for resurrect
+```
 
 ## Session Layout
 
@@ -18,12 +29,38 @@ All operations go through `scripts/agent.py`. Status listing uses `scripts/statu
 ## Spawn a Subagent
 
 ```bash
-./scripts/agent.py spawn <task-name> '<prompt>'
+./scripts/agent.py spawn <task-name> '<prompt>' [options]
 # Spawned 'deploy-api' in pane %42 (agents:pi) [session: e9c0307e-...]
 ```
 
 Spawns a new pane, names it, writes a JSON state file, tiles the layout, and starts `claude --session-id`.
 Call multiple times to run agents in parallel.
+
+| Option | Description |
+|--------|-------------|
+| `--dangerously-skip-permissions` | Pass `--dangerously-skip-permissions` to claude — no permission prompts |
+| `--model MODEL` | Use a specific model (e.g. `claude-opus-4-7`, `claude-sonnet-4-6`) |
+| `--tools TOOLS` | Comma-separated allowed tools passed via `--allowedTools` (e.g. `Read,Edit,Bash`) |
+| `--effort LEVEL` | Thinking effort: `low`, `medium`, `high`, `xhigh`, `max`, `auto` |
+
+```bash
+./scripts/agent.py spawn researcher 'audit the API' \
+  --model claude-opus-4-7 \
+  --dangerously-skip-permissions \
+  --tools 'Read,Write,Edit,Bash,Grep,Glob,WebFetch,WebSearch,Agent'
+```
+
+Common tool names: `Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob`, `Agent`, `WebFetch`, `WebSearch`, `LSP`, `NotebookEdit`, `Skill`, `TaskCreate`, `TaskUpdate`, `TaskList`
+
+Available models:
+
+| Model | `--model` value |
+|-------|-----------------|
+| Opus 4.7 | `claude-opus-4-7` |
+| Opus 4.5 | `claude-opus-4-5` |
+| Sonnet 4.6 | `claude-sonnet-4-6` |
+| Sonnet 4.5 | `claude-sonnet-4-5` |
+| Haiku 4.5 | `claude-haiku-4-5-20251001` |
 
 ## List Panes
 
@@ -45,10 +82,19 @@ Reads the final assistant response directly from the structured JSONL log — no
 Lightweight poll — reads only timestamps, never loads response text. Use this in a loop instead of calling `result` repeatedly.
 
 ```bash
-./scripts/agent.py ping <task-name>   # prints "ready", "thinking", or "no session"
+./scripts/agent.py ping
 ```
 
-`ready` means a new response has arrived since the last `spawn` or `send`. Call `result` once ping returns `ready`.
+Prints a table of all sessions in the current window:
+
+```
+SESSION-ID                            TASK      STATUS
+------------------------------------  --------  -------
+3f2a1b4c-...                          research  ready
+9d0e7f8a-...                          writer    thinking
+```
+
+`ready` means a new response has arrived since the last `spawn` or `prompt`. Call `result <task>` once its row shows `ready`.
 
 ## Resurrect a Cleaned-Up Agent
 
@@ -73,6 +119,15 @@ Resets the ping watermark — subsequent `ping` calls will wait for the next fre
 ./scripts/agent.py cleanup --all         # kill all agent panes (keep base pane)
 ```
 
+## Capture Pane Output
+
+```bash
+./scripts/agent.py capture <task-name>         # last screenful
+./scripts/agent.py capture <task-name> full    # scrollback up to 3000 lines
+./scripts/agent.py capture <task-name> log     # stream output to /tmp/<task-name>.log
+./scripts/agent.py capture <task-name> stop    # stop streaming
+```
+
 ## Resolve Pane ID
 
 ```bash
@@ -81,7 +136,7 @@ Resets the ping watermark — subsequent `ping` calls will wait for the next fre
 
 ## Resolve Session ID
 
-Use this when the main agent's context is clear and you need the UUID to pass to `resurrect`, share with another agent, or reference the JSONL log directly.
+Use this when the main agent's context is clear and you need the UUID to pass to `./scripts/agent.py resurrect`, share with another agent, or reference the JSONL log directly.
 
 ```bash
 ./scripts/agent.py session-id <task-name>   # prints the Claude session UUID

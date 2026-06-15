@@ -207,6 +207,12 @@ def cmd_pane_id(args: argparse.Namespace) -> None:
     print(resolve_pane_id(win, args.task))
 
 
+def cmd_session_id(args: argparse.Namespace) -> None:
+    win = get_win()
+    state = load_state(win, args.task)
+    print(state["session_id"])
+
+
 def cmd_prompt(args: argparse.Namespace) -> None:
     win = get_win()
     pane_id = resolve_pane_id(win, args.task)
@@ -362,6 +368,9 @@ def main() -> None:
     p_pane = sub.add_parser("pane-id", help="resolve task name to tmux pane ID")
     p_pane.add_argument("task")
 
+    p_sid = sub.add_parser("session-id", help="resolve task name to Claude session UUID")
+    p_sid.add_argument("task")
+
     p_prompt = sub.add_parser("prompt", help="send a follow-up prompt to an agent pane")
     p_prompt.add_argument("task")
     p_prompt.add_argument("text")
@@ -399,6 +408,7 @@ def main() -> None:
     dispatch = {
         "spawn": cmd_spawn,
         "pane-id": cmd_pane_id,
+        "session-id": cmd_session_id,
         "prompt": cmd_prompt,
         "result": cmd_result,
         "resurrect": cmd_resurrect,

@@ -78,3 +78,11 @@ Resets the ping watermark — subsequent `ping` calls will wait for the next fre
 ```bash
 ./scripts/agent.py pane-id <task-name>   # prints the tmux pane ID (e.g. %42)
 ```
+
+## Resolve Session ID
+
+Use this when the main agent's context is clear and you need the UUID to pass to `resurrect`, share with another agent, or reference the JSONL log directly.
+
+```bash
+./scripts/agent.py session-id <task-name>   # prints the Claude session UUID
+```

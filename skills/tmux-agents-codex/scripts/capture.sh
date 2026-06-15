@@ -9,7 +9,7 @@ set -euo pipefail
 script_dir="$(dirname "$(realpath "$0")")"
 task="${1:?task-name required}"
 mode="${2:-}"
-pane_id=$("${script_dir}/pane-id.sh" "$task")
+pane_id=$(python3 "${script_dir}/agent.py" pane-id "$task")
 
 case "$mode" in
 full)

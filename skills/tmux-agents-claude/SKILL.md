@@ -9,21 +9,18 @@ Spawn, monitor, and collect results from Claude Code subagents. Each subagent ru
 
 All operations go through `scripts/agent.py`.
 
-## Help
+## Initialization
+
+Run `cleanup --all` before spawning agents and after they finish to remove dead panes and stale state files:
 
 ```bash
-./scripts/agent.py --help                  # list all subcommands
-./scripts/agent.py spawn --help            # options for spawn
-./scripts/agent.py result --help           # options for result
-./scripts/agent.py capture --help          # options for capture
-./scripts/agent.py cleanup --help          # options for cleanup
-./scripts/agent.py resurrect --help        # options for resurrect
+./scripts/agent.py cleanup --all
 ```
 
 ## Session Layout
 
 - **main** — your interactive session (e.g. window `pi`)
-- **agents:pi** — your agents window; each subagent is a pane within it
+- **agents** — your agents window; each subagent is a pane within it
 - Panes are named by task so you can reference them by name
 
 ## Spawn a Subagent
@@ -61,12 +58,6 @@ Available models:
 | Sonnet 4.5 | `claude-sonnet-4-5` |
 | Haiku 4.5 | `claude-haiku-4-5-20251001` |
 
-## List Panes
-
-```bash
-./scripts/agent.py status   # list pane IDs and titles in current agents window
-```
-
 ## Read Result (token-efficient)
 
 Reads the final assistant response directly from the structured JSONL log — no terminal capture overhead.
@@ -76,24 +67,23 @@ Reads the final assistant response directly from the structured JSONL log — no
 ./scripts/agent.py result <task-name> --wait   # block until response arrives, then print it
 ```
 
-## Check If Response Is Ready
+## Check Status / List Panes
 
-Lightweight poll — reads only timestamps, never loads response text. Use this in a loop instead of calling `result` repeatedly.
+Shows pane IDs, task names, session IDs, and ready/thinking/dead status. Use instead of calling `result` repeatedly.
 
 ```bash
 ./scripts/agent.py ping
 ```
 
-Prints a table of all sessions in the current window:
-
 ```
-SESSION-ID                            TASK      STATUS
-------------------------------------  --------  -------
-3f2a1b4c-...                          research  ready
-9d0e7f8a-...                          writer    thinking
+PANE  TASK      SESSION-ID                            STATUS
+----  --------  ------------------------------------  -------
+%23   research  3f2a1b4c-...                          ready
+%24   writer    9d0e7f8a-...                          thinking
 ```
 
-`ready` means a new response has arrived since the last `spawn` or `prompt`. Call `result <task>` once its row shows `ready`.
+`ready` — new response arrived since last `spawn` or `prompt`. `dead` — session no longer active, run `cleanup --all`.
+Call `result <task>` once its row shows `ready`.
 
 ## Resurrect a Cleaned-Up Agent
 
@@ -115,7 +105,7 @@ Resets the ping watermark — subsequent `ping` calls will wait for the next fre
 
 ```bash
 ./scripts/agent.py cleanup <task-name>   # kill one pane
-./scripts/agent.py cleanup --all         # kill all agent panes (keep base pane)
+./scripts/agent.py cleanup --all         # kill all agent panes + purge stale state files
 ```
 
 ## Capture Pane Output
@@ -139,4 +129,15 @@ Use this when the main agent's context is clear and you need the UUID to pass to
 
 ```bash
 ./scripts/agent.py session-id <task-name>   # prints the Claude session UUID
+```
+
+## Help
+
+```bash
+./scripts/agent.py --help                  # list all subcommands
+./scripts/agent.py spawn --help            # options for spawn
+./scripts/agent.py result --help           # options for result
+./scripts/agent.py capture --help          # options for capture
+./scripts/agent.py cleanup --help          # options for cleanup
+./scripts/agent.py resurrect --help        # options for resurrect
 ```

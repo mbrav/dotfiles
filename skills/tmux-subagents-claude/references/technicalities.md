@@ -2,7 +2,7 @@
 
 Architecture and internals behind [SKILL.md](../SKILL.md). For choosing models,
 tools, and `--dangerously-skip-permissions` when spawning, see
-[tools-and-models.md](tools-and-models.md). All commands via `scripts/agent.py`.
+[tools-and-models.md](tools-and-models.md). All commands via `~/.config/scripts/tmux-agents-claude`.
 
 ## Session layout
 
@@ -36,7 +36,7 @@ Anchoring to `$TMUX_PANE` makes result independent of focus. Untargeted `display
 ## State model — one JSON per window
 
 ```
-/tmp/tmux-claude-<window>.json
+/tmp/mux-subagents-claude-<window>.json
 ```
 
 ```json
@@ -73,7 +73,7 @@ Fix: `spawn`/`resurrect` ensure persistent `__keeper__` window (`exec sleep 2147
 
 Multiple sessions run agents in parallel **as long as each lives in different window** (names unique + stable):
 
-- State namespaced per window (`tmux-claude-<window>.json`).
+- State namespaced per window (`mux-subagents-claude-<window>.json`).
 - `cleanup --all` touches **current** window only — concurrency-safe.
 - `cleanup --prune` only cross-window command. Removes **only dead-pane entries** — never deletes live session's agents.
 - Two orchestrators sharing one window share same namespace — avoid duplicate task names.
@@ -88,6 +88,16 @@ Multiple sessions run agents in parallel **as long as each lives in different wi
 | `dead` | pane gone; clear with `cleanup --prune` |
 
 Status from `~/.claude/sessions/*.json`. Live pane never reported `dead`. `result` reads last `end_turn` text from `~/.claude/projects/<cwd-slug>/<session>.jsonl`.
+
+### `result` semantics
+
+`result` exit 0 means *an `end_turn` message exists in the JSONL*, **not** that the agent's work is finished or correct. The agent may have responded "starting now" and gone back to thinking. Check body content, not just exit code.
+
+`prompt --wait` improves on this: it snapshots the last response *before* sending, then blocks for a **new** `end_turn`. So you can't accidentally pick up a stale reply.
+
+### Stuck-input bug (INSERT mode)
+
+`send-keys -l <text>` followed by `Enter` is silently buffered if the pane is in vim/INSERT or any modal state. Status keeps reporting `idle` (from JSONL) while prompts pile up un-submitted. `cmd_prompt` mitigates by sending `Escape Escape C-u` before paste and verifying the input line is empty after Enter; on failure it exits `prompt-not-submitted` (rc=2). Recovery: `cleanup <task>` + `resurrect <task> <session-id>` (context preserved via session UUID).
 
 ## Cleanup semantics
 
@@ -111,7 +121,7 @@ Common `--tools` values: `Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob`, `Agent
 
 ## Related files
 
-- `scripts/agent.py` — CLI (all subcommands).
+- `~/.config/scripts/tmux-agents-claude` — CLI (all subcommands).
 - `~/.config/tmux/agents.sh` — Dracula status segment showing live agent counts.
 - `~/.config/scripts/_util` — shared bash helpers incl. `dedup_window_name`.
 - `~/.config/tmux/tmux-named-session.sh` — Prefix+a navigation to agent windows.

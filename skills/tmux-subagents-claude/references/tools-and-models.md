@@ -17,6 +17,16 @@ No `--model`/`--tools` = account default model + full tool access. Narrow delibe
 - Haiku: fanning out many agents over straightforward work.
 - Match model to *hardest* step, not average.
 
+### Polling cadence by model
+
+| Model | Typical end_turn | Wait strategy |
+|-------|------------------|---------------|
+| Haiku | seconds | `result --wait` or `prompt --wait` (single blocking call) |
+| Sonnet | tens of seconds to minutes | `result --wait` — **never** ping-loop |
+| Opus | minutes | `result --wait` mandatory; if you must observe progress use **one** `ping --all` snapshot |
+
+Manual `ping` only when you'll branch on idle/busy change within ~10s. Repeated pings on a busy agent waste tokens and don't accelerate work; the tool warns after 3 in 30s.
+
 Older fallbacks (`claude-opus-4-5`, `claude-sonnet-4-5`) exist; prefer newest per tier.
 
 ## Tool selection
@@ -55,19 +65,19 @@ With explicit ask: still scope `--tools` tightly so unattended agent can't excee
 
 ```bash
 # Routine edit — Sonnet, scoped tools, prompts on
-./scripts/agent.py spawn fix-bug 'Fix the off-by-one in pagination' \
+~/.config/scripts/tmux-agents-claude spawn fix-bug 'Fix the off-by-one in pagination' \
   --model claude-sonnet-4-6 --tools 'Read,Edit,Grep,Glob'
 
 # Cheap parallel scan — Haiku, read-only
-./scripts/agent.py spawn audit-imports 'List unused imports across src/' \
+~/.config/scripts/tmux-agents-claude spawn audit-imports 'List unused imports across src/' \
   --model claude-haiku-4-5-20251001 --tools 'Read,Grep,Glob'
 
 # Hard architecture task — Opus, broad tools
-./scripts/agent.py spawn redesign 'Propose a new caching layer; write an ADR' \
+~/.config/scripts/tmux-agents-claude spawn redesign 'Propose a new caching layer; write an ADR' \
   --model claude-opus-4-7 --tools 'Read,Write,Edit,Grep,Glob,WebSearch'
 
 # Unattended — ONLY because user explicitly asked to skip permissions
-./scripts/agent.py spawn migrate 'Run the DB migration and verify' \
+~/.config/scripts/tmux-agents-claude spawn migrate 'Run the DB migration and verify' \
   --model claude-sonnet-4-6 --tools 'Read,Edit,Bash' \
   --dangerously-skip-permissions
 ```

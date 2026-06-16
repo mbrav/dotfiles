@@ -6,7 +6,7 @@ description: Orchestrate Claude Code subagents via tmux panes. Use when you need
 # Tmux Agents — Claude
 
 Spawn and manage parallel Claude Code subagents, each in its own tmux **pane**
-inside the detached `agents` session. All commands go through `scripts/agent.py`.
+inside the detached `agents` session. All commands go through `~/.config/scripts/tmux-agents-claude`.
 
 - [references/tools-and-models.md](references/tools-and-models.md) — which model,
   tools, and permissions to pass when spawning (read before choosing options).
@@ -18,39 +18,59 @@ inside the detached `agents` session. All commands go through `scripts/agent.py`
 Run cleanup before and after a batch of agents:
 
 ```bash
-./scripts/agent.py cleanup --all
+~/.config/scripts/tmux-agents-claude cleanup --all
 ```
 
 ## Workflow
 
-1. **Spawn** one or more agents (run multiple times to parallelize):
+1. **Spawn** all independent agents **upfront** (parallelism window starts now, not later) — run `spawn` multiple times:
 
    ```bash
-   ./scripts/agent.py spawn <task> '<prompt>' [options]
+   ~/.config/scripts/tmux-agents-claude spawn <task> '<prompt>' [options]
    ```
 
-2. **Check status** — call until the row shows `idle`:
+2. **Wait for the result** — default to a single blocking call, not a ping loop:
 
    ```bash
-   ./scripts/agent.py ping          # this window  (--all = every window)
+   ~/.config/scripts/tmux-agents-claude result <task> --wait   # block until end_turn (cheap; reads JSONL)
+   ~/.config/scripts/tmux-agents-claude result <task>          # non-blocking; exit 1 if not done
+   ~/.config/scripts/tmux-agents-claude ping [--all]           # snapshot status of many at once
    ```
 
-3. **Read the result** (token-cheap; reads the JSONL log, not the terminal):
+3. **Follow up / inspect / clean up:**
 
    ```bash
-   ./scripts/agent.py result <task>          # exit 1 if not done yet
-   ./scripts/agent.py result <task> --wait   # block until done
+   ~/.config/scripts/tmux-agents-claude prompt  <task> '<text>' [--wait]   # send + (optionally) block for new response
+   ~/.config/scripts/tmux-agents-claude capture <task> [full|log|stop]     # raw terminal — ONLY when JSONL won't do
+   ~/.config/scripts/tmux-agents-claude cleanup <task>                     # kill one
+   ~/.config/scripts/tmux-agents-claude cleanup --all                      # kill this window's agents
+   ~/.config/scripts/tmux-agents-claude cleanup --prune                    # drop dead entries everywhere
    ```
 
-4. **Follow up / inspect / clean up:**
+## Workflow patterns — pick the cheap path
 
-   ```bash
-   ./scripts/agent.py prompt  <task> '<text>'        # send another message
-   ./scripts/agent.py capture <task> [full|log|stop] # raw terminal output
-   ./scripts/agent.py cleanup <task>                 # kill one
-   ./scripts/agent.py cleanup --all                  # kill this window's agents
-   ./scripts/agent.py cleanup --prune                # drop dead entries everywhere
-   ```
+| Want | Use | Cost |
+|------|-----|------|
+| Block until done | `result <task> --wait` | cheap (one call, reads JSONL) |
+| Send + block for new reply | `prompt <task> '…' --wait` | cheap |
+| Status across many | `ping [--all]` once | cheap |
+| Is it done yet (non-blocking)? | `result <task>` | cheap |
+| Raw terminal (debug only) | `capture <task>` | **expensive**, use only on anomaly |
+
+**Rules:**
+
+- After `prompt`, default to `result --wait` (or `prompt … --wait`), **not** a ping loop.
+- Never `capture` an `idle` agent — `result` is cheaper and structured.
+- Never `capture` before a `prompt` (pre-flight checks return useless `idle`). Captures are post-mortems.
+- Don't ping a `busy` agent more than once per ~10s — it changes nothing. The tool will warn you.
+- Spawn all independent agents at the start of the task, even if you'll `prompt` them later.
+- `result` exit 0 = a `end_turn` message exists. NOT "work is finished" — verify body content.
+
+## Stuck agent (INSERT mode / no response)
+
+`prompt` resets modal state and verifies submission. If it exits with `prompt-not-submitted`,
+the pane is wedged (e.g. left in vim/INSERT). Inspect with `capture`, then `cleanup <task>` +
+`resurrect <task> <session-id>` to reset while preserving context.
 
 ## Spawn options
 
@@ -67,7 +87,6 @@ model/tools per task and the full model list.
 ## Other commands
 
 - `resurrect <task> <session-uuid>` — restore a cleaned-up agent (resumes its context)
-- `pane-id <task>` / `session-id <task>` — resolve identifiers
 - `<cmd> --help` — full options for any subcommand
 
 ## Status values
@@ -78,6 +97,6 @@ model/tools per task and the full model list.
 ## Rules of thumb
 
 - Reference agents by **task name**; task names must be unique within a window.
-- Prefer `ping`/`result` over `capture` — they're cheap and structured.
+- Prefer `result --wait` / `prompt --wait` over ping loops; prefer `result` over `capture`.
 - `cleanup --all` only touches the current window; `--prune` is the only
   cross-window command and never removes live agents.

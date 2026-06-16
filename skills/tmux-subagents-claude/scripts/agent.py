@@ -4,8 +4,6 @@ agent.py — tmux-subagents-claude management CLI
 
 Subcommands:
   spawn      <task> <prompt>     spawn a Claude subagent pane
-  pane-id    <task>              resolve task name → tmux pane ID
-  session-id <task>              resolve task name → Claude session UUID
   prompt     <task> <text>       send a follow-up prompt to an agent pane
   result     <task> [--wait]     read last complete response from JSONL log
   ping       [--all]             status table of agents
@@ -84,6 +82,10 @@ MODELS = [
 ]
 
 EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max", "auto"]
+
+PING_HISTORY_PATH = Path(f"/tmp/{PREFIX}-pinghist.json")
+PING_BUSY_WINDOW_SEC = 30
+PING_BUSY_THRESHOLD = 3
 
 
 # ---------------------------------------------------------------------------
@@ -462,22 +464,102 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     )
 
 
-def cmd_pane_id(args: argparse.Namespace) -> None:
-    """Print the tmux pane ID for a named task."""
-    print(resolve_pane_id(get_win(), args.task))
+def _capture_pane(pane_id: str) -> str:
+    """Snapshot current pane (last screenful), empty string on failure."""
+    try:
+        return tmux_out("capture-pane", "-t", pane_id, "-p")
+    except subprocess.CalledProcessError:
+        return ""
 
 
-def cmd_session_id(args: argparse.Namespace) -> None:
-    """Print the Claude session UUID for a named task."""
-    print(get_agent(get_win(), args.task)["session_id"])
+def _reset_input_line(pane_id: str) -> None:
+    """Drop any modal state and clear the Claude input buffer before pasting.
+
+    Without this, a pane left in INSERT/vim/modal state silently buffers pasted
+    text but never submits it — agent looks busy by JSONL but is actually wedged.
+    """
+    tmux("send-keys", "-t", pane_id, "Escape")
+    time.sleep(0.05)
+    tmux("send-keys", "-t", pane_id, "Escape")
+    time.sleep(0.05)
+    # C-u kills line in readline-style; harmless if already empty.
+    tmux("send-keys", "-t", pane_id, "C-u")
+    time.sleep(0.05)
+
+
+def _verify_submitted(pane_id: str, text: str) -> bool:
+    """After Enter, confirm the pasted text is no longer sitting on input line.
+
+    Looks at the last ~6 lines (where the ❯ prompt lives). If a non-trivial
+    tail of the submitted text is still visible there, submission failed.
+    """
+    time.sleep(0.3)
+    snap = _capture_pane(pane_id)
+    tail_lines = "\n".join(snap.splitlines()[-6:])
+    # Use the last meaningful chunk of the user text — short prefixes match noise.
+    needle = text.strip().splitlines()[-1][-40:] if text.strip() else ""
+    if not needle:
+        return True
+    return needle not in tail_lines
+
+
+def _send_prompt(pane_id: str, text: str, verify: bool = True) -> bool:
+    """Reset, paste, submit, optionally verify. Returns True on success."""
+    _reset_input_line(pane_id)
+    tmux("send-keys", "-t", pane_id, "-l", text)
+    time.sleep(0.05)
+    tmux("send-keys", "-t", pane_id, "Enter")
+    if not verify:
+        return True
+    if _verify_submitted(pane_id, text):
+        return True
+    log.warning("prompt verify failed once, retrying")
+    _reset_input_line(pane_id)
+    tmux("send-keys", "-t", pane_id, "-l", text)
+    time.sleep(0.05)
+    tmux("send-keys", "-t", pane_id, "Enter")
+    return _verify_submitted(pane_id, text)
 
 
 def cmd_prompt(args: argparse.Namespace) -> None:
-    """Send a follow-up prompt to a running agent pane."""
-    pane_id = resolve_pane_id(get_win(), args.task)
-    log.info("prompt task=%s pane=%s", args.task, pane_id)
-    tmux("send-keys", "-t", pane_id, "-l", args.text)
-    tmux("send-keys", "-t", pane_id, "Enter")
+    """Send a follow-up prompt to a running agent pane.
+
+    Hardens against the INSERT-mode-stuck failure: prior modal state is reset
+    before paste, Enter is sent explicitly, and submission is verified.
+    """
+    win = get_win()
+    pane_id = resolve_pane_id(win, args.task)
+    log.info(
+        "prompt task=%s pane=%s verify=%s wait=%s",
+        args.task,
+        pane_id,
+        args.verify,
+        args.wait,
+    )
+
+    ok = _send_prompt(pane_id, args.text, verify=args.verify)
+    if not ok:
+        log.error("prompt task=%s NOT submitted — pane likely modal/stuck", args.task)
+        print(
+            f"prompt-not-submitted: task '{args.task}' pane {pane_id}. "
+            "Pane may be in INSERT/modal state. Try `capture` to inspect, "
+            "or `cleanup <task>` + `resurrect <task> <session-id>` to reset.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    if args.wait:
+        meta = get_agent(win, args.task)
+        jsonl = jsonl_path(meta)
+        # Baseline: snapshot current last response so we wait for a NEW one.
+        baseline = extract_last_response(jsonl)
+        log.info("prompt --wait task=%s polling for new response", args.task)
+        while True:
+            time.sleep(2)
+            current = extract_last_response(jsonl)
+            if current is not None and current != baseline:
+                print(current)
+                return
 
 
 def cmd_result(args: argparse.Namespace) -> None:
@@ -536,6 +618,43 @@ def _ping_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str, 
     return rows
 
 
+def _record_ping_and_warn(rows: list[tuple[str, str, str, str]]) -> None:
+    """Warn when the same busy task is pinged too often — suggests result --wait."""
+    try:
+        hist = (
+            json.loads(PING_HISTORY_PATH.read_text())
+            if PING_HISTORY_PATH.exists()
+            else {}
+        )
+    except (json.JSONDecodeError, OSError):
+        hist = {}
+    now = time.time()
+    cutoff = now - PING_BUSY_WINDOW_SEC
+    warned: list[str] = []
+    for _pane, task, _sid, status in rows:
+        if status != "busy":
+            continue
+        stamps = [t for t in hist.get(task, []) if t > cutoff]
+        stamps.append(now)
+        hist[task] = stamps
+        if len(stamps) >= PING_BUSY_THRESHOLD:
+            warned.append(task)
+    # GC dead keys
+    hist = {k: [t for t in v if t > cutoff] for k, v in hist.items()}
+    hist = {k: v for k, v in hist.items() if v}
+    try:
+        PING_HISTORY_PATH.write_text(json.dumps(hist))
+    except OSError:
+        pass
+    for task in warned:
+        print(
+            f"hint: '{task}' pinged {PING_BUSY_THRESHOLD}+ times in {PING_BUSY_WINDOW_SEC}s "
+            f"while busy — use `result {task} --wait` (single cheap call) "
+            f"or `prompt {task} '<text>' --wait`.",
+            file=sys.stderr,
+        )
+
+
 def cmd_ping(args: argparse.Namespace) -> None:
     """Print a status table of agent sessions."""
     statuses = claude_session_statuses()
@@ -558,6 +677,7 @@ def cmd_ping(args: argparse.Namespace) -> None:
     print(fmt.format(*("-" * w for w in col_w)))
     for row in rows:
         print(fmt.format(*row))
+    _record_ping_and_warn(rows)
 
 
 def cmd_resurrect(args: argparse.Namespace) -> None:
@@ -597,8 +717,23 @@ def cmd_resurrect(args: argparse.Namespace) -> None:
 
 def cmd_capture(args: argparse.Namespace) -> None:
     """Capture or stream pane output: default screenful, full scrollback, log, or stop."""
-    pane_id = resolve_pane_id(get_win(), args.task)
+    win = get_win()
+    pane_id = resolve_pane_id(win, args.task)
     mode = args.mode
+
+    # Cheapness hint: if agent is idle and user wants a one-shot capture,
+    # `result` reads the JSONL log instead of parsing terminal output.
+    if mode in (None, "full"):
+        meta = load_win(win)["agents"].get(args.task, {})
+        sid = meta.get("session_id")
+        if sid:
+            status = claude_session_statuses().get(sid)
+            if status == "idle":
+                print(
+                    f"hint: '{args.task}' is idle — `result {args.task}` is cheaper "
+                    "(reads JSONL log, not terminal scrollback).",
+                    file=sys.stderr,
+                )
     log.debug(
         "capture task=%s pane=%s mode=%s", args.task, pane_id, mode or "screenful"
     )
@@ -637,7 +772,7 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
         log.info("cleanup --prune: cross-window sweep")
         panes = live_panes()
         removed = 0
-        for sf in sorted(Path("/tmp").glob("{PREFIX}-*.json")):
+        for sf in sorted(Path("/tmp").glob(f"{PREFIX}-*.json")):
             try:
                 data = json.loads(sf.read_text())
             except (json.JSONDecodeError, OSError):
@@ -743,17 +878,21 @@ def main() -> None:
         help=f"thinking effort level: {', '.join(EFFORT_LEVELS)}",
     )
 
-    p_pane = sub.add_parser("pane-id", help="resolve task name to tmux pane ID")
-    p_pane.add_argument("task")
-
-    p_sid = sub.add_parser(
-        "session-id", help="resolve task name to Claude session UUID"
-    )
-    p_sid.add_argument("task")
-
     p_prompt = sub.add_parser("prompt", help="send a follow-up prompt to an agent pane")
     p_prompt.add_argument("task")
     p_prompt.add_argument("text")
+    p_prompt.add_argument(
+        "--wait",
+        action="store_true",
+        help="block until a NEW end_turn response arrives, then print it",
+    )
+    p_prompt.add_argument(
+        "--no-verify",
+        dest="verify",
+        action="store_false",
+        help="skip post-Enter verification (default: verify, fail loud if stuck)",
+    )
+    p_prompt.set_defaults(verify=True)
 
     p_result = sub.add_parser(
         "result", help="read last complete response from JSONL log"
@@ -808,8 +947,6 @@ def main() -> None:
         "cleanup": cmd_cleanup,
         "resurrect": cmd_resurrect,
         "capture": cmd_capture,
-        "pane-id": cmd_pane_id,
-        "session-id": cmd_session_id,
     }
     dispatch[args.cmd](args)
 

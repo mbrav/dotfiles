@@ -251,6 +251,31 @@ function progress_bar() {
     "${bar_filled}${bar_empty}" "${percent}"
 }
 
+# TMUX HELPERS
+
+# Return a window name unique within a tmux session by appending -N on collision.
+# Arguments:
+#   $1 - desired base window name (required)
+#   $2 - tmux session to check against (optional; default: current session)
+# Output:
+#   Prints a name not currently used by any window in the target session.
+# Usage:
+#   name="$(dedup_window_name "dotfiles")"
+#   name="$(dedup_window_name "obsidian" agents)"
+function dedup_window_name() {
+  local base="${1:?window name required}"
+  local session="${2:-}"
+  local list_args=(-F '#{window_name}')
+  [[ -n "$session" ]] && list_args=(-t "$session" "${list_args[@]}")
+
+  local name="$base" suffix=2
+  while tmux list-windows "${list_args[@]}" 2>/dev/null | grep -qx "$name"; do
+    name="${base}-${suffix}"
+    suffix=$((suffix + 1))
+  done
+  echo "$name"
+}
+
 # CHECK FUNCTIONS
 
 function is_x86() {

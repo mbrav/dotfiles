@@ -11,17 +11,68 @@ All operations go through `scripts/agent.py`.
 
 ## Initialization
 
-Run `cleanup --all` before spawning agents and after they finish to remove dead panes and stale state files:
+Run `cleanup --all` before spawning agents and after they finish to remove this
+window's panes and its state file:
 
 ```bash
 ./scripts/agent.py cleanup --all
 ```
 
+> [!note] Prerequisite: `automatic-rename off`
+> The skill keys everything off the **window name**, so window names must be
+> stable. Set `set -g automatic-rename off` in tmux.conf (already configured in
+> this dotfiles repo). Windows are named manually via `tmux-new-window.sh` /
+> `tmux-rename-window.sh`, which de-dupe names via the shared
+> `dedup_window_name` helper in `~/.config/scripts/_util`.
+
 ## Session Layout
 
-- **main** — your interactive session (e.g. window `pi`)
-- **agents** — your agents window; each subagent is a pane within it
-- Panes are named by task so you can reference them by name
+- **main** — your interactive session (e.g. window `obsidian`)
+- **agents** — a session with one window **per source window, named identically**
+  (`agents:obsidian`); each subagent is a pane within it
+- Agents are tracked by task name in the window's state file, so you reference them by task
+- **Prefix+a** (tmux binding) jumps to the agents window mirroring your current
+  window — same naming convention as `tmux-named-session.sh`
+- A hidden **`__keeper__`** window (running a long `sleep`) anchors the agents
+  session
+
+> [!note] Keeper window keeps the session alive
+> The agents session is **detached**, so if its last window's pane process exits
+> (claude crashing, the sandbox suspending/resuming and killing processes, or an
+> agent simply finishing), tmux would close that window and then destroy the
+> whole empty session — making every subsequent `ping`/`result`/`capture`/
+> `cleanup` fail with `no sessions` / `can't find window: agents`. To prevent
+> this, `spawn`/`resurrect` always ensure a persistent `__keeper__` window
+> exists. Dead agents then show up as `dead` in `ping` (clear `cleanup --all`)
+> and can be brought back with `resurrect`, instead of vanishing silently.
+
+> [!note] State: one JSON per window, keyed by window name
+> All agents for a source window live in a **single** file
+> `/tmp/tmux-claude-<window>.json`:
+>
+> ```json
+> {
+>   "window": "obsidian",
+>   "agents_window_id": "@72",
+>   "agents": {
+>     "test-1": {"pane_id": "%134", "session_id": "...", "cwd": "..."}
+>   }
+> }
+> ```
+>
+> The window NAME is resolved **focus-independently** by walking this process's
+> ancestor PIDs and matching tmux's per-pane `#{pane_pid}` (falling back to
+> `$TMUX_PANE`, then an untargeted query). An untargeted `display-message` alone
+> follows the user's *focus* and drifts between calls — the original source of
+> `no sessions` / `pane not found`.
+
+> [!warning] Concurrent orchestrator sessions
+> Multiple `pi` sessions run agents in parallel safely **as long as each lives in
+> a different tmux window** (window names are unique + stable). `cleanup --all`
+> only touches the **current** window. The cross-window sweep lives behind
+> `cleanup --prune`, which removes **only dead-pane entries** and empty files —
+> never live agents. Two orchestrators sharing one window share the
+> `tmux-claude-<window>.json` namespace, so avoid duplicate task names there.
 
 ## Spawn a Subagent
 
@@ -82,8 +133,8 @@ PANE  TASK      SESSION-ID                            STATUS
 %24   writer    9d0e7f8a-...                          busy
 ```
 
-`idle` — agent is waiting for input. `busy` — agent is actively processing. `dead` — session no longer running, run `cleanup --all`.
-Call `result <task>` once its row shows `idle`.
+`idle` — waiting for input. `busy` — actively processing. `starting` — pane is live but the session hasn't reported status yet. `dead` — pane is gone; run `cleanup --prune` to clear its entry.
+Call `result <task>` once its row shows `idle`. Use `ping --all` to list agents across every window.
 
 ## Resurrect a Cleaned-Up Agent
 
@@ -104,9 +155,14 @@ Resets the ping watermark — subsequent `ping` calls will wait for the next fre
 ## Cleanup
 
 ```bash
-./scripts/agent.py cleanup <task-name>   # kill one pane
-./scripts/agent.py cleanup --all         # kill all agent panes + purge stale state files
+./scripts/agent.py cleanup <task-name>   # kill one pane, drop it from this window's state
+./scripts/agent.py cleanup --all         # kill this window's agents + remove its state file
+./scripts/agent.py cleanup --prune       # cross-window sweep: drop dead-pane entries + empty files
 ```
+
+`--all` is scoped to the current window and is concurrency-safe. `--prune` is the
+only command that touches other windows, and it only removes entries whose pane
+is confirmed dead — so it never deletes another live session's agents.
 
 ## Capture Pane Output
 

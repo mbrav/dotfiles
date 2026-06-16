@@ -15,30 +15,30 @@ result=""
 
 # Process each currency pair
 for pair in "${currencies[@]}"; do
-	# Split the pair into from and to currencies
-	cur_from=$(echo "$pair" | awk '{print $1}')
-	cur_to=$(echo "$pair" | awk '{print $2}')
-	txt_display=$(echo "$pair" | awk '{print $3}')
+  # Split the pair into from and to currencies
+  cur_from=$(echo "$pair" | awk '{print $1}')
+  cur_to=$(echo "$pair" | awk '{print $2}')
+  txt_display=$(echo "$pair" | awk '{print $3}')
 
-	#echo "$cur_from $cur_to $txt_display"
+  #echo "$cur_from $cur_to $txt_display"
 
-	api_url="https://api.exchangerate-api.com/v4/latest/${cur_from}"
-	tmp_file="/tmp/${cur_from}.json"
+  api_url="https://api.exchangerate-api.com/v4/latest/${cur_from}"
+  tmp_file="/tmp/${cur_from}.json"
 
-	# Check if the temporary file exists and if it's older than 1 hour
-	if [[ ! -f "${tmp_file}" ]] || [[ $(find "${tmp_file}" -mmin +10) ]]; then
-		# Call the API and save the result to the temporary file
-		curl -s "${api_url}" >"${tmp_file}"
-		echo "${api_url} ${tmp_file}"
-	fi
+  # Check if the temporary file exists and if it's older than 1 hour
+  if [[ ! -f "${tmp_file}" ]] || [[ $(find "${tmp_file}" -mmin +10) ]]; then
+    # Call the API and save the result to the temporary file
+    curl -s "${api_url}" >"${tmp_file}"
+    echo "${api_url} ${tmp_file}"
+  fi
 
-	# Output the current date and the exchange rate
-	if [[ -f "${tmp_file}" ]]; then
-		exchnang_rate=$(jq -r ".rates.${cur_to}" "$tmp_file")
-		result="${result}${txt_display}${exchnang_rate} "
-	else
-		result="error"
-	fi
+  # Output the current date and the exchange rate
+  if [[ -f "${tmp_file}" ]]; then
+    exchnang_rate=$(jq -r ".rates.${cur_to}" "$tmp_file")
+    result="${result}${txt_display}${exchnang_rate} "
+  else
+    result="error"
+  fi
 done
 
 echo "${result}" | xargs

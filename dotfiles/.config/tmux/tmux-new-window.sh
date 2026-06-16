@@ -23,15 +23,10 @@ if [[ -z "$selected_dir" ]]; then
   exit 0
 fi
 
-win_name="$(basename "$selected_dir")"
+base_name="$(basename "$selected_dir")"
 
 # Deduplicate: append -N suffix if name already exists in current session
-base_name="$win_name"
-suffix=2
-while tmux list-windows -F '#{window_name}' | grep -qx "$win_name"; do
-  win_name="${base_name}-${suffix}"
-  suffix=$((suffix + 1))
-done
+win_name="$(dedup_window_name "$base_name")"
 [[ "$win_name" != "$base_name" ]] && info_msg "Renamed to avoid duplicate: ${BOLD}${win_name}${CLEAR}" ""
 
 tmux new-window -n "$win_name" -c "$selected_dir"

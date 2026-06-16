@@ -18,7 +18,7 @@ State model
 All agents for one source window live in a SINGLE JSON file keyed by the
 window's (stable, deduped) NAME::
 
-    /tmp/tmux-claude-<window>.json
+    /tmp/tmux-subagents-claude-<window>.json
     {
       "window": "obsidian",
       "agents_window_id": "@65",
@@ -52,8 +52,9 @@ from pathlib import Path
 #   TMUX_AGENT_DEBUG      1/true/yes  → set level to DEBUG (default: INFO)
 # ---------------------------------------------------------------------------
 
+PREFIX = "tmux-subagents-claude"
 LOG_ENABLED = os.environ.get("TMUX_AGENT_LOG", "1").lower() in ("1", "true", "yes")
-LOG_PATH = os.environ.get("TMUX_AGENT_LOG_PATH", "/tmp/tmux-subagents-claude.log")
+LOG_PATH = os.environ.get("TMUX_AGENT_LOG_PATH", f"/tmp/{PREFIX}.log")
 LOG_FORMAT = os.environ.get(
     "TMUX_AGENT_LOG_FORMAT", "%(asctime)s %(levelname)-5s %(name)s %(message)s"
 )
@@ -136,7 +137,7 @@ def _winkey(win: str) -> str:
 
 def winfile(win: str) -> Path:
     """Path to the single JSON state file holding all agents for *win*."""
-    return Path(f"/tmp/tmux-claude-{_winkey(win)}.json")
+    return Path(f"/tmp/{PREFIX}-{_winkey(win)}.json")
 
 
 def load_win(win: str) -> dict:
@@ -540,7 +541,7 @@ def cmd_ping(args: argparse.Namespace) -> None:
     statuses = claude_session_statuses()
     if getattr(args, "all", False):
         rows = []
-        for sf in sorted(Path("/tmp").glob("tmux-claude-*.json")):
+        for sf in sorted(Path("/tmp").glob(f"{PREFIX}-*.json")):
             win = json.loads(sf.read_text()).get("window", sf.stem)
             rows.extend(_ping_rows(win, statuses))
     else:
@@ -636,7 +637,7 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
         log.info("cleanup --prune: cross-window sweep")
         panes = live_panes()
         removed = 0
-        for sf in sorted(Path("/tmp").glob("tmux-claude-*.json")):
+        for sf in sorted(Path("/tmp").glob("{PREFIX}-*.json")):
             try:
                 data = json.loads(sf.read_text())
             except (json.JSONDecodeError, OSError):
@@ -710,7 +711,7 @@ def main() -> None:
     """Parse CLI arguments and dispatch to the appropriate subcommand."""
     parser = argparse.ArgumentParser(
         prog="agent.py",
-        description="tmux-subagents-claude management CLI",
+        description=f"{PREFIX} management CLI",
         epilog="2026 github.com/mbrav",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -801,14 +802,14 @@ def main() -> None:
 
     dispatch = {
         "spawn": cmd_spawn,
-        "pane-id": cmd_pane_id,
-        "session-id": cmd_session_id,
         "prompt": cmd_prompt,
         "result": cmd_result,
-        "resurrect": cmd_resurrect,
         "ping": cmd_ping,
-        "capture": cmd_capture,
         "cleanup": cmd_cleanup,
+        "resurrect": cmd_resurrect,
+        "capture": cmd_capture,
+        "pane-id": cmd_pane_id,
+        "session-id": cmd_session_id,
     }
     dispatch[args.cmd](args)
 

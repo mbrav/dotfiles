@@ -34,6 +34,7 @@ relies on ``automatic-rename off`` (set in tmux.conf) so window names are stable
 
 import argparse
 import json
+import logging
 import os
 import shlex
 import subprocess
@@ -41,6 +42,31 @@ import sys
 import time
 import uuid
 from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Logging — controlled entirely by environment variables
+#
+#   TMUX_AGENT_LOG        1/true/yes  → enable file logging (default: on)
+#   TMUX_AGENT_LOG_PATH   path        → log file (default: /tmp/tmux-agent-claude.log)
+#   TMUX_AGENT_LOG_FORMAT format str  → Python logging format
+#   TMUX_AGENT_DEBUG      1/true/yes  → set level to DEBUG (default: INFO)
+# ---------------------------------------------------------------------------
+
+LOG_ENABLED = os.environ.get("TMUX_AGENT_LOG", "1").lower() in ("1", "true", "yes")
+LOG_PATH = os.environ.get("TMUX_AGENT_LOG_PATH", "/tmp/tmux-agent-claude.log")
+LOG_FORMAT = os.environ.get(
+    "TMUX_AGENT_LOG_FORMAT", "%(asctime)s %(levelname)-5s %(name)s %(message)s"
+)
+LOG_DEBUG = os.environ.get("TMUX_AGENT_DEBUG", "").lower() in ("1", "true", "yes")
+
+log = logging.getLogger("tmux-agents")
+log.setLevel(logging.DEBUG if LOG_DEBUG else logging.INFO)
+log.propagate = False  # don't bleed into root logger / stdout
+
+if LOG_ENABLED:
+    fh = logging.FileHandler(LOG_PATH)
+    fh.setFormatter(logging.Formatter(LOG_FORMAT))
+    log.addHandler(fh)
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +119,9 @@ def get_win() -> str:
     if pane:
         args += ["-t", pane]
     args.append("#{window_name}")
-    return subprocess.check_output(args, text=True).strip()
+    win = subprocess.check_output(args, text=True).strip()
+    log.debug("get_win -> %s (TMUX_PANE=%s)", win, pane or "<unset>")
+    return win
 
 
 # ---------------------------------------------------------------------------
@@ -120,15 +148,21 @@ def load_win(win: str) -> dict:
             data.setdefault("window", win)
             data.setdefault("agents_window_id", None)
             data.setdefault("agents", {})
+            log.debug("load_win %s: %d agent(s) from %s", win, len(data["agents"]), sf)
             return data
-        except (json.JSONDecodeError, OSError):
-            pass
+        except (json.JSONDecodeError, OSError) as e:
+            log.debug("load_win %s: parse error (%s), returning empty state", win, e)
+    else:
+        log.debug("load_win %s: no state file, returning empty", win)
     return {"window": win, "agents_window_id": None, "agents": {}}
 
 
 def save_win(win: str, data: dict) -> None:
     """Persist the window's state."""
     winfile(win).write_text(json.dumps(data, indent=2))
+    log.debug(
+        "save_win %s: %d agent(s) -> %s", win, len(data.get("agents", {})), winfile(win)
+    )
 
 
 def get_agent(win: str, task: str) -> dict:
@@ -212,8 +246,11 @@ def claude_session_statuses() -> dict[str, str]:
 def live_panes() -> set[str]:
     """Set of all live pane IDs across the server."""
     try:
-        return set(tmux_out("list-panes", "-a", "-F", "#{pane_id}").splitlines())
+        panes = set(tmux_out("list-panes", "-a", "-F", "#{pane_id}").splitlines())
+        log.debug("live_panes: %d pane(s)", len(panes))
+        return panes
     except subprocess.CalledProcessError:
+        log.debug("live_panes: tmux error, returning empty set")
         return set()
 
 
@@ -225,9 +262,11 @@ def agents_window_id(win: str) -> str | None:
         ).splitlines():
             wid, _, name = line.partition(" ")
             if name == win:
+                log.debug("agents_window_id %s -> %s", win, wid)
                 return wid
     except subprocess.CalledProcessError:
-        pass
+        log.debug("agents_window_id %s: agents session not found", win)
+    log.debug("agents_window_id %s -> None", win)
     return None
 
 
@@ -260,10 +299,9 @@ def ensure_agents_session() -> None:
         text=True,
     )
     if r.returncode == 0:
-        return  # freshly created, keeper in place
+        log.info("agents session created (keeper window: %s)", KEEPER_WINDOW)
+        return
     if "duplicate session" in r.stderr:
-        # Session already exists; make sure the keeper window is present (it may
-        # be absent if the session predates this fix or was altered manually).
         try:
             names = set(
                 tmux_out(
@@ -287,6 +325,9 @@ def ensure_agents_session() -> None:
                 capture_output=True,
                 text=True,
             )
+            log.info("keeper window added to existing agents session")
+        else:
+            log.debug("ensure_agents_session: session exists, keeper present")
         return
     raise subprocess.CalledProcessError(r.returncode, r.args, r.stdout, r.stderr)
 
@@ -317,15 +358,20 @@ def ensure_agents_window(win: str) -> tuple[str, bool, str, str]:
             "#{window_id} #{pane_id}",
         )
         win_id, pane_id = out.split()
+        log.info("agents window created: win=%s id=%s pane=%s", win, win_id, pane_id)
         return f"agents:{win_id}", True, pane_id, win_id
+    log.debug("ensure_agents_window: window exists win=%s id=%s", win, win_id)
     return f"agents:{win_id}", False, "", win_id
 
 
 def resolve_pane_id(win: str, task: str) -> str:
     """Return the live pane ID for *task* from state; exit 1 if missing or dead."""
     meta = load_win(win)["agents"].get(task)
-    if meta and meta.get("pane_id") in live_panes():
-        return meta["pane_id"]
+    pane_id = meta.get("pane_id") if meta else None
+    if pane_id and pane_id in live_panes():
+        log.debug("resolve_pane_id task=%s -> %s", task, pane_id)
+        return pane_id
+    log.info("resolve_pane_id task=%s pane=%s not found or dead", task, pane_id)
     print(f"pane not found: {task}", file=sys.stderr)
     sys.exit(1)
 
@@ -338,12 +384,15 @@ def resolve_pane_id(win: str, task: str) -> str:
 def cmd_spawn(args: argparse.Namespace) -> None:
     """Spawn a new Claude subagent pane in the agents session."""
     win = get_win()
+    log.info("spawn task=%s win=%s", args.task, win)
     target, fresh_window, initial_pane, win_id = ensure_agents_window(win)
 
     if fresh_window:
         pane_id = initial_pane  # captured atomically at session/window creation
     else:
         pane_id = tmux_out("split-window", "-t", target, "-d", "-P", "-F", "#{pane_id}")
+
+    log.debug("spawn task=%s pane=%s fresh_window=%s", args.task, pane_id, fresh_window)
 
     # Generate a session ID and record state in the consolidated window file.
     session_id = str(uuid.uuid4())
@@ -371,17 +420,20 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     if getattr(args, "effort", None):
         parts.extend(["--effort", args.effort])
 
+    log.debug("spawn task=%s cmd: %s", args.task, shlex.join(parts))
     tmux("send-keys", "-t", pane_id, shlex.join(parts), "Enter")
 
     # Wait for Claude's interactive prompt (❯) then send the initial prompt literally.
     deadline = time.time() + 30
+    log.debug("spawn task=%s waiting for ❯ (timeout=30s)", args.task)
     while time.time() < deadline:
         time.sleep(1)
         try:
             if "❯" in tmux_out("capture-pane", "-t", pane_id, "-p"):
+                log.debug("spawn task=%s prompt ready", args.task)
                 break
         except subprocess.CalledProcessError:
-            # Pane vanished (e.g. claude exited immediately); stop waiting.
+            log.debug("spawn task=%s pane vanished while waiting", args.task)
             break
 
     tmux("send-keys", "-t", pane_id, "-l", args.prompt)
@@ -397,6 +449,13 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     if getattr(args, "effort", None):
         extras.append(f"effort={args.effort}")
     extra_str = f" [{', '.join(extras)}]" if extras else ""
+    log.info(
+        "spawned task=%s pane=%s session=%s%s",
+        args.task,
+        pane_id,
+        session_id,
+        f" {extra_str}" if extra_str else "",
+    )
     print(
         f"Spawned '{args.task}' in pane {pane_id} ({target}) [session: {session_id}]{extra_str}"
     )
@@ -415,6 +474,7 @@ def cmd_session_id(args: argparse.Namespace) -> None:
 def cmd_prompt(args: argparse.Namespace) -> None:
     """Send a follow-up prompt to a running agent pane."""
     pane_id = resolve_pane_id(get_win(), args.task)
+    log.info("prompt task=%s pane=%s", args.task, pane_id)
     tmux("send-keys", "-t", pane_id, "-l", args.text)
     tmux("send-keys", "-t", pane_id, "Enter")
 
@@ -425,8 +485,16 @@ def cmd_result(args: argparse.Namespace) -> None:
     meta = get_agent(win, args.task)
     session_id = meta["session_id"]
     jsonl = jsonl_path(meta)
+    log.debug(
+        "result task=%s session=%s jsonl=%s wait=%s",
+        args.task,
+        session_id,
+        jsonl,
+        args.wait,
+    )
 
     if args.wait:
+        log.info("result task=%s waiting for response", args.task)
         print(
             f"Waiting for response from '{args.task}' (session: {session_id})...",
             file=sys.stderr,
@@ -434,17 +502,20 @@ def cmd_result(args: argparse.Namespace) -> None:
         while True:
             result = extract_last_response(jsonl)
             if result is not None:
+                log.info("result task=%s response ready", args.task)
                 print(result)
                 return
             time.sleep(2)
     else:
         result = extract_last_response(jsonl)
         if result is None:
+            log.info("result task=%s no complete response yet", args.task)
             print(
                 f"No complete response yet for task '{args.task}' (session: {session_id})",
                 file=sys.stderr,
             )
             sys.exit(1)
+        log.info("result task=%s response found", args.task)
         print(result)
 
 
@@ -459,6 +530,7 @@ def _ping_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str, 
         # A live pane is never "dead"; missing status just means it's still
         # starting up (the claude session-status file lags briefly).
         status = statuses.get(sid, "starting") if pane in panes else "dead"
+        log.debug("ping win=%s task=%s pane=%s status=%s", win, task, pane, status)
         rows.append((pane, task, sid, status))
     return rows
 
@@ -491,6 +563,7 @@ def cmd_resurrect(args: argparse.Namespace) -> None:
     """Bring back a cleaned-up agent using its known session UUID."""
     win = get_win()
     session_id = args.session_id
+    log.info("resurrect task=%s session=%s win=%s", args.task, session_id, win)
 
     target, fresh_window, initial_pane, win_id = ensure_agents_window(win)
     pane_id = (
@@ -498,6 +571,7 @@ def cmd_resurrect(args: argparse.Namespace) -> None:
         if fresh_window
         else tmux_out("split-window", "-t", target, "-d", "-P", "-F", "#{pane_id}")
     )
+    log.debug("resurrect task=%s pane=%s", args.task, pane_id)
     tmux("select-layout", "-t", target, "even-horizontal")
 
     tmux(
@@ -516,6 +590,7 @@ def cmd_resurrect(args: argparse.Namespace) -> None:
         "cwd": os.getcwd(),
     }
     save_win(win, data)
+    log.info("resurrected task=%s pane=%s session=%s", args.task, pane_id, session_id)
     print(f"Resurrected '{args.task}' in pane {pane_id} (session: {session_id})")
 
 
@@ -523,15 +598,20 @@ def cmd_capture(args: argparse.Namespace) -> None:
     """Capture or stream pane output: default screenful, full scrollback, log, or stop."""
     pane_id = resolve_pane_id(get_win(), args.task)
     mode = args.mode
+    log.debug(
+        "capture task=%s pane=%s mode=%s", args.task, pane_id, mode or "screenful"
+    )
 
     if mode == "full":
         print(tmux_out("capture-pane", "-t", pane_id, "-p", "-S", "-3000"))
     elif mode == "log":
         logfile = f"/tmp/{args.task}.log"
         tmux("pipe-pane", "-t", pane_id, "-o", f"cat >> {logfile}")
+        log.info("capture task=%s streaming to %s", args.task, logfile)
         print(f"Streaming to {logfile}")
     elif mode == "stop":
         tmux("pipe-pane", "-t", pane_id)
+        log.info("capture task=%s streaming stopped", args.task)
         print("Stopped streaming")
     else:
         print(tmux_out("capture-pane", "-t", pane_id, "-p"))
@@ -553,6 +633,7 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
         # Cross-window sweep: drop only entries whose pane is confirmed dead, and
         # remove window files that end up empty. Never touches live agents, so it
         # is safe to run alongside concurrent orchestrator sessions.
+        log.info("cleanup --prune: cross-window sweep")
         panes = live_panes()
         removed = 0
         for sf in sorted(Path("/tmp").glob("tmux-claude-*.json")):
@@ -561,11 +642,18 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
             except (json.JSONDecodeError, OSError):
                 sf.unlink(missing_ok=True)
                 print(f"Removed unreadable: {sf.name}")
+                log.info("prune: removed unreadable %s", sf.name)
                 removed += 1
                 continue
             agents = data.get("agents", {})
             dead = [t for t, m in agents.items() if m.get("pane_id") not in panes]
             for t in dead:
+                log.info(
+                    "prune: dead agent '%s' in %s (pane %s)",
+                    t,
+                    sf.name,
+                    agents[t].get("pane_id"),
+                )
                 del agents[t]
                 print(f"Pruned dead agent '{t}' from {sf.name}")
                 removed += 1
@@ -573,24 +661,33 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
                 sf.write_text(json.dumps(data, indent=2))
             else:
                 sf.unlink(missing_ok=True)
+                log.info("prune: removed empty %s", sf.name)
                 print(f"Removed empty: {sf.name}")
+        log.info(
+            "prune: %d dead entr%s removed", removed, "y" if removed == 1 else "ies"
+        )
         print(f"{removed} dead entr{'y' if removed == 1 else 'ies'} pruned")
         return
 
     win = get_win()
 
     if args.all:
+        log.info("cleanup --all win=%s", win)
         data = load_win(win)
         for task, meta in data["agents"].items():
             pane_id = meta.get("pane_id", "")
             if _kill_pane(pane_id):
+                log.info("cleanup: killed pane=%s task=%s", pane_id, task)
                 print(f"Killed pane {pane_id} ({task})")
             else:
+                log.info("cleanup: pane=%s already gone task=%s", pane_id, task)
                 print(f"Pane {pane_id} already gone ({task})")
         winfile(win).unlink(missing_ok=True)
+        log.debug("cleanup --all: removed state file for win=%s", win)
         return
 
     # Single task
+    log.info("cleanup task=%s win=%s", args.task, win)
     meta = get_agent(win, args.task)
     _kill_pane(meta.get("pane_id", ""))
     data = load_win(win)
@@ -599,6 +696,8 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
         save_win(win, data)
     else:
         winfile(win).unlink(missing_ok=True)
+        log.debug("cleanup: state file removed (no agents left) win=%s", win)
+    log.info("cleanup done task=%s pane=%s", args.task, meta.get("pane_id"))
     print(f"Killed pane {meta.get('pane_id')} ({args.task})")
 
 

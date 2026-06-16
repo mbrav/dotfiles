@@ -76,9 +76,18 @@ Cleanup before/after batch:
 
 See [tools-and-models.md](references/tools-and-models.md) for model/tools per task.
 
+## Resurrect
+
+Restore killed agent + full context:
+
+```bash
+~/.config/scripts/tmux-subagents-claude resurrect <task> <session-uuid>
+```
+
+Session ID from original spawn output or prior `status` call. Creates new pane, resumes exact conversation (JSONL history preserved). Use after `cleanup <task>` to recover without losing work.
+
 ## Other commands
 
-- `resurrect <task> <session-uuid>` — restore cleaned-up agent + context
 - `<cmd> --help` — full options
 
 ## Status values
@@ -96,3 +105,4 @@ See [tools-and-models.md](references/tools-and-models.md) for model/tools per ta
 - Reference agents by **task name** (unique per window).
 - Block for reply: `result --wait` / `prompt --wait`. `result` > `capture`. `status` free.
 - `cleanup --all` = current window only. `--prune` = cross-window, preserves live agents.
+

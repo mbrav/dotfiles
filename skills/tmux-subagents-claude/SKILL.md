@@ -84,6 +84,8 @@ the pane is wedged (e.g. left in vim/INSERT). Inspect with `capture`, then `clea
 | `--effort LEVEL` | `low`, `medium`, `high`, `xhigh`, `max`, `auto` |
 | `--dangerously-skip-permissions` | skip permission prompts — **only when the user explicitly asks** |
 
+Session display names are auto-generated in format `subagent-{window}-{task}` (e.g. `subagent-mywindow-mytask`).
+
 See [tools-and-models.md](references/tools-and-models.md) for choosing the right
 model/tools per task and the full model list.
 

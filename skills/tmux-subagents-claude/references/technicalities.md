@@ -65,9 +65,9 @@ Window names sanitized for filename (`/`→`-`, space→`_`).
 
 ## Keeper window
 
-Without anchor, last agent pane exit → window closes → tmux destroys empty session → all later `ping`/`result`/`capture`/`cleanup` fail with `no sessions` / `can't find window: agents`.
+Without anchor, last agent pane exit → window closes → tmux destroys empty session → all later `status`/`result`/`capture`/`cleanup` fail with `no sessions` / `can't find window: agents`.
 
-Fix: `spawn`/`resurrect` ensure persistent `__keeper__` window (`exec sleep 2147483647`). Dead agents show `dead` in `ping` (clear with `cleanup --prune`) or recoverable via `resurrect`. Keeper excluded from Dracula agent-count segment.
+Fix: `spawn`/`resurrect` ensure persistent `__keeper__` window (`exec sleep 2147483647`). Dead agents show `dead` in `status` (clear with `cleanup --prune`) or recoverable via `resurrect`. Keeper excluded from Dracula agent-count segment.
 
 ## Concurrency model
 
@@ -78,22 +78,27 @@ Multiple sessions run agents in parallel **as long as each lives in different wi
 - `cleanup --prune` only cross-window command. Removes **only dead-pane entries** — never deletes live session's agents.
 - Two orchestrators sharing one window share same namespace — avoid duplicate task names.
 
-## Status values (`ping`)
+## Status values (`status`)
 
 | Status | Meaning |
 |--------|---------|
-| `idle` | pane live; agent waiting for input |
+| `empty` | pane live; agent idle but no completed reply in the JSONL yet (fresh / awaiting first prompt) |
+| `idle` | pane live; agent waiting for input with at least one completed reply to read |
 | `busy` | pane live; agent actively processing |
 | `starting` | pane live but claude session-status file not yet appeared (brief lag) |
 | `dead` | pane gone; clear with `cleanup --prune` |
 
-Status from `~/.claude/sessions/*.json`. Live pane never reported `dead`. `result` reads last `end_turn` text from `~/.claude/projects/<cwd-slug>/<session>.jsonl`.
+Status from `~/.claude/sessions/*.json`. Live pane never reported `dead`. An idle pane is refined to `empty` when `extract_last_response` finds no `end_turn` in its JSONL — this separates "nothing produced yet" from "done, output ready" (the *idle trap* that misleads orchestrators into thinking a prompt was dropped). `result` reads last `end_turn` text from `~/.claude/projects/<cwd-slug>/<session>.jsonl`.
 
 ### `result` semantics
 
 `result` exit 0 means *an `end_turn` message exists in the JSONL*, **not** that the agent's work is finished or correct. The agent may have responded "starting now" and gone back to thinking. Check body content, not just exit code.
 
 `prompt --wait` improves on this: it snapshots the last response *before* sending, then blocks for a **new** `end_turn`. So you can't accidentally pick up a stale reply.
+
+`result --wait` blocks while the session status is `busy`, then prints the latest `end_turn`. This stops it returning a stale prior reply *while the agent is still working*, but it cannot detect staleness once the agent has gone back to `idle`: if you send a follow-up and the agent finishes before you call, you get that (correct, latest) reply — but in the brief window before its status flips to `busy` you could still catch the previous one. For send-and-block on a guaranteed-new reply, use `prompt --wait`.
+
+The `empty`/`idle` split (see *Status values*) removes the worst of the idle trap: a freshly spawned agent that has produced nothing shows `empty`, not `idle`. But `idle` is still ambiguous once an agent has replied at least once — it means "waiting for input" whether the agent just *finished your latest prompt* or *never received it*. A fast model returns to `idle` within seconds, so `status` showing `idle` shortly after a `prompt` does **not** prove the prompt was dropped — read the reply body to confirm. Inferring "prompt not delivered" from `idle`, then re-sending and `capture`-ing, is the classic thrash this skill exists to prevent.
 
 ### Stuck-input bug (INSERT mode)
 

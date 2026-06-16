@@ -22,10 +22,10 @@ No `--model`/`--tools` = account default model + full tool access. Narrow delibe
 | Model | Typical end_turn | Wait strategy |
 |-------|------------------|---------------|
 | Haiku | seconds | `result --wait` or `prompt --wait` (single blocking call) |
-| Sonnet | tens of seconds to minutes | `result --wait` — **never** ping-loop |
-| Opus | minutes | `result --wait` mandatory; if you must observe progress use **one** `ping --all` snapshot |
+| Sonnet | tens of seconds to minutes | `result --wait` |
+| Opus | minutes | `result --wait`; to observe progress, take a `status --all` snapshot |
 
-Manual `ping` only when you'll branch on idle/busy change within ~10s. Repeated pings on a busy agent waste tokens and don't accelerate work; the tool warns after 3 in 30s.
+`status` is an on-demand snapshot — use it whenever you want to see the table. To *wait* for a reply, block with `result --wait` / `prompt --wait` rather than re-running `status`.
 
 Older fallbacks (`claude-opus-4-5`, `claude-sonnet-4-5`) exist; prefer newest per tier.
 

@@ -6,7 +6,7 @@ Subcommands:
   spawn      <task> <prompt>     spawn a Claude subagent pane
   prompt     <task> <text>       send a follow-up prompt to an agent pane
   result     <task> [--wait]     read last complete response from JSONL log
-  ping       [--all]             status table of agents
+  status     [--all]             status table of agents
   resurrect  <task> <uuid>       bring back a cleaned-up agent by session UUID
   capture    <task> [mode]       capture/stream pane output
   cleanup    <task|--all|--prune>  kill agents / purge state
@@ -82,10 +82,6 @@ MODELS = [
 ]
 
 EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max", "auto"]
-
-PING_HISTORY_PATH = Path(f"/tmp/{PREFIX}-pinghist.json")
-PING_BUSY_WINDOW_SEC = 30
-PING_BUSY_THRESHOLD = 3
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +272,7 @@ def agents_window_id(win: str) -> str | None:
 # Persistent anchor window. Without it, the last agent pane exiting (claude
 # crash, the sandbox suspend/resume killing processes, or simply finishing)
 # closes the only window in the agents session and tmux destroys the WHOLE
-# session -- which then makes ping/result/capture/cleanup fail with
+# session -- which then makes status/result/capture/cleanup fail with
 # ``no sessions`` / ``can't find window: agents``. The keeper runs a long sleep
 # so the session is never empty and always survives.
 KEEPER_WINDOW = "__keeper__"
@@ -582,9 +578,15 @@ def cmd_result(args: argparse.Namespace) -> None:
             f"Waiting for response from '{args.task}' (session: {session_id})...",
             file=sys.stderr,
         )
+        # Block while the agent is still `busy` so we don't hand back a stale
+        # prior end_turn while it's working on a freshly-sent prompt. This
+        # cannot detect staleness once the agent has gone back to `idle` — for
+        # send-and-block on a guaranteed-NEW reply use `prompt --wait`, which
+        # baselines the prior response before sending.
         while True:
+            status = claude_session_statuses().get(session_id, "starting")
             result = extract_last_response(jsonl)
-            if result is not None:
+            if status != "busy" and result is not None:
                 log.info("result task=%s response ready", args.task)
                 print(result)
                 return
@@ -602,7 +604,7 @@ def cmd_result(args: argparse.Namespace) -> None:
         print(result)
 
 
-def _ping_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str, str]]:
+def _status_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str, str]]:
     """Build (pane, task, session, status) rows for one window's agents."""
     data = load_win(win)
     panes = live_panes()
@@ -613,58 +615,31 @@ def _ping_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str, 
         # A live pane is never "dead"; missing status just means it's still
         # starting up (the claude session-status file lags briefly).
         status = statuses.get(sid, "starting") if pane in panes else "dead"
-        log.debug("ping win=%s task=%s pane=%s status=%s", win, task, pane, status)
+        # Disambiguate the "idle trap": an idle agent that has produced no
+        # completed reply yet is "empty" (fresh / awaiting its first prompt),
+        # vs "idle" which means it finished work and has output to read. Lets a
+        # caller tell "nothing here yet" apart from "done".
+        if status == "idle":
+            try:
+                if extract_last_response(jsonl_path(meta)) is None:
+                    status = "empty"
+            except (KeyError, OSError):
+                pass
+        log.debug("status win=%s task=%s pane=%s status=%s", win, task, pane, status)
         rows.append((pane, task, sid, status))
     return rows
 
 
-def _record_ping_and_warn(rows: list[tuple[str, str, str, str]]) -> None:
-    """Warn when the same busy task is pinged too often — suggests result --wait."""
-    try:
-        hist = (
-            json.loads(PING_HISTORY_PATH.read_text())
-            if PING_HISTORY_PATH.exists()
-            else {}
-        )
-    except (json.JSONDecodeError, OSError):
-        hist = {}
-    now = time.time()
-    cutoff = now - PING_BUSY_WINDOW_SEC
-    warned: list[str] = []
-    for _pane, task, _sid, status in rows:
-        if status != "busy":
-            continue
-        stamps = [t for t in hist.get(task, []) if t > cutoff]
-        stamps.append(now)
-        hist[task] = stamps
-        if len(stamps) >= PING_BUSY_THRESHOLD:
-            warned.append(task)
-    # GC dead keys
-    hist = {k: [t for t in v if t > cutoff] for k, v in hist.items()}
-    hist = {k: v for k, v in hist.items() if v}
-    try:
-        PING_HISTORY_PATH.write_text(json.dumps(hist))
-    except OSError:
-        pass
-    for task in warned:
-        print(
-            f"hint: '{task}' pinged {PING_BUSY_THRESHOLD}+ times in {PING_BUSY_WINDOW_SEC}s "
-            f"while busy — use `result {task} --wait` (single cheap call) "
-            f"or `prompt {task} '<text>' --wait`.",
-            file=sys.stderr,
-        )
-
-
-def cmd_ping(args: argparse.Namespace) -> None:
+def cmd_status(args: argparse.Namespace) -> None:
     """Print a status table of agent sessions."""
     statuses = claude_session_statuses()
     if getattr(args, "all", False):
         rows = []
         for sf in sorted(Path("/tmp").glob(f"{PREFIX}-*.json")):
             win = json.loads(sf.read_text()).get("window", sf.stem)
-            rows.extend(_ping_rows(win, statuses))
+            rows.extend(_status_rows(win, statuses))
     else:
-        rows = _ping_rows(get_win(), statuses)
+        rows = _status_rows(get_win(), statuses)
 
     if not rows:
         print("no sessions")
@@ -677,7 +652,6 @@ def cmd_ping(args: argparse.Namespace) -> None:
     print(fmt.format(*("-" * w for w in col_w)))
     for row in rows:
         print(fmt.format(*row))
-    _record_ping_and_warn(rows)
 
 
 def cmd_resurrect(args: argparse.Namespace) -> None:
@@ -908,10 +882,10 @@ def main() -> None:
     p_resurrect.add_argument("task", help="task name to restore")
     p_resurrect.add_argument("session_id", help="session UUID from the original spawn")
 
-    p_ping = sub.add_parser(
-        "ping", help="status table of agents for the current window"
+    p_status = sub.add_parser(
+        "status", help="status table of agents for the current window"
     )
-    p_ping.add_argument(
+    p_status.add_argument(
         "--all", action="store_true", help="show agents across all windows"
     )
 
@@ -943,7 +917,7 @@ def main() -> None:
         "spawn": cmd_spawn,
         "prompt": cmd_prompt,
         "result": cmd_result,
-        "ping": cmd_ping,
+        "status": cmd_status,
         "cleanup": cmd_cleanup,
         "resurrect": cmd_resurrect,
         "capture": cmd_capture,

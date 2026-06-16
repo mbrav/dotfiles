@@ -39,6 +39,7 @@ import subprocess
 import sys
 import time
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -410,6 +411,11 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     # Start claude interactively — prompt is sent as keystrokes after startup,
     # not as a CLI arg (which claude treats as a system prompt, leaving it idle).
     parts = ["claude", "--session-id", session_id]
+
+    # Generate display name: agent-{name}-{task}-{YYYY-MM-DD}
+    display_name = f"{PREFIX}-{win}-{args.task}-{datetime.now().strftime('%Y-%m-%d')}"
+    parts.extend(["--name", display_name])
+
     if getattr(args, "dangerously_skip_permissions", False):
         parts.append("--dangerously-skip-permissions")
     if getattr(args, "model", None):
@@ -426,7 +432,7 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     deadline = time.time() + 30
     log.debug("spawn task=%s waiting for ❯ (timeout=30s)", args.task)
     while time.time() < deadline:
-        time.sleep(1)
+        time.sleep(0.25)
         try:
             if "❯" in tmux_out("capture-pane", "-t", pane_id, "-p"):
                 log.debug("spawn task=%s prompt ready", args.task)

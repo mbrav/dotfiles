@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-agent.py — tmux-agents-claude management CLI
+agent.py — tmux-subagents-claude management CLI
 
 Subcommands:
   spawn      <task> <prompt>     spawn a Claude subagent pane
@@ -33,7 +33,6 @@ relies on ``automatic-rename off`` (set in tmux.conf) so window names are stable
 """
 
 import argparse
-import fcntl
 import json
 import logging
 import os
@@ -42,20 +41,19 @@ import subprocess
 import sys
 import time
 import uuid
-from contextlib import contextmanager
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Logging — controlled entirely by environment variables
 #
 #   TMUX_AGENT_LOG        1/true/yes  → enable file logging (default: on)
-#   TMUX_AGENT_LOG_PATH   path        → log file (default: /tmp/tmux-agent-claude.log)
+#   TMUX_AGENT_LOG_PATH   path        → log file (default: /tmp/tmux-subagents-claude.log)
 #   TMUX_AGENT_LOG_FORMAT format str  → Python logging format
 #   TMUX_AGENT_DEBUG      1/true/yes  → set level to DEBUG (default: INFO)
 # ---------------------------------------------------------------------------
 
 LOG_ENABLED = os.environ.get("TMUX_AGENT_LOG", "1").lower() in ("1", "true", "yes")
-LOG_PATH = os.environ.get("TMUX_AGENT_LOG_PATH", "/tmp/tmux-agent-claude.log")
+LOG_PATH = os.environ.get("TMUX_AGENT_LOG_PATH", "/tmp/tmux-subagents-claude.log")
 LOG_FORMAT = os.environ.get(
     "TMUX_AGENT_LOG_FORMAT", "%(asctime)s %(levelname)-5s %(name)s %(message)s"
 )
@@ -85,15 +83,6 @@ MODELS = [
 ]
 
 EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max", "auto"]
-
-# Persistent anchor window. Without it, the last agent pane exiting (claude
-# crash, the sandbox suspend/resume killing processes, or simply finishing)
-# closes the only window in the agents session and tmux destroys the WHOLE
-# session -- which then makes ping/result/capture/cleanup fail with
-# ``no sessions`` / ``can't find window: agents``. The keeper runs a long sleep
-# so the session is never empty and always survives.
-KEEPER_WINDOW = "__keeper__"
-KEEPER_CMD = "exec sleep 2147483647"
 
 
 # ---------------------------------------------------------------------------
@@ -150,73 +139,30 @@ def winfile(win: str) -> Path:
     return Path(f"/tmp/tmux-claude-{_winkey(win)}.json")
 
 
-def _lockfile(win: str) -> Path:
-    """Path to the advisory lock guarding *win*'s state file."""
-    return winfile(win).with_suffix(".lock")
-
-
-def _read_state(win: str) -> dict:
-    """Load and normalise *win*'s state dict (empty skeleton if absent/corrupt)."""
+def load_win(win: str) -> dict:
+    """Load the window's state, or return an empty skeleton if absent."""
     sf = winfile(win)
-    data: dict = {}
     if sf.exists():
         try:
             data = json.loads(sf.read_text())
+            data.setdefault("window", win)
+            data.setdefault("agents_window_id", None)
+            data.setdefault("agents", {})
+            log.debug("load_win %s: %d agent(s) from %s", win, len(data["agents"]), sf)
+            return data
         except (json.JSONDecodeError, OSError) as e:
-            log.debug("state %s: parse error (%s), using empty", win, e)
-            data = {}
-    data.setdefault("window", win)
-    data.setdefault("agents_window_id", None)
-    data.setdefault("agents", {})
-    return data
-
-
-def _write_state(win: str, data: dict) -> None:
-    """Persist *win*'s state, or drop the file when it carries nothing useful.
-
-    A record with no agents *and* no window id is meaningless, so the file is
-    removed to force the next spawn to rediscover tmux from scratch (preventing
-    a stale window id from pointing at a window tmux already closed). A file
-    with an empty agents map but a live window id is kept on purpose: parallel
-    spawns read it and share the one window instead of each creating their own.
-    """
-    sf = winfile(win)
-    if not data["agents"] and not data["agents_window_id"]:
-        sf.unlink(missing_ok=True)
-        log.debug("state %s: removed (empty)", win)
+            log.debug("load_win %s: parse error (%s), returning empty state", win, e)
     else:
-        sf.write_text(json.dumps(data, indent=2))
-        log.debug("state %s: %d agent(s) -> %s", win, len(data["agents"]), sf)
+        log.debug("load_win %s: no state file, returning empty", win)
+    return {"window": win, "agents_window_id": None, "agents": {}}
 
 
-@contextmanager
-def win_state(win: str, *, write: bool = False):
-    """One advisory-locked critical section over a window's JSON state.
-
-    Yields the mutable state dict. With ``write=True`` an exclusive lock is held
-    and the dict is persisted on clean exit; otherwise a shared lock is held and
-    nothing is written. The whole read-modify-write happens under a single lock,
-    so concurrent spawns can't clobber one another.
-
-    Hold exactly one ``win_state`` per window at a time — never nest it (fcntl
-    locks are per-process and a second acquisition would self-deadlock).
-    """
-    fd = os.open(str(_lockfile(win)), os.O_CREAT | os.O_RDWR, 0o600)
-    try:
-        fcntl.flock(fd, fcntl.LOCK_EX if write else fcntl.LOCK_SH)
-        data = _read_state(win)
-        yield data
-        if write:
-            _write_state(win, data)
-    finally:
-        fcntl.flock(fd, fcntl.LOCK_UN)
-        os.close(fd)
-
-
-def load_win(win: str) -> dict:
-    """Return a read-only snapshot of the window's state (shared lock)."""
-    with win_state(win) as data:
-        return data
+def save_win(win: str, data: dict) -> None:
+    """Persist the window's state."""
+    winfile(win).write_text(json.dumps(data, indent=2))
+    log.debug(
+        "save_win %s: %d agent(s) -> %s", win, len(data.get("agents", {})), winfile(win)
+    )
 
 
 def get_agent(win: str, task: str) -> dict:
@@ -308,18 +254,30 @@ def live_panes() -> set[str]:
         return set()
 
 
-def _find_window_in_tmux(win: str) -> str | None:
-    """Return the window id (@N) of the exact-named agents-session window, or None."""
+def agents_window_id(win: str) -> str | None:
+    """Return the window ID (@N) of the exact-named window in the agents session."""
     try:
         for line in tmux_out(
             "list-windows", "-t", "agents", "-F", "#{window_id} #{window_name}"
         ).splitlines():
             wid, _, name = line.partition(" ")
             if name == win:
+                log.debug("agents_window_id %s -> %s", win, wid)
                 return wid
     except subprocess.CalledProcessError:
-        log.debug("_find_window_in_tmux %s: agents session not found", win)
+        log.debug("agents_window_id %s: agents session not found", win)
+    log.debug("agents_window_id %s -> None", win)
     return None
+
+
+# Persistent anchor window. Without it, the last agent pane exiting (claude
+# crash, the sandbox suspend/resume killing processes, or simply finishing)
+# closes the only window in the agents session and tmux destroys the WHOLE
+# session -- which then makes ping/result/capture/cleanup fail with
+# ``no sessions`` / ``can't find window: agents``. The keeper runs a long sleep
+# so the session is never empty and always survives.
+KEEPER_WINDOW = "__keeper__"
+KEEPER_CMD = "exec sleep 2147483647"
 
 
 def ensure_agents_session() -> None:
@@ -387,19 +345,9 @@ def ensure_agents_window(win: str) -> tuple[str, bool, str, str]:
     initial_pane_id is only meaningful when fresh_window=True.
     """
     ensure_agents_session()
-
-    # One exclusive critical section: discover-or-create the window so that
-    # parallel spawns can't each create their own. State id is authoritative;
-    # fall back to tmux, then create. The id is recorded before the lock drops.
-    with win_state(win, write=True) as data:
-        win_id = data["agents_window_id"] or _find_window_in_tmux(win)
-
-        if win_id:
-            data["agents_window_id"] = win_id
-            log.debug("ensure_agents_window: window exists win=%s id=%s", win, win_id)
-            return f"agents:{win_id}", False, "", win_id
-
-        win_id, pane_id = tmux_out(
+    win_id = agents_window_id(win)
+    if win_id is None:
+        out = tmux_out(
             "new-window",
             "-t",
             "agents",
@@ -408,10 +356,12 @@ def ensure_agents_window(win: str) -> tuple[str, bool, str, str]:
             "-P",
             "-F",
             "#{window_id} #{pane_id}",
-        ).split()
-        data["agents_window_id"] = win_id
+        )
+        win_id, pane_id = out.split()
         log.info("agents window created: win=%s id=%s pane=%s", win, win_id, pane_id)
         return f"agents:{win_id}", True, pane_id, win_id
+    log.debug("ensure_agents_window: window exists win=%s id=%s", win, win_id)
+    return f"agents:{win_id}", False, "", win_id
 
 
 def resolve_pane_id(win: str, task: str) -> str:
@@ -444,15 +394,16 @@ def cmd_spawn(args: argparse.Namespace) -> None:
 
     log.debug("spawn task=%s pane=%s fresh_window=%s", args.task, pane_id, fresh_window)
 
-    # Generate a session ID and record state atomically in the consolidated window file.
+    # Generate a session ID and record state in the consolidated window file.
     session_id = str(uuid.uuid4())
-    with win_state(win, write=True) as data:
-        data["agents_window_id"] = win_id
-        data["agents"][args.task] = {
-            "pane_id": pane_id,
-            "session_id": session_id,
-            "cwd": os.getcwd(),
-        }
+    data = load_win(win)
+    data["agents_window_id"] = win_id
+    data["agents"][args.task] = {
+        "pane_id": pane_id,
+        "session_id": session_id,
+        "cwd": os.getcwd(),
+    }
+    save_win(win, data)
 
     # Side-by-side horizontal layout: | Agent 1 | Agent 2 | Agent 3 |
     tmux("select-layout", "-t", target, "even-horizontal")
@@ -631,14 +582,14 @@ def cmd_resurrect(args: argparse.Namespace) -> None:
         "Enter",
     )
 
-    # Atomically add the resurrected agent to state
-    with win_state(win, write=True) as data:
-        data["agents_window_id"] = win_id
-        data["agents"][args.task] = {
-            "pane_id": pane_id,
-            "session_id": session_id,
-            "cwd": os.getcwd(),
-        }
+    data = load_win(win)
+    data["agents_window_id"] = win_id
+    data["agents"][args.task] = {
+        "pane_id": pane_id,
+        "session_id": session_id,
+        "cwd": os.getcwd(),
+    }
+    save_win(win, data)
     log.info("resurrected task=%s pane=%s session=%s", args.task, pane_id, session_id)
     print(f"Resurrected '{args.task}' in pane {pane_id} (session: {session_id})")
 
@@ -722,32 +673,30 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
 
     if args.all:
         log.info("cleanup --all win=%s", win)
-        with win_state(win, write=True) as data:
-            for task, meta in data["agents"].items():
-                pane_id = meta.get("pane_id", "")
-                if _kill_pane(pane_id):
-                    log.info("cleanup: killed pane=%s task=%s", pane_id, task)
-                    print(f"Killed pane {pane_id} ({task})")
-                else:
-                    log.info("cleanup: pane=%s already gone task=%s", pane_id, task)
-                    print(f"Pane {pane_id} already gone ({task})")
-            # Drop every agent and the window id -> _write_state removes the file.
-            data["agents"].clear()
-            data["agents_window_id"] = None
+        data = load_win(win)
+        for task, meta in data["agents"].items():
+            pane_id = meta.get("pane_id", "")
+            if _kill_pane(pane_id):
+                log.info("cleanup: killed pane=%s task=%s", pane_id, task)
+                print(f"Killed pane {pane_id} ({task})")
+            else:
+                log.info("cleanup: pane=%s already gone task=%s", pane_id, task)
+                print(f"Pane {pane_id} already gone ({task})")
+        winfile(win).unlink(missing_ok=True)
+        log.debug("cleanup --all: removed state file for win=%s", win)
         return
 
     # Single task
     log.info("cleanup task=%s win=%s", args.task, win)
     meta = get_agent(win, args.task)
     _kill_pane(meta.get("pane_id", ""))
-
-    # Atomically remove the agent. Nulling the window id once the last agent is
-    # gone makes _write_state drop the file, forcing a clean rediscovery later.
-    with win_state(win, write=True) as data:
-        data["agents"].pop(args.task, None)
-        if not data["agents"]:
-            data["agents_window_id"] = None
-
+    data = load_win(win)
+    data["agents"].pop(args.task, None)
+    if data["agents"]:
+        save_win(win, data)
+    else:
+        winfile(win).unlink(missing_ok=True)
+        log.debug("cleanup: state file removed (no agents left) win=%s", win)
     log.info("cleanup done task=%s pane=%s", args.task, meta.get("pane_id"))
     print(f"Killed pane {meta.get('pane_id')} ({args.task})")
 
@@ -761,7 +710,7 @@ def main() -> None:
     """Parse CLI arguments and dispatch to the appropriate subcommand."""
     parser = argparse.ArgumentParser(
         prog="agent.py",
-        description="tmux-agents-claude management CLI",
+        description="tmux-subagents-claude management CLI",
         epilog="2026 github.com/mbrav",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)

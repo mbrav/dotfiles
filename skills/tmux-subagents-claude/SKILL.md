@@ -1,5 +1,5 @@
 ---
-name: tmux-agents-claude
+name: tmux-subagents-claude
 description: Orchestrate Claude Code subagents via tmux panes. Use when you need to spawn parallel Claude agents for subtasks, delegate work, monitor running agents, read their output, or clean up finished panes. Each subagent runs in a named pane inside the detached agents session window that mirrors the current window name.
 ---
 

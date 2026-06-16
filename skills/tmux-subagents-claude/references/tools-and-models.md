@@ -65,19 +65,19 @@ With explicit ask: still scope `--tools` tightly so unattended agent can't excee
 
 ```bash
 # Routine edit — Sonnet, scoped tools, prompts on
-~/.config/scripts/tmux-agents-claude spawn fix-bug 'Fix the off-by-one in pagination' \
+~/.config/scripts/tmux-subagents-claude spawn fix-bug 'Fix the off-by-one in pagination' \
   --model claude-sonnet-4-6 --tools 'Read,Edit,Grep,Glob'
 
 # Cheap parallel scan — Haiku, read-only
-~/.config/scripts/tmux-agents-claude spawn audit-imports 'List unused imports across src/' \
+~/.config/scripts/tmux-subagents-claude spawn audit-imports 'List unused imports across src/' \
   --model claude-haiku-4-5-20251001 --tools 'Read,Grep,Glob'
 
 # Hard architecture task — Opus, broad tools
-~/.config/scripts/tmux-agents-claude spawn redesign 'Propose a new caching layer; write an ADR' \
+~/.config/scripts/tmux-subagents-claude spawn redesign 'Propose a new caching layer; write an ADR' \
   --model claude-opus-4-7 --tools 'Read,Write,Edit,Grep,Glob,WebSearch'
 
 # Unattended — ONLY because user explicitly asked to skip permissions
-~/.config/scripts/tmux-agents-claude spawn migrate 'Run the DB migration and verify' \
+~/.config/scripts/tmux-subagents-claude spawn migrate 'Run the DB migration and verify' \
   --model claude-sonnet-4-6 --tools 'Read,Edit,Bash' \
   --dangerously-skip-permissions
 ```

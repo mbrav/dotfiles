@@ -2,7 +2,7 @@
 
 Architecture and internals behind [SKILL.md](../SKILL.md). For choosing models,
 tools, and `--dangerously-skip-permissions` when spawning, see
-[tools-and-models.md](tools-and-models.md). All commands via `~/.config/scripts/tmux-agents-claude`.
+[tools-and-models.md](tools-and-models.md). All commands via `~/.config/scripts/tmux-subagents-claude`.
 
 ## Session layout
 
@@ -121,7 +121,7 @@ Common `--tools` values: `Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob`, `Agent
 
 ## Related files
 
-- `~/.config/scripts/tmux-agents-claude` — CLI (all subcommands).
+- `~/.config/scripts/tmux-subagents-claude` — CLI (all subcommands).
 - `~/.config/tmux/agents.sh` — Dracula status segment showing live agent counts.
 - `~/.config/scripts/_util` — shared bash helpers incl. `dedup_window_name`.
 - `~/.config/tmux/tmux-named-session.sh` — Prefix+a navigation to agent windows.

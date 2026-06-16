@@ -58,7 +58,7 @@ LOG_FORMAT = os.environ.get(
 )
 LOG_DEBUG = os.environ.get("TMUX_AGENT_DEBUG", "").lower() in ("1", "true", "yes")
 
-log = logging.getLogger("tmux-agents")
+log = logging.getLogger(PREFIX)
 log.setLevel(logging.DEBUG if LOG_DEBUG else logging.INFO)
 log.propagate = False  # don't bleed into root logger / stdout
 

@@ -6,7 +6,7 @@ description: Orchestrate Claude Code subagents via tmux panes. Use when you need
 # Tmux Agents — Claude
 
 Spawn and manage parallel Claude Code subagents, each in its own tmux **pane**
-inside the detached `agents` session. All commands go through `~/.config/scripts/tmux-agents-claude`.
+inside the detached `agents` session. All commands go through `~/.config/scripts/tmux-subagents-claude`.
 
 - [references/tools-and-models.md](references/tools-and-models.md) — which model,
   tools, and permissions to pass when spawning (read before choosing options).
@@ -18,7 +18,7 @@ inside the detached `agents` session. All commands go through `~/.config/scripts
 Run cleanup before and after a batch of agents:
 
 ```bash
-~/.config/scripts/tmux-agents-claude cleanup --all
+~/.config/scripts/tmux-subagents-claude cleanup --all
 ```
 
 ## Workflow
@@ -26,25 +26,25 @@ Run cleanup before and after a batch of agents:
 1. **Spawn** all independent agents **upfront** (parallelism window starts now, not later) — run `spawn` multiple times:
 
    ```bash
-   ~/.config/scripts/tmux-agents-claude spawn <task> '<prompt>' [options]
+   ~/.config/scripts/tmux-subagents-claude spawn <task> '<prompt>' [options]
    ```
 
 2. **Wait for the result** — default to a single blocking call, not a ping loop:
 
    ```bash
-   ~/.config/scripts/tmux-agents-claude result <task> --wait   # block until end_turn (cheap; reads JSONL)
-   ~/.config/scripts/tmux-agents-claude result <task>          # non-blocking; exit 1 if not done
-   ~/.config/scripts/tmux-agents-claude ping [--all]           # snapshot status of many at once
+   ~/.config/scripts/tmux-subagents-claude result <task> --wait   # block until end_turn (cheap; reads JSONL)
+   ~/.config/scripts/tmux-subagents-claude result <task>          # non-blocking; exit 1 if not done
+   ~/.config/scripts/tmux-subagents-claude ping [--all]           # snapshot status of many at once
    ```
 
 3. **Follow up / inspect / clean up:**
 
    ```bash
-   ~/.config/scripts/tmux-agents-claude prompt  <task> '<text>' [--wait]   # send + (optionally) block for new response
-   ~/.config/scripts/tmux-agents-claude capture <task> [full|log|stop]     # raw terminal — ONLY when JSONL won't do
-   ~/.config/scripts/tmux-agents-claude cleanup <task>                     # kill one
-   ~/.config/scripts/tmux-agents-claude cleanup --all                      # kill this window's agents
-   ~/.config/scripts/tmux-agents-claude cleanup --prune                    # drop dead entries everywhere
+   ~/.config/scripts/tmux-subagents-claude prompt  <task> '<text>' [--wait]   # send + (optionally) block for new response
+   ~/.config/scripts/tmux-subagents-claude capture <task> [full|log|stop]     # raw terminal — ONLY when JSONL won't do
+   ~/.config/scripts/tmux-subagents-claude cleanup <task>                     # kill one
+   ~/.config/scripts/tmux-subagents-claude cleanup --all                      # kill this window's agents
+   ~/.config/scripts/tmux-subagents-claude cleanup --prune                    # drop dead entries everywhere
    ```
 
 ## Workflow patterns — pick the cheap path

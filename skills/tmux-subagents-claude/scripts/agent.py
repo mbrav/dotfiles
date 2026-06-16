@@ -617,14 +617,14 @@ def cmd_result(args: argparse.Namespace) -> None:
 
 
 def _status_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str, str]]:
-    """Build (pane, agent_name, session, status) rows for one window's agents."""
+    """Build (pane, task, session, status) rows for one window's agents."""
     data = load_win(win)
     panes = live_panes()
     rows = []
     for task, meta in data["agents"].items():
         sid = meta.get("session_id", "?")
         pane = meta.get("pane_id", "?")
-        agent_name = meta.get("agent_name", task)
+        agent_name = meta.get("agent_name", f"subagent-{win}-{task}")
         # A live pane is never "dead"; missing status just means it's still
         # starting up (the claude session-status file lags briefly).
         status = statuses.get(sid, "starting") if pane in panes else "dead"
@@ -639,7 +639,7 @@ def _status_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str
             except (KeyError, OSError):
                 pass
         log.debug("status agent=%s pane=%s status=%s", agent_name, pane, status)
-        rows.append((pane, agent_name, sid, status))
+        rows.append((pane, task, sid, status))
     return rows
 
 
@@ -658,7 +658,7 @@ def cmd_status(args: argparse.Namespace) -> None:
         print("no sessions")
         return
 
-    headers = ("PANE", "AGENT", "SESSION-ID", "STATUS")
+    headers = ("PANE", "TASK", "SESSION-ID", "STATUS")
     col_w = [max(len(headers[i]), max(len(r[i]) for r in rows)) for i in range(4)]
     fmt = "  ".join(f"{{:<{w}}}" for w in col_w)
     print(fmt.format(*headers))

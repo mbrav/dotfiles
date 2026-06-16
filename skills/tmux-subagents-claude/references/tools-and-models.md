@@ -1,65 +1,51 @@
 # Spawning Guide — Models, Tools, Permissions
 
-How to choose `--model`, `--tools`, `--dangerously-skip-permissions`. Command syntax in [SKILL.md](../SKILL.md).
+Choose `--model`, `--tools`, `--dangerously-skip-permissions`. Syntax in [SKILL.md](../SKILL.md).
 
-No `--model`/`--tools` = account default model + full tool access. Narrow deliberately per task.
+Default: account model + full tools. Narrow per task.
 
 ## Model selection
 
-| Task | Model | Why |
-|------|-------|-----|
-| Deep reasoning, architecture, hard debugging, multi-step refactors | `claude-opus-4-7` | Strongest reasoning; worth cost on genuinely hard work |
-| General coding, edits, reviews, most subtasks | `claude-sonnet-4-6` | Best capability/cost balance — default choice |
-| Bulk/parallel: file scans, grep-summarize, simple edits, log triage | `claude-haiku-4-5-20251001` | Fast + cheap; ideal for many concurrent agents |
+- **Deep reasoning / architecture / hard debugging**: `claude-opus-4-7` (strongest; worth cost)
+- **General coding / edits / reviews / most subtasks**: `claude-sonnet-4-6` (best balance, default)
+- **Bulk/parallel scans / simple edits / log triage**: `claude-haiku-4-5-20251001` (fast + cheap)
 
-- Default Sonnet unless task clearly needs more/less.
-- Opus: wrong answer is expensive OR problem genuinely complex — not routine edits.
-- Haiku: fanning out many agents over straightforward work.
-- Match model to *hardest* step, not average.
+Rules: Default Sonnet. Opus for complex/expensive-wrong-answer. Haiku for many concurrent agents. Match hardest step.
 
 ### Polling cadence by model
 
-| Model | Typical end_turn | Wait strategy |
-|-------|------------------|---------------|
-| Haiku | seconds | `result --wait` or `prompt --wait` (single blocking call) |
-| Sonnet | tens of seconds to minutes | `result --wait` |
-| Opus | minutes | `result --wait`; to observe progress, take a `status --all` snapshot |
+- **Haiku**: seconds. Use `result --wait` or `prompt --wait`
+- **Sonnet**: tens of seconds to minutes. Use `result --wait`
+- **Opus**: minutes. Use `result --wait`; take `status --all` for progress
 
-`status` is an on-demand snapshot — use it whenever you want to see the table. To *wait* for a reply, block with `result --wait` / `prompt --wait` rather than re-running `status`.
+`status` on-demand snapshot. Block with `result --wait` / `prompt --wait` to wait, don't re-run `status`.
 
-Older fallbacks (`claude-opus-4-5`, `claude-sonnet-4-5`) exist; prefer newest per tier.
+Fallbacks: `claude-opus-4-5`, `claude-sonnet-4-5`. Prefer newest.
 
 ## Tool selection
 
-Pass **minimum** set via `--tools` (comma-separated). Fewer tools = less risk, less distraction, faster. Omit `--tools` only for open-ended work.
+Pass **minimum** set via `--tools` (comma-separated). Fewer = less risk, faster. Omit for open-ended work.
 
-| Task | `--tools` |
-|------|-----------|
-| Read-only analysis, code review | `Read,Grep,Glob` |
-| Research with web access | `Read,Grep,Glob,WebFetch,WebSearch` |
-| Editing existing code | `Read,Edit,Grep,Glob` |
-| Creating new files / scaffolding | `Read,Write,Edit,Grep,Glob` |
-| Build/test/run commands | add `Bash` |
-| Jupyter notebooks | add `NotebookEdit` |
-| Spawn own subagents | add `Agent` |
-| Task tracking | add `TaskCreate,TaskUpdate,TaskList` |
+- **Read-only / review**: `Read,Grep,Glob`
+- **Research + web**: `Read,Grep,Glob,WebFetch,WebSearch`
+- **Edit code**: `Read,Edit,Grep,Glob`
+- **New files**: `Read,Write,Edit,Grep,Glob`
+- **Build/test/run**: add `Bash`
+- **Jupyter**: add `NotebookEdit`
+- **Subagents**: add `Agent`
+- **Task tracking**: add `TaskCreate,TaskUpdate,TaskList`
 
-Full vocabulary: `Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob`, `Agent`, `WebFetch`, `WebSearch`, `LSP`, `NotebookEdit`, `Skill`, `TaskCreate`, `TaskUpdate`, `TaskList`.
+Full: `Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob`, `Agent`, `WebFetch`, `WebSearch`, `LSP`, `NotebookEdit`, `Skill`, `TaskCreate`, `TaskUpdate`, `TaskList`.
 
-- Read-only tasks: no `Write`/`Edit`/`Bash`.
-- `Bash` = highest blast radius — add only when agent must run commands.
-- Start narrow; can always `prompt` agent or respawn with more.
+Read-only: no `Write`/`Edit`/`Bash`. `Bash` = blast radius (add only when needed). Start narrow.
 
 ## `--dangerously-skip-permissions`
 
-Bypasses all permission prompts — agent edits files and runs commands without confirmation.
+Bypass all permission prompts — no confirmation on edits/commands.
 
-> [!danger] Only on explicit user request
-> Do **not** pass `--dangerously-skip-permissions` unless user explicitly asked (e.g. "skip permissions", "run unattended", "auto-approve"). Removes human-in-the-loop safety for destructive actions.
+**Only on explicit user request** (e.g., "skip", "unattended", "auto-approve"). Removes human-in-loop safety.
 
-Without explicit ask: omit. Agent pauses on sensitive actions — safe default for `Bash`/`Write`/`Edit` agents.
-
-With explicit ask: still scope `--tools` tightly so unattended agent can't exceed task scope.
+Without ask: omit. Default safe. With ask: still scope `--tools` tightly.
 
 ## Examples
 

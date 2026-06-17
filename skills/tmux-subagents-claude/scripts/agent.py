@@ -151,7 +151,7 @@ def load_win(win: str) -> dict:
             log.debug("load_win %s: %d agent(s) from %s", win, len(data["agents"]), sf)
             return data
         except (json.JSONDecodeError, OSError) as e:
-            log.debug("load_win %s: parse error (%s), returning empty state", win, e)
+            log.warning("load_win %s: parse error (%s), returning empty state", win, e)
     else:
         log.debug("load_win %s: no state file, returning empty", win)
     return {"window": win, "agents_window_id": None, "agents": {}}
@@ -170,6 +170,12 @@ def get_agent(win: str, task: str) -> dict:
     data = load_win(win)
     meta = data["agents"].get(task)
     if meta is None:
+        log.warning(
+            "get_agent: task '%s' not found in window '%s' (known: %s)",
+            task,
+            win,
+            list(data["agents"].keys()),
+        )
         print(f"No agent '{task}' tracked for window '{win}'", file=sys.stderr)
         sys.exit(1)
     return meta
@@ -187,18 +193,21 @@ def jsonl_path(meta: dict) -> Path:
     # non-alphanumeric char with "-" (covers / . _ space). Match it exactly,
     # else paths with "_" (e.g. transcribe_audio -> transcribe-audio) miss.
     project_dir = re.sub(r"[^a-zA-Z0-9]", "-", cwd)
-    return (
+    path = (
         Path.home()
         / ".claude"
         / "projects"
         / project_dir
         / f"{meta['session_id']}.jsonl"
     )
+    log.debug("jsonl_path cwd=%s -> %s", cwd, path)
+    return path
 
 
 def extract_last_response(jsonl: Path) -> str | None:
     """Return text of the last end_turn assistant message in the JSONL log, or None."""
     if not jsonl.exists():
+        log.debug("extract_last_response: JSONL not found: %s", jsonl)
         return None
     last_text = None
     with open(jsonl) as f:
@@ -208,7 +217,8 @@ def extract_last_response(jsonl: Path) -> str | None:
                 continue
             try:
                 record = json.loads(line)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                log.warning("extract_last_response: bad JSON line in %s: %s", jsonl, e)
                 continue
             if record.get("type") != "assistant":
                 continue
@@ -236,8 +246,8 @@ def claude_session_statuses() -> dict[str, str]:
                 sid = data.get("sessionId")
                 if sid:
                     statuses[sid] = data.get("status", "idle")
-            except (json.JSONDecodeError, OSError):
-                pass
+            except (json.JSONDecodeError, OSError) as e:
+                log.warning("claude_session_statuses: skipping %s: %s", f.name, e)
     return statuses
 
 
@@ -332,6 +342,11 @@ def ensure_agents_session() -> None:
         else:
             log.debug("ensure_agents_session: session exists, keeper present")
         return
+    log.error(
+        "ensure_agents_session: unexpected tmux error (rc=%d): %s",
+        r.returncode,
+        r.stderr.strip(),
+    )
     raise subprocess.CalledProcessError(r.returncode, r.args, r.stdout, r.stderr)
 
 
@@ -374,7 +389,9 @@ def resolve_pane_id(win: str, task: str) -> str:
     if pane_id and pane_id in live_panes():
         log.debug("resolve_pane_id task=%s -> %s", task, pane_id)
         return pane_id
-    log.info("resolve_pane_id task=%s pane=%s not found or dead", task, pane_id)
+    log.warning(
+        "resolve_pane_id task=%s pane=%s not found or dead (win=%s)", task, pane_id, win
+    )
     print(f"pane not found: {task}", file=sys.stderr)
     sys.exit(1)
 
@@ -435,15 +452,21 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     # Wait for Claude's interactive prompt (❯) then send the initial prompt literally.
     deadline = time.time() + 30
     log.debug("spawn agent=%s waiting for ❯ (timeout=30s)", agent_name)
+    _prompt_seen = False
     while time.time() < deadline:
         time.sleep(0.25)
         try:
             if "❯" in tmux_out("capture-pane", "-t", pane_id, "-p"):
                 log.debug("spawn agent=%s prompt ready", agent_name)
+                _prompt_seen = True
                 break
         except subprocess.CalledProcessError:
-            log.debug("spawn agent=%s pane vanished while waiting", agent_name)
+            log.warning("spawn agent=%s pane vanished while waiting for ❯", agent_name)
             break
+    if not _prompt_seen:
+        log.warning(
+            "spawn agent=%s ❯ never appeared within 30s (pane=%s)", agent_name, pane_id
+        )
 
     # Repaint so Claude fills the (possibly resized) pane and anchors its input
     # box to the bottom before we paste the initial prompt.
@@ -523,8 +546,8 @@ def _force_redraw(pane_id: str) -> None:
         time.sleep(0.15)
         tmux("resize-window", "-t", pane_id, "-y", str(h))
         time.sleep(0.2)
-    except (subprocess.CalledProcessError, ValueError):
-        pass
+    except (subprocess.CalledProcessError, ValueError) as e:
+        log.warning("_force_redraw: failed for pane %s: %s", pane_id, e)
 
 
 def _reset_input_line(pane_id: str) -> None:
@@ -620,12 +643,25 @@ def cmd_prompt(args: argparse.Namespace) -> None:
         # Baseline: snapshot current last response so we wait for a NEW one.
         baseline = extract_last_response(jsonl)
         log.info("prompt --wait agent=%s polling for new response", agent_name)
+        _wait_iters = 0
         while True:
             time.sleep(2)
+            _wait_iters += 1
             current = extract_last_response(jsonl)
             if current is not None and current != baseline:
+                log.info(
+                    "prompt --wait agent=%s new response after %ds",
+                    agent_name,
+                    _wait_iters * 2,
+                )
                 print(current)
                 return
+            if _wait_iters % 10 == 0:
+                log.debug(
+                    "prompt --wait agent=%s still waiting (%ds elapsed)",
+                    agent_name,
+                    _wait_iters * 2,
+                )
 
 
 def cmd_result(args: argparse.Namespace) -> None:
@@ -654,13 +690,26 @@ def cmd_result(args: argparse.Namespace) -> None:
         # cannot detect staleness once the agent has gone back to `idle` — for
         # send-and-block on a guaranteed-NEW reply use `prompt --wait`, which
         # baselines the prior response before sending.
+        _wait_iters = 0
         while True:
             status = claude_session_statuses().get(session_id, "starting")
             result = extract_last_response(jsonl)
             if status != "busy" and result is not None:
-                log.info("result agent=%s response ready", agent_name)
+                log.info(
+                    "result agent=%s response ready after %ds",
+                    agent_name,
+                    _wait_iters * 2,
+                )
                 print(result)
                 return
+            _wait_iters += 1
+            if _wait_iters % 10 == 0:
+                log.debug(
+                    "result --wait agent=%s still waiting status=%s (%ds elapsed)",
+                    agent_name,
+                    status,
+                    _wait_iters * 2,
+                )
             time.sleep(2)
     else:
         result = extract_last_response(jsonl)
@@ -698,8 +747,12 @@ def _status_rows(
             try:
                 if extract_last_response(jsonl_path(meta)) is None:
                     status = "empty"
-            except (KeyError, OSError):
-                pass
+            except (KeyError, OSError) as e:
+                log.warning(
+                    "_status_rows: error checking JSONL for agent '%s': %s",
+                    agent_name,
+                    e,
+                )
         context = _pane_context(pane) if live else "-"
         log.debug(
             "status agent=%s pane=%s status=%s context=%s",
@@ -886,8 +939,12 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
     # Single task
     meta = get_agent(win, args.task)
     agent_name = meta.get("agent_name", f"subagent-{win}-{args.task}")
-    log.info("cleanup agent=%s win=%s", agent_name, win)
-    _kill_pane(meta.get("pane_id", ""))
+    pane_to_kill = meta.get("pane_id", "")
+    log.info("cleanup agent=%s win=%s pane=%s", agent_name, win, pane_to_kill)
+    if not _kill_pane(pane_to_kill):
+        log.warning(
+            "cleanup: pane %s already dead for agent '%s'", pane_to_kill, agent_name
+        )
     data = load_win(win)
     data["agents"].pop(args.task, None)
     if data["agents"]:
@@ -895,8 +952,8 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
     else:
         winfile(win).unlink(missing_ok=True)
         log.debug("cleanup: state file removed (no agents left) win=%s", win)
-    log.info("cleanup done agent=%s pane=%s", agent_name, meta.get("pane_id"))
-    print(f"Killed pane {meta.get('pane_id')} ({agent_name})")
+    log.info("cleanup done agent=%s pane=%s", agent_name, pane_to_kill)
+    print(f"Killed pane {pane_to_kill} ({agent_name})")
 
 
 # ---------------------------------------------------------------------------

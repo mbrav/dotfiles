@@ -81,10 +81,11 @@ Parallel agents as long as each in different window (unique + stable names):
 - `empty`: pane live, no reply yet (fresh/awaiting first prompt)
 - `idle`: pane live, reply ready
 - `busy`: pane live, working
+- `waiting`: blocked on a prompt (permission/question). NOT done — `result --wait` may return a stale prior reply; inspect via `capture`.
 - `starting`: pane live, session-status file pending
 - `dead`: pane gone (clear with `cleanup --prune`)
 
-From `~/.claude/sessions/*.json`. `empty` = no `end_turn` in JSONL (separates "nothing yet" from "done"). `result` reads last `end_turn` from `~/.claude/projects/<cwd-slug>/<session>.jsonl`.
+From `~/.claude/sessions/*.json`. `empty` = no `end_turn` in JSONL (separates "nothing yet" from "done"). `result` reads last `end_turn` from `~/.claude/projects/<cwd-slug>/<session>.jsonl`, where `<cwd-slug>` = cwd with every non-alphanumeric char → `-` (matches Claude's own encoding; e.g. `transcribe_audio` → `transcribe-audio`).
 
 ### `result` semantics
 
@@ -96,9 +97,22 @@ From `~/.claude/sessions/*.json`. `empty` = no `end_turn` in JSONL (separates "n
 
 `empty`/`idle` split: fresh agent = `empty`. `idle` ambiguous (done or not received?). Fast models return `idle` in seconds — don't infer "dropped" from `idle`. Read reply body.
 
-### Stuck-input bug (INSERT mode)
+### Prompt submission
 
-`send-keys -l <text>` silently buffered if pane in vim/INSERT. Status stays `idle` while prompts pile up. `cmd_prompt` mitigates: `Escape Escape C-u` before paste, verify empty after Enter. Fail = `prompt-not-submitted` (rc=2). Recover: `cleanup <task>` + `resurrect <task> <session-id>`.
+`cmd_prompt` → `_send_prompt` does, in order:
+
+1. **`_force_redraw(pane)`** — nudge window height ±1 (`resize-window -y h-1` then `-y h`). Delivers SIGWINCH so Claude repaints full-height with its input box pinned to the bottom. Height-only: width is unchanged so text never rewraps (a width nudge reflows everything and can scroll the box out of view). Also run after `spawn`.
+2. **`_reset_input_line(pane)`** — `C-u` only (kill input line). **No Escape**: in current Claude (v2.1.x) Esc-Esc opens the rewind/checkpoint modal, so the paste lands in that menu and never submits.
+3. paste `-l <text>` + `Enter`.
+4. **`_verify_submitted`** — capture, strip trailing blank lines, check the text is no longer on the input line; retry once, else `prompt-not-submitted` (rc=2).
+
+Why repaint matters: Claude measures pane height at startup. When the pane later grows (layout rebalance as siblings spawn/close), Claude does NOT repaint — input box stranded mid-pane with blank lines below the footer. Pastes miss it, and a naive last-6-lines verify sees only blanks → false "submitted" → `prompt --wait` polls a reply that never comes.
+
+Recover a wedged pane: `cleanup <task>` + `resurrect <task> <session-id>`.
+
+### `status` CONTEXT column
+
+`status` parses each live pane's footer for context-window usage (`_pane_context` → regex `\d+(\.\d+)?k/\d+(\.\d+)?k (\d+(\.\d+)?%)`), e.g. `90.0k/1000.0k (9.0%)`. `-` if pane dead/starting or footer not rendered. Costs one `capture-pane` per live pane.
 
 ## Cleanup semantics
 

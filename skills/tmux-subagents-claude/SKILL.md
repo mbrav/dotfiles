@@ -63,9 +63,9 @@ Cleanup before/after batch:
 - Spawn all independent agents upfront, even if prompting later.
 - `result` exit 0 = `end_turn` exists. NOT done — verify body.
 
-## Stuck agent (INSERT mode / no response)
+## Stuck agent (no response / prompt won't submit)
 
-`prompt` resets modal state + verifies submission. Exit `prompt-not-submitted` = pane wedged. Inspect via `capture`, then cleanup + resurrect to reset + preserve context.
+`prompt` repaints + clears the line + verifies before sending. Exit `prompt-not-submitted` = pane still wedged: `capture` to inspect, then cleanup + resurrect. See [technicalities.md](references/technicalities.md#prompt-submission).
 
 ## Spawn options
 
@@ -95,14 +95,16 @@ Session ID from original spawn output or prior `status` call. Creates new pane, 
 - `empty`: live, no reply yet
 - `idle`: live, reply ready
 - `busy`: working
+- `waiting`: blocked on a prompt (permission/question). NOT done — `result --wait` may return a stale prior reply. Inspect via `capture`.
 - `starting`: pane live, status pending
 - `dead`: pane gone (run `cleanup --prune`)
 
 `empty` = no completed reply. `idle` = reply in JSONL. Neither proves latest prompt landed — use `prompt … --wait` to confirm.
+
+`status` table also shows a `CONTEXT` column: agent's context-window usage parsed from its footer, e.g. `90.0k/1000.0k (9.0%)`. `-` = pane dead/starting or footer not rendered.
 
 ## Rules of thumb
 
 - Reference agents by **task name** (unique per window).
 - Block for reply: `result --wait` / `prompt --wait`. `result` > `capture`. `status` free.
 - `cleanup --all` = current window only. `--prune` = cross-window, preserves live agents.
-

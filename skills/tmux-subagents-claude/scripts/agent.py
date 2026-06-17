@@ -34,6 +34,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -182,7 +183,10 @@ def get_agent(win: str, task: str) -> dict:
 def jsonl_path(meta: dict) -> Path:
     """Derive the Claude JSONL transcript path from an agent metadata dict."""
     cwd = meta.get("cwd", os.getcwd())
-    project_dir = cwd.replace("/", "-").replace(".", "-")
+    # Claude encodes the cwd into a project dir name by replacing every
+    # non-alphanumeric char with "-" (covers / . _ space). Match it exactly,
+    # else paths with "_" (e.g. transcribe_audio -> transcribe-audio) miss.
+    project_dir = re.sub(r"[^a-zA-Z0-9]", "-", cwd)
     return (
         Path.home()
         / ".claude"
@@ -441,6 +445,9 @@ def cmd_spawn(args: argparse.Namespace) -> None:
             log.debug("spawn agent=%s pane vanished while waiting", agent_name)
             break
 
+    # Repaint so Claude fills the (possibly resized) pane and anchors its input
+    # box to the bottom before we paste the initial prompt.
+    _force_redraw(pane_id)
     tmux("send-keys", "-t", pane_id, "-l", args.prompt)
     tmux("send-keys", "-t", pane_id, "Enter")
 
@@ -474,17 +481,60 @@ def _capture_pane(pane_id: str) -> str:
         return ""
 
 
-def _reset_input_line(pane_id: str) -> None:
-    """Drop any modal state and clear the Claude input buffer before pasting.
+# Matches the context-window usage in Claude's footer status line, e.g.
+# "↑601 ↓131 R84.9k W1.9k $0.042 (sub) 90.0k/1000.0k (9.0%)" -> "90.0k/1000.0k (9.0%)".
+_CONTEXT_RE = re.compile(r"(\d+(?:\.\d+)?k/\d+(?:\.\d+)?k\s*\(\d+(?:\.\d+)?%\))")
 
-    Without this, a pane left in INSERT/vim/modal state silently buffers pasted
-    text but never submits it — agent looks busy by JSONL but is actually wedged.
+
+def _pane_context(pane_id: str) -> str:
+    """Extract context-window usage (tokens/limit (pct)) from a pane footer.
+
+    Returns the last match in the captured screenful, or "-" if none (pane
+    starting, dead, or footer not rendered).
     """
-    tmux("send-keys", "-t", pane_id, "Escape")
-    time.sleep(0.05)
-    tmux("send-keys", "-t", pane_id, "Escape")
-    time.sleep(0.05)
-    # C-u kills line in readline-style; harmless if already empty.
+    match = None
+    for line in _capture_pane(pane_id).splitlines():
+        m = _CONTEXT_RE.search(line)
+        if m:
+            # Normalise internal whitespace to a single space: "X/Y (Z%)".
+            match = " ".join(m.group(1).split())
+    return match or "-"
+
+
+def _force_redraw(pane_id: str) -> None:
+    """Force Claude's TUI to repaint and bottom-anchor its input box.
+
+    Claude measures terminal height at startup; if the pane later grows (layout
+    rebalance when sibling panes spawn/close), Claude does NOT repaint and leaves
+    its input box mid-pane with a block of blank lines below the footer. That
+    also breaks submit-verification — the box falls outside the captured tail, so
+    a still-unsubmitted prompt reads as "submitted" and wedges ``prompt --wait``
+    forever. A width nudge + layout restore delivers SIGWINCH, making Claude
+    redraw full-height with the prompt pinned to the bottom.
+
+    Nudges the window HEIGHT by one row and back: width is unchanged so Claude's
+    text never rewraps (a width nudge reflows everything and can scroll the input
+    box out of view), but the height change delivers SIGWINCH and re-anchors the
+    box to the bottom.
+    """
+    try:
+        h = int(tmux_out("display-message", "-p", "-t", pane_id, "#{window_height}"))
+        tmux("resize-window", "-t", pane_id, "-y", str(h - 1))
+        time.sleep(0.15)
+        tmux("resize-window", "-t", pane_id, "-y", str(h))
+        time.sleep(0.2)
+    except (subprocess.CalledProcessError, ValueError):
+        pass
+
+
+def _reset_input_line(pane_id: str) -> None:
+    """Clear the Claude input buffer before pasting.
+
+    Do NOT send Escape: in current Claude (v2.1.x) Esc-Esc opens the rewind /
+    checkpoint modal, so pasted text lands in that menu instead of the prompt and
+    never submits — which used to wedge every ``prompt``/``prompt --wait``. A
+    single C-u kills the readline-style input line and is harmless when empty.
+    """
     tmux("send-keys", "-t", pane_id, "C-u")
     time.sleep(0.05)
 
@@ -496,8 +546,13 @@ def _verify_submitted(pane_id: str, text: str) -> bool:
     tail of the submitted text is still visible there, submission failed.
     """
     time.sleep(0.3)
-    snap = _capture_pane(pane_id)
-    tail_lines = "\n".join(snap.splitlines()[-6:])
+    snap_lines = _capture_pane(pane_id).splitlines()
+    # Drop trailing blank lines: Claude can leave dead space below its footer,
+    # which would push the input box out of a naive tail slice and mask a
+    # still-unsubmitted prompt as submitted.
+    while snap_lines and not snap_lines[-1].strip():
+        snap_lines.pop()
+    tail_lines = "\n".join(snap_lines[-6:])
     # Use the last meaningful chunk of the user text — short prefixes match noise.
     needle = text.strip().splitlines()[-1][-40:] if text.strip() else ""
     if not needle:
@@ -507,6 +562,10 @@ def _verify_submitted(pane_id: str, text: str) -> bool:
 
 def _send_prompt(pane_id: str, text: str, verify: bool = True) -> bool:
     """Reset, paste, submit, optionally verify. Returns True on success."""
+    # Repaint first so the input box is bottom-anchored: a mid-pane box (Claude
+    # not having repainted after a resize) silently eats pastes and defeats
+    # verification.
+    _force_redraw(pane_id)
     _reset_input_line(pane_id)
     tmux("send-keys", "-t", pane_id, "-l", text)
     time.sleep(0.05)
@@ -616,8 +675,10 @@ def cmd_result(args: argparse.Namespace) -> None:
         print(result)
 
 
-def _status_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str, str]]:
-    """Build (pane, task, session, status) rows for one window's agents."""
+def _status_rows(
+    win: str, statuses: dict[str, str]
+) -> list[tuple[str, str, str, str, str]]:
+    """Build (pane, task, session, status, context) rows for one window's agents."""
     data = load_win(win)
     panes = live_panes()
     rows = []
@@ -627,7 +688,8 @@ def _status_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str
         agent_name = meta.get("agent_name", f"subagent-{win}-{task}")
         # A live pane is never "dead"; missing status just means it's still
         # starting up (the claude session-status file lags briefly).
-        status = statuses.get(sid, "starting") if pane in panes else "dead"
+        live = pane in panes
+        status = statuses.get(sid, "starting") if live else "dead"
         # Disambiguate the "idle trap": an idle agent that has produced no
         # completed reply yet is "empty" (fresh / awaiting its first prompt),
         # vs "idle" which means it finished work and has output to read. Lets a
@@ -638,8 +700,15 @@ def _status_rows(win: str, statuses: dict[str, str]) -> list[tuple[str, str, str
                     status = "empty"
             except (KeyError, OSError):
                 pass
-        log.debug("status agent=%s pane=%s status=%s", agent_name, pane, status)
-        rows.append((pane, task, sid, status))
+        context = _pane_context(pane) if live else "-"
+        log.debug(
+            "status agent=%s pane=%s status=%s context=%s",
+            agent_name,
+            pane,
+            status,
+            context,
+        )
+        rows.append((pane, task, sid, status, context))
     return rows
 
 
@@ -658,8 +727,8 @@ def cmd_status(args: argparse.Namespace) -> None:
         print("no sessions")
         return
 
-    headers = ("PANE", "TASK", "SESSION-ID", "STATUS")
-    col_w = [max(len(headers[i]), max(len(r[i]) for r in rows)) for i in range(4)]
+    headers = ("PANE", "TASK", "SESSION-ID", "STATUS", "CONTEXT")
+    col_w = [max(len(headers[i]), max(len(r[i]) for r in rows)) for i in range(5)]
     fmt = "  ".join(f"{{:<{w}}}" for w in col_w)
     print(fmt.format(*headers))
     print(fmt.format(*("-" * w for w in col_w)))

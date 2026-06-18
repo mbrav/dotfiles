@@ -811,7 +811,7 @@ def cmd_resurrect(args: argparse.Namespace) -> None:
         "send-keys",
         "-t",
         pane_id,
-        shlex.join(["claude", "--session-id", session_id, "--name", agent_name]),
+        shlex.join(["claude", "--resume", session_id]),
         "Enter",
     )
 
@@ -973,7 +973,10 @@ def cmd_recap(args: argparse.Namespace) -> None:
     ok = _send_prompt(pane_id, "/recap")
     if not ok:
         log.error("recap agent=%s NOT submitted", agent_name)
-        print(f"prompt-not-submitted: agent '{agent_name}' pane {pane_id}", file=sys.stderr)
+        print(
+            f"prompt-not-submitted: agent '{agent_name}' pane {pane_id}",
+            file=sys.stderr,
+        )
         sys.exit(2)
     print(f"Sent /recap to {agent_name} ({pane_id})")
 
@@ -989,7 +992,10 @@ def cmd_compact(args: argparse.Namespace) -> None:
     ok = _send_prompt(pane_id, text)
     if not ok:
         log.error("compact agent=%s NOT submitted", agent_name)
-        print(f"prompt-not-submitted: agent '{agent_name}' pane {pane_id}", file=sys.stderr)
+        print(
+            f"prompt-not-submitted: agent '{agent_name}' pane {pane_id}",
+            file=sys.stderr,
+        )
         sys.exit(2)
     print(f"Sent {text!r} to {agent_name} ({pane_id})")
 
@@ -1097,7 +1103,9 @@ def main() -> None:
     p_recap = sub.add_parser("recap", help="send /recap to an agent pane")
     p_recap.add_argument("task", help="task name")
 
-    p_compact = sub.add_parser("compact", help="send /compact [description] to an agent pane")
+    p_compact = sub.add_parser(
+        "compact", help="send /compact [description] to an agent pane"
+    )
     p_compact.add_argument("task", help="task name")
     p_compact.add_argument(
         "description",

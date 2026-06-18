@@ -34,7 +34,7 @@ Anchoring = independent of focus. Untargeted `display-message` drifts (causes `n
 ## State model — one JSON per window
 
 ```
-/tmp/mux-subagents-claude-<window>.json
+~/.local/share/tmux-subagents-claude/<window>.json
 ```
 
 ```json
@@ -71,7 +71,7 @@ Fix: persistent `__keeper__` window (`sleep 2147483647`). Dead agents show `dead
 
 Parallel agents as long as each in different window (unique + stable names):
 
-- State per window (`mux-subagents-claude-<window>.json`)
+- State per window (`~/.local/share/tmux-subagents-claude/<window>.json`)
 - `cleanup --all` = current window only (safe)
 - `cleanup --prune` = cross-window, removes only dead panes (preserves live)
 - Shared window = shared namespace (avoid duplicate task names)
@@ -113,6 +113,13 @@ Recover a wedged pane: `cleanup <task>` + `resurrect <task> <session-id>`.
 ### `status` CONTEXT column
 
 `status` parses each live pane's footer for context-window usage (`_pane_context` → regex `\d+(\.\d+)?k/\d+(\.\d+)?k (\d+(\.\d+)?%)`), e.g. `90.0k/1000.0k (9.0%)`. `-` if pane dead/starting or footer not rendered. Costs one `capture-pane` per live pane.
+
+## Context management commands
+
+- `recap <task>`: sends `/recap` to the agent pane — prompts a summary of work done so far
+- `compact <task> [description]`: sends `/compact [description]` — triggers Claude's context compaction with optional description
+
+Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 
 ## Cleanup semantics
 

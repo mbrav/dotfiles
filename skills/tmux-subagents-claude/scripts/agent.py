@@ -52,6 +52,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 PREFIX = "tmux-subagents-claude"
+STATE_DIR = Path.home() / ".local" / "share" / PREFIX
 LOG_ENABLED = os.environ.get("TMUX_AGENT_LOG", "1").lower() in ("1", "true", "yes")
 LOG_PATH = os.environ.get("TMUX_AGENT_LOG_PATH", f"/tmp/{PREFIX}.log")
 LOG_FORMAT = os.environ.get(
@@ -135,8 +136,9 @@ def _winkey(win: str) -> str:
 
 
 def winfile(win: str) -> Path:
-    """Path to the single JSON state file holding all agents for *win*."""
-    return Path(f"/tmp/{PREFIX}-{_winkey(win)}.json")
+    """Path to the JSON state file for *win* under STATE_DIR."""
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    return STATE_DIR / f"{_winkey(win)}.json"
 
 
 def load_win(win: str) -> dict:
@@ -770,7 +772,7 @@ def cmd_status(args: argparse.Namespace) -> None:
     statuses = claude_session_statuses()
     if getattr(args, "all", False):
         rows = []
-        for sf in sorted(Path("/tmp").glob(f"{PREFIX}-*.json")):
+        for sf in sorted(STATE_DIR.glob("*.json")) if STATE_DIR.exists() else []:
             win = json.loads(sf.read_text()).get("window", sf.stem)
             rows.extend(_status_rows(win, statuses))
     else:
@@ -884,7 +886,7 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
         log.info("cleanup --prune: cross-window sweep")
         panes = live_panes()
         removed = 0
-        for sf in sorted(Path("/tmp").glob(f"{PREFIX}-*.json")):
+        for sf in sorted(STATE_DIR.glob("*.json")) if STATE_DIR.exists() else []:
             try:
                 data = json.loads(sf.read_text())
             except (json.JSONDecodeError, OSError):
@@ -954,6 +956,42 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
         log.debug("cleanup: state file removed (no agents left) win=%s", win)
     log.info("cleanup done agent=%s pane=%s", agent_name, pane_to_kill)
     print(f"Killed pane {pane_to_kill} ({agent_name})")
+
+
+# ---------------------------------------------------------------------------
+# Agent slash-command shortcuts
+# ---------------------------------------------------------------------------
+
+
+def cmd_recap(args: argparse.Namespace) -> None:
+    """Send /recap to an agent pane."""
+    win = get_win()
+    pane_id = resolve_pane_id(win, args.task)
+    meta = load_win(win)["agents"].get(args.task, {})
+    agent_name = meta.get("agent_name", f"subagent-{win}-{args.task}")
+    log.info("recap agent=%s pane=%s", agent_name, pane_id)
+    ok = _send_prompt(pane_id, "/recap")
+    if not ok:
+        log.error("recap agent=%s NOT submitted", agent_name)
+        print(f"prompt-not-submitted: agent '{agent_name}' pane {pane_id}", file=sys.stderr)
+        sys.exit(2)
+    print(f"Sent /recap to {agent_name} ({pane_id})")
+
+
+def cmd_compact(args: argparse.Namespace) -> None:
+    """Send /compact [description] to an agent pane."""
+    win = get_win()
+    pane_id = resolve_pane_id(win, args.task)
+    meta = load_win(win)["agents"].get(args.task, {})
+    agent_name = meta.get("agent_name", f"subagent-{win}-{args.task}")
+    text = "/compact" if not args.description else f"/compact {args.description}"
+    log.info("compact agent=%s pane=%s text=%r", agent_name, pane_id, text)
+    ok = _send_prompt(pane_id, text)
+    if not ok:
+        log.error("compact agent=%s NOT submitted", agent_name)
+        print(f"prompt-not-submitted: agent '{agent_name}' pane {pane_id}", file=sys.stderr)
+        sys.exit(2)
+    print(f"Sent {text!r} to {agent_name} ({pane_id})")
 
 
 # ---------------------------------------------------------------------------
@@ -1056,6 +1094,18 @@ def main() -> None:
         help="cross-window sweep: drop dead-pane entries + empty files (concurrency-safe)",
     )
 
+    p_recap = sub.add_parser("recap", help="send /recap to an agent pane")
+    p_recap.add_argument("task", help="task name")
+
+    p_compact = sub.add_parser("compact", help="send /compact [description] to an agent pane")
+    p_compact.add_argument("task", help="task name")
+    p_compact.add_argument(
+        "description",
+        nargs="?",
+        default=None,
+        help="optional description passed to /compact",
+    )
+
     args = parser.parse_args()
 
     dispatch = {
@@ -1066,6 +1116,8 @@ def main() -> None:
         "cleanup": cmd_cleanup,
         "resurrect": cmd_resurrect,
         "capture": cmd_capture,
+        "recap": cmd_recap,
+        "compact": cmd_compact,
     }
     dispatch[args.cmd](args)
 

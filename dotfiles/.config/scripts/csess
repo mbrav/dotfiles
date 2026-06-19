@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+# ccs — interactive Claude Code session manager for the current project.
+# Lists sessions in fzf; actions: resume / delete / rename.
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "$(realpath "$0")")" && pwd)"
+# shellcheck source=_util
+source "${script_dir}/_util"
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  echo "Usage: ccs"
+  echo "  Lists Claude Code sessions for the current directory in fzf."
+  echo "  Actions: resume | delete | rename"
+  exit 0
+fi
+
+for dep in fzf jq; do
+  command -v "$dep" >/dev/null || error_msg "Missing dependency: $dep" 1
+done
+
+CLAUDE_DIR="${HOME}/.claude"
+SESSIONS_DIR="${CLAUDE_DIR}/sessions"
+PROJECTS_DIR="${CLAUDE_DIR}/projects"
+
+# Non-alphanumeric → '-' (Claude's own slug encoding)
+cwd_slug=$(printf '%s' "$PWD" | sed 's/[^a-zA-Z0-9]/-/g')
+project_dir="${PROJECTS_DIR}/${cwd_slug}"
+
+[[ -d "$project_dir" ]] || error_msg "No Claude sessions for: $PWD" 1
+
+# ── Index live sessions by sessionId ─────────────────────────────────────────
+declare -A live_name live_status live_file
+
+for f in "${SESSIONS_DIR}"/*.json; do
+  [[ -f "$f" ]] || continue
+  data=$(jq -r '"\(.sessionId // "")\t\(.name // "")\t\(.status // "?")"' "$f" 2>/dev/null) || continue
+  IFS=$'\t' read -r fsid fname fstatus <<<"$data"
+  [[ -z "$fsid" ]] && continue
+  live_name[$fsid]="$fname"
+  live_status[$fsid]="$fstatus"
+  live_file[$fsid]="$f"
+done
+
+# ── Build session list ────────────────────────────────────────────────────────
+# Columns: sid \t name \t status \t date \t size \t alive \t session_file
+list=""
+while IFS= read -r jsonl; do
+  [[ -f "$jsonl" ]] || continue
+  sid=$(basename "$jsonl" .jsonl)
+  if [[ ${live_file[$sid]+set} == set ]]; then
+    name="${live_name[$sid]:-—}"
+    status="${live_status[$sid]:-?}"
+    sf="${live_file[$sid]}"
+    alive="live"
+  else
+    name="—"
+    status="dead"
+    sf=""
+    alive="dead"
+  fi
+  [[ -z "$name" ]] && name="—"
+  date=$(date -r "$jsonl" "+%Y-%m-%d %H:%M")
+  size="$(($(wc -c <"$jsonl") / 1024))k"
+  list+="${sid}"$'\t'"${name}"$'\t'"${status}"$'\t'"${date}"$'\t'"${size}"$'\t'"${alive}"$'\t'"${sf}"$'\n'
+done < <(ls -t "${project_dir}"/*.jsonl 2>/dev/null || true)
+
+[[ -n "$list" ]] || error_msg "No sessions found for: $PWD" 1
+
+# ── fzf session picker ────────────────────────────────────────────────────────
+fzf_lines=$(printf '%s' "$list" | awk -F'\t' '{
+    mark = ($6 == "live") ? "●" : "○"
+    printf "%s  %-36s  %-24s  %-10s  %-16s  %s\n", mark, $1, $2, $3, $4, $5
+}')
+
+header="     UUID                                  NAME                      STATUS      DATE              SIZE"
+sel=$(printf '%s\n' "$fzf_lines" | fzf \
+  --ansi \
+  --header="$header" \
+  --prompt="Session › " \
+  --layout=reverse \
+  --border \
+  --height=50%) || {
+  info_msg "Cancelled."
+  exit 0
+}
+
+sid=$(echo "$sel" | awk '{print $2}')
+entry=$(printf '%s' "$list" | awk -F'\t' -v s="$sid" '$1==s')
+name=$(echo "$entry" | cut -f2)
+alive=$(echo "$entry" | cut -f6)
+sf=$(echo "$entry" | cut -f7)
+jsonl="${project_dir}/${sid}.jsonl"
+
+# ── action picker ─────────────────────────────────────────────────────────────
+action=$(printf 'resume\ndelete\nrename' | fzf \
+  --prompt="Action [${name}] › " \
+  --layout=reverse \
+  --border \
+  --height=20%) || {
+  info_msg "Cancelled."
+  exit 0
+}
+
+case "$action" in
+
+resume)
+  info_msg "Resuming: ${name} (${sid})"
+  exec claude --resume "$sid"
+  ;;
+
+delete)
+  warning_msg "About to permanently delete:"
+  echo "  ${BOLD}JSONL   :${CLEAR} ${jsonl}"
+  [[ -n "$sf" ]] && echo "  ${BOLD}Session :${CLEAR} ${sf}"
+  yes_no_prompt "Delete session '${name}'?" || {
+    info_msg "Aborted."
+    exit 0
+  }
+  rm -f "$jsonl"
+  [[ -n "$sf" ]] && rm -f "$sf"
+  success_msg "Deleted ${sid}"
+  ;;
+
+rename)
+  if [[ "$alive" != "live" ]]; then
+    warning_msg "Session is not live — cannot rename."
+    info_msg "To set name on resume: claude --resume ${sid} --name <new-name>"
+    exit 0
+  fi
+  read -r -p "${CYAN}New name for '${name}': ${CLEAR}" new_name
+  [[ -z "$new_name" ]] && error_msg "Name cannot be empty." 1
+  tmp=$(mktemp)
+  jq --arg n "$new_name" '.name = $n' "$sf" >"$tmp" && mv "$tmp" "$sf"
+  success_msg "Renamed to '${new_name}'"
+  ;;
+
+esac

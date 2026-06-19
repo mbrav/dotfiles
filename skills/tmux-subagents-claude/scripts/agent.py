@@ -76,10 +76,12 @@ if LOG_ENABLED:
 
 MODELS = [
     # Claude 4
+    "claude-opus-4-8",
     "claude-opus-4-7",
     "claude-opus-4-5",
     "claude-sonnet-4-6",
     "claude-sonnet-4-5",
+    "claude-haiku-4-5",
     "claude-haiku-4-5-20251001",
 ]
 
@@ -315,6 +317,9 @@ def ensure_agents_session() -> None:
     )
     if r.returncode == 0:
         log.info("agents session created (keeper window: %s)", KEEPER_WINDOW)
+        # detached new-session defaults to window-size manual; override so panes
+        # resize to the attaching client rather than staying stuck at creation size.
+        subprocess.run(["tmux", "set-option", "-t", "agents", "window-size", "latest"], check=False)
         return
     if "duplicate session" in r.stderr:
         try:
@@ -438,9 +443,8 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     # not as a CLI arg (which claude treats as a system prompt, leaving it idle).
     parts = ["claude", "--session-id", session_id]
     parts.extend(["--name", agent_name])
+    parts.append("--dangerously-skip-permissions")
 
-    if getattr(args, "dangerously_skip_permissions", False):
-        parts.append("--dangerously-skip-permissions")
     if getattr(args, "model", None):
         parts.extend(["--model", args.model])
     if getattr(args, "tools", None):
@@ -477,8 +481,6 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     tmux("send-keys", "-t", pane_id, "Enter")
 
     extras = []
-    if getattr(args, "dangerously_skip_permissions", False):
-        extras.append("skip-perms")
     if getattr(args, "model", None):
         extras.append(f"model={args.model}")
     if getattr(args, "tools", None):
@@ -728,8 +730,8 @@ def cmd_result(args: argparse.Namespace) -> None:
 
 def _status_rows(
     win: str, statuses: dict[str, str]
-) -> list[tuple[str, str, str, str, str]]:
-    """Build (pane, task, session, status, context) rows for one window's agents."""
+) -> list[tuple[str, str, str, str, str, str]]:
+    """Build (project, pane, task, session, status, context) rows for one window's agents."""
     data = load_win(win)
     panes = live_panes()
     rows = []
@@ -763,13 +765,14 @@ def _status_rows(
             status,
             context,
         )
-        rows.append((pane, task, sid, status, context))
+        rows.append((win, pane, task, sid, status, context))
     return rows
 
 
 def cmd_status(args: argparse.Namespace) -> None:
     """Print a status table of agent sessions."""
     statuses = claude_session_statuses()
+    task_filter = getattr(args, "task", None)
     if getattr(args, "all", False):
         rows = []
         for sf in sorted(STATE_DIR.glob("*.json")) if STATE_DIR.exists() else []:
@@ -778,12 +781,22 @@ def cmd_status(args: argparse.Namespace) -> None:
     else:
         rows = _status_rows(get_win(), statuses)
 
+    if task_filter:
+        rows = [r for r in rows if r[1] == task_filter]
+        if not rows:
+            log.error("status: task '%s' not found", task_filter)
+            print(f"unknown-task: {task_filter}", file=sys.stderr)
+            sys.exit(2)
+        # Single-agent query: print bare status for easy scripting
+        print(rows[0][4])
+        return
+
     if not rows:
         print("no sessions")
         return
 
-    headers = ("PANE", "TASK", "SESSION-ID", "STATUS", "CONTEXT")
-    col_w = [max(len(headers[i]), max(len(r[i]) for r in rows)) for i in range(5)]
+    headers = ("PROJECT", "PANE", "TASK", "SESSION-ID", "STATUS", "CONTEXT")
+    col_w = [max(len(headers[i]), max(len(r[i]) for r in rows)) for i in range(6)]
     fmt = "  ".join(f"{{:<{w}}}" for w in col_w)
     print(fmt.format(*headers))
     print(fmt.format(*("-" * w for w in col_w)))
@@ -1018,12 +1031,6 @@ def main() -> None:
     p_spawn.add_argument("task", help="task name (pane title + state key)")
     p_spawn.add_argument("prompt", help="prompt to pass to claude")
     p_spawn.add_argument(
-        "--dangerously-skip-permissions",
-        action="store_true",
-        dest="dangerously_skip_permissions",
-        help="pass --dangerously-skip-permissions to claude",
-    )
-    p_spawn.add_argument(
         "--model",
         metavar="MODEL",
         choices=MODELS,
@@ -1073,6 +1080,9 @@ def main() -> None:
 
     p_status = sub.add_parser(
         "status", help="status table of agents for the current window"
+    )
+    p_status.add_argument(
+        "task", nargs="?", default=None, help="show status for a single agent"
     )
     p_status.add_argument(
         "--all", action="store_true", help="show agents across all windows"

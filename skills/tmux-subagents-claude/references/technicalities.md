@@ -127,15 +127,14 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 - `cleanup --all`: kill all in window, remove state file
 - `cleanup --prune`: drop dead panes + empty/unreadable files (all windows)
 
-## Models
+## Tools
 
-- Opus 4.7: `claude-opus-4-7`
-- Opus 4.5: `claude-opus-4-5`
-- Sonnet 4.6: `claude-sonnet-4-6`
-- Sonnet 4.5: `claude-sonnet-4-5`
-- Haiku 4.5: `claude-haiku-4-5-20251001`
-
-Tools: `Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob`, `Agent`, `WebFetch`, `WebSearch`, `LSP`, `NotebookEdit`, `Skill`, `TaskCreate`, `TaskUpdate`, `TaskList`.
+- **Files**: `Read`, `Write`, `Edit`, `Grep`, `Glob`, `NotebookEdit`
+- **Shell**: `Bash`
+- **Agents**: `Agent`, `Skill`
+- **Web**: `WebFetch`, `WebSearch`
+- **Tasks**: `TaskCreate`, `TaskUpdate`, `TaskList`
+- **IDE**: `LSP`
 
 ## Related files
 

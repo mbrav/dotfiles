@@ -86,13 +86,30 @@ func forceRedraw(pane string) {
 
 // redrawWindowPanes forces every pane in a window to repaint after a layout
 // change. select-layout rebalances pane *widths*, but Claude's TUI (v2.1.x)
-// only reliably reflows on a width SIGWINCH — a height-only nudge (forceRedraw)
-// leaves narrowed neighbors showing stale, wrong-width frames that bleed across
-// borders. One window-level width nudge (one column out and back) delivers
-// SIGWINCH to every pane at once: cheaper and more correct than nudging each
-// pane individually with a height-only redraw. Cosmetic only — orchestration
+// only reliably reflows on a width SIGWINCH, so the panes must be jolted.
+//
+// The window can also be stuck at a phantom size — e.g. left over from a
+// transient display-popup client that has since detached — that automatic
+// resizing won't correct on its own. A manual `-x <width>` nudge can't escape
+// that: under window-size=latest + aggressive-resize tmux clamps a manual width
+// back, and the old nudge read the *stuck* width and resized around it, never
+// reaching the size the viewing client actually wants.
+//
+// `resize-window -A` instead snaps the window to its *automatic* size — the
+// largest client for which it is the current window — which both escapes a stuck
+// size and is the size tmux genuinely wants. We then nudge one column narrower
+// and snap back with `-A`, guaranteeing a width SIGWINCH cycle to every pane even
+// when the window was already correctly sized. Cosmetic only — orchestration
 // reads per-pane grids and is unaffected.
 func redrawWindowPanes(target string) {
+	if err := tmuxRun("resize-window", "-t", target, "-A"); err != nil {
+		logWarnf("redrawWindowPanes: auto-resize failed for %s: %v", target, err)
+
+		return
+	}
+
+	sleep(cfg.RedrawSettle)
+
 	ws, err := tmuxOutput("display-message", "-p", "-t", target, "#{window_width}")
 	if err != nil {
 		logWarnf("redrawWindowPanes: failed to read width for %s: %v", target, err)
@@ -107,15 +124,17 @@ func redrawWindowPanes(target string) {
 		return
 	}
 
+	// Nudge one column narrower, then snap back to automatic, forcing a width
+	// SIGWINCH even when the window was already at its automatic size.
 	if err := tmuxRun("resize-window", "-t", target, "-x", strconv.Itoa(w-1)); err != nil {
-		logWarnf("redrawWindowPanes: resize failed for %s: %v", target, err)
+		logWarnf("redrawWindowPanes: nudge failed for %s: %v", target, err)
 
 		return
 	}
 
 	sleep(cfg.RedrawSettle)
 
-	_ = tmuxRun("resize-window", "-t", target, "-x", strconv.Itoa(w))
+	_ = tmuxRun("resize-window", "-t", target, "-A")
 
 	sleep(cfg.RedrawAfter)
 }

@@ -57,9 +57,15 @@ Names sanitized: `/`→`-`, space→`_`.
 
 - **First spawn**: `ensure_agents_session` creates detached `agents` + `__keeper__`, then mirror window
 - **Subsequent spawns**: `split-window` adds pane to same window
-- **Every spawn**: `select-layout even-horizontal` retiles columns
+- **Every spawn**: `select-layout tiled` retiles, then `redrawWindowPanes` repaints (see below)
 - Agent started with `claude --session-id <uuid>`, prompt typed after `❯` (CLI arg = system prompt = idle)
 - **Cleanup**: kill panes; window closes on last death. Session survives via keeper.
+
+## Redraw / stuck window size
+
+`redraw` (also run after every spawn/resurrect) repaints all panes: Claude's TUI (v2.1.x) only reflows on a **width** SIGWINCH, so a layout change leaves neighbors showing stale, wrong-width frames that bleed across borders.
+
+`redrawWindowPanes` does `resize-window -A` (snap to the window's *automatic* size), then a one-column nudge + `-A` again to guarantee a SIGWINCH cycle. The `-A` matters: under `window-size latest` + `aggressive-resize on`, a window can get stuck at a phantom size — typically left by a transient **`display-popup`** client that attached at its own geometry then detached — and a manual `-x <width>` nudge is clamped/overridden, never escaping it. `-A` asks tmux for the size the current client actually wants. **Avoid viewing `agents` through a popup**; attach in a real window. If a window looks garbled, run `tmux-subagents-claude redraw`.
 
 ## Keeper window
 

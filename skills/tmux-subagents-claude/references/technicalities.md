@@ -1,6 +1,6 @@
 # Tmux Agents — Technicalities
 
-Architecture behind [SKILL.md](../SKILL.md). Model/tools selection: [tools-and-models.md](tools-and-models.md). Commands: `tmux-subagents-claude` (Go binary on `PATH`; source in [`go/tmux-subagents-claude/`](../../../go/tmux-subagents-claude)).
+Architecture behind [SKILL.md](../SKILL.md). Model/tools selection: [tools-and-models.md](tools-and-models.md). Commands: `claudemux` (Go binary on `PATH`; source in [`go/claudemux/`](../../../go/claudemux)).
 
 ## Session layout
 
@@ -34,7 +34,7 @@ Anchoring = independent of focus. Untargeted `display-message` drifts (causes `n
 ## State model — one JSON per window
 
 ```
-~/.local/share/tmux-subagents-claude/<window>.json
+~/.local/share/claudemux/<window>.json
 ```
 
 ```json
@@ -65,7 +65,7 @@ Names sanitized: `/`→`-`, space→`_`.
 
 `redraw` (also run after every spawn/resurrect) repaints all panes: Claude's TUI (v2.1.x) only reflows on a **width** SIGWINCH, so a layout change leaves neighbors showing stale, wrong-width frames that bleed across borders.
 
-`redrawWindowPanes` does `resize-window -A` (snap to the window's *automatic* size), then a one-column nudge + `-A` again to guarantee a SIGWINCH cycle. The `-A` matters: under `window-size latest` + `aggressive-resize on`, a window can get stuck at a phantom size — typically left by a transient **`display-popup`** client that attached at its own geometry then detached — and a manual `-x <width>` nudge is clamped/overridden, never escaping it. `-A` asks tmux for the size the current client actually wants. **Avoid viewing `agents` through a popup**; attach in a real window. If a window looks garbled, run `tmux-subagents-claude redraw`.
+`redrawWindowPanes` does `resize-window -A` (snap to the window's *automatic* size), then a one-column nudge + `-A` again to guarantee a SIGWINCH cycle. The `-A` matters: under `window-size latest` + `aggressive-resize on`, a window can get stuck at a phantom size — typically left by a transient **`display-popup`** client that attached at its own geometry then detached — and a manual `-x <width>` nudge is clamped/overridden, never escaping it. `-A` asks tmux for the size the current client actually wants. **Avoid viewing `agents` through a popup**; attach in a real window. If a window looks garbled, run `claudemux redraw`.
 
 ## Keeper window
 
@@ -77,7 +77,7 @@ Fix: persistent `__keeper__` window running `exec tail -n +1 -F <logpath>` — `
 
 Parallel agents as long as each in different window (unique + stable names):
 
-- State per window (`~/.local/share/tmux-subagents-claude/<window>.json`)
+- State per window (`~/.local/share/claudemux/<window>.json`)
 - `cleanup --all` = current window only (safe)
 - `cleanup --prune` = cross-window, removes only dead panes (preserves live)
 - Shared window = shared namespace (avoid duplicate task names)
@@ -146,17 +146,17 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 ## Implementation
 
 Single Go binary (stdlib only), `module github.com/mbrav/dotfiles/go`, package in
-`go/tmux-subagents-claude/`. Layered files: `config.go` (constants + env-driven
+`go/claudemux/`. Layered files: `config.go` (constants + env-driven
 `Config` + logging), `tmux.go` (tmux primitives), `state.go` (window/state store),
 `claude.go` (transcript/session readers), `session.go` (agents session + keeper +
 panes), `tui.go` (the TUI driver), `agent.go` (`resolveAgent`), `status.go`
 (`projectScope`/`buildRows`), `commands.go`, `main.go` (CLI). Tunable timing lives
 in `Config` (env `TMUX_AGENT_*`, e.g. `TMUX_AGENT_WAIT_TIMEOUT`). Build/test:
-`cd go && go test ./... && go build -o ~/go/bin/tmux-subagents-claude ./tmux-subagents-claude`.
+`cd go && go test ./... && go build -o ~/go/bin/claudemux ./claudemux`.
 
 ## Related files
 
-- `tmux-subagents-claude` — CLI (Go binary in `~/go/bin`); source in `go/tmux-subagents-claude/`
+- `claudemux` — CLI (Go binary in `~/go/bin`); source in `go/claudemux/`
 - `~/.config/tmux/agents.sh` — Dracula agent count segment
 - `~/.config/scripts/_util` — bash helpers + `dedup_window_name`
 - `~/.config/tmux/tmux-named-session.sh` — Prefix+a navigation

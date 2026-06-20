@@ -4,7 +4,7 @@ description: Orchestrate parallel Claude Code subagents in tmux panes via the `t
 ---
 # Tmux Agents — Claude
 
-Parallel Claude Code subagents in tmux panes. CLI: `tmux-subagents-claude` (Go binary on `PATH`).
+Parallel Claude Code subagents in tmux panes. CLI: `claudemux` (Go binary on `PATH`).
 
 - [references/tools-and-models.md](references/tools-and-models.md) — model/tools/permissions
 - [references/technicalities.md](references/technicalities.md) — architecture, state, concurrency, troubleshooting
@@ -12,13 +12,13 @@ Parallel Claude Code subagents in tmux panes. CLI: `tmux-subagents-claude` (Go b
 ## Install
 
 ```bash
-go install github.com/mbrav/dotfiles/go/tmux-subagents-claude@latest   # -> ~/go/bin
+go install github.com/mbrav/dotfiles/go/claudemux@latest   # -> ~/go/bin
 ```
 
 ## Setup
 
 ```bash
-tmux-subagents-claude cleanup --all   # before/after batch
+claudemux cleanup --all   # before/after batch
 ```
 
 ## Workflow
@@ -26,29 +26,29 @@ tmux-subagents-claude cleanup --all   # before/after batch
 1. **Spawn** all agents upfront (parallelism starts immediately). Flags precede positionals:
 
    ```bash
-   tmux-subagents-claude spawn [options] <task> '<prompt>'
+   claudemux spawn [options] <task> '<prompt>'
    ```
 
 2. **Collect results:**
 
    ```bash
-   tmux-subagents-claude result --wait <task>    # block until idle, print reply
-   tmux-subagents-claude result <task>           # non-blocking; exit 1 if no reply yet
-   tmux-subagents-claude status                  # snapshot table (current project)
-   tmux-subagents-claude status <task>           # bare status word — grep/script-friendly
+   claudemux result --wait <task>    # block until idle, print reply
+   claudemux result <task>           # non-blocking; exit 1 if no reply yet
+   claudemux status                  # snapshot table (current project)
+   claudemux status <task>           # bare status word — grep/script-friendly
    ```
 
 3. **Follow up / inspect / manage:**
 
    ```bash
-   tmux-subagents-claude prompt  [--wait] <task> '<text>'   # send prompt, optionally block
-   tmux-subagents-claude recap   <task>                     # send /recap to agent
-   tmux-subagents-claude compact <task> [description]       # send /compact to agent
-   tmux-subagents-claude capture <task> [full|log|stop]     # raw terminal (expensive)
-   tmux-subagents-claude redraw                             # re-tile + repaint panes (fix garbled attached view)
-   tmux-subagents-claude cleanup <task>                     # kill one agent
-   tmux-subagents-claude cleanup --all                      # kill all in window
-   tmux-subagents-claude cleanup --prune                    # drop dead entries
+   claudemux prompt  [--wait] <task> '<text>'   # send prompt, optionally block
+   claudemux recap   <task>                     # send /recap to agent
+   claudemux compact <task> [description]       # send /compact to agent
+   claudemux capture <task> [full|log|stop]     # raw terminal (expensive)
+   claudemux redraw                             # re-tile + repaint panes (fix garbled attached view)
+   claudemux cleanup <task>                     # kill one agent
+   claudemux cleanup --all                      # kill all in window
+   claudemux cleanup --prune                    # drop dead entries
    ```
 
 ## Rules
@@ -65,6 +65,13 @@ tmux-subagents-claude cleanup --all   # before/after batch
 
 `prompt` repaints + clears line + verifies before sending. `prompt-not-submitted` exit = pane wedged: `capture` to inspect, then `cleanup` + `resurrect`. See [technicalities.md](references/technicalities.md#prompt-submission).
 
+## Session manager
+
+```bash
+claudeman   # fzf picker: resume / delete / rename any Claude session in current project
+claudeman -a  # all projects
+```
+
 ## Spawn options
 
 Flags must come **before** the `<task> <prompt>` positionals (e.g. `spawn --model M --tools T <task> '<prompt>'`).
@@ -79,7 +86,7 @@ See [tools-and-models.md](references/tools-and-models.md) for model/tools per ta
 ## Resurrect
 
 ```bash
-tmux-subagents-claude resurrect <task> <session-uuid>
+claudemux resurrect <task> <session-uuid>
 ```
 
 Session ID from spawn output or `status`. Creates new pane, resumes exact conversation (JSONL preserved).

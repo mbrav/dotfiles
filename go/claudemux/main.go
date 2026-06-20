@@ -1,6 +1,6 @@
-// Command tmux-subagents-claude orchestrates parallel Claude Code subagents in
-// tmux panes under a detached `agents` session. See the tmux-subagents-claude
-// skill (SKILL.md) for the full external contract.
+// Command claudemux orchestrates parallel Claude Code subagents in tmux panes
+// under a detached `agents` session. See the tmux-subagents-claude skill
+// (SKILL.md) for the full external contract.
 package main
 
 // main.go — CLI surface. Each subcommand owns a flag.FlagSet (stdlib `flag`,
@@ -12,13 +12,14 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"slices"
 	"strings"
 )
 
-const usageText = `tmux-subagents-claude — orchestrate Claude Code subagents in tmux panes
+const usageText = `claudemux — orchestrate Claude Code subagents in tmux panes
 
-usage: tmux-subagents-claude <command> [flags] [args]
+usage: claudemux <command> [flags] [args]
 
 commands:
   spawn      [--model M] [--tools T] [--effort L] [--permission-mode P] <task> <prompt>
@@ -31,6 +32,7 @@ commands:
   recap      <task>
   compact    <task> [description]
   redraw
+  version
 
 flags must precede positionals (e.g. result --wait foo)
 
@@ -49,6 +51,12 @@ func main() {
 
 	if cmd == "-h" || cmd == "--help" || cmd == "help" {
 		fmt.Println(usageText)
+
+		return
+	}
+
+	if cmd == "-version" || cmd == "--version" || cmd == "version" {
+		printVersion()
 
 		return
 	}
@@ -73,6 +81,50 @@ var dispatch = map[string]func([]string){
 	"recap":     runRecap,
 	"compact":   runCompact,
 	"redraw":    runRedraw,
+}
+
+// printVersion prints the module version and VCS commit info embedded by the
+// Go toolchain. With `go install ...@latest` the module version is the resolved
+// tag or pseudo-version; vcs.revision/vcs.time are also present when built from
+// a VCS checkout.
+func printVersion() {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		fmt.Println("version: unknown")
+		return
+	}
+
+	ver := info.Main.Version
+	if ver == "" {
+		ver = "(unknown)"
+	}
+
+	fmt.Printf("%s %s\n", info.Main.Path, ver)
+
+	var revision, commitTime, modified string
+
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			revision = s.Value
+		case "vcs.time":
+			commitTime = s.Value
+		case "vcs.modified":
+			modified = s.Value
+		}
+	}
+
+	if revision != "" {
+		fmt.Printf("commit:   %s\n", revision)
+	}
+
+	if commitTime != "" {
+		fmt.Printf("time:     %s\n", commitTime)
+	}
+
+	if modified == "true" {
+		fmt.Println("modified: true (dirty tree)")
+	}
 }
 
 // ---------------------------------------------------------------------------

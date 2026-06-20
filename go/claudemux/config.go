@@ -16,7 +16,7 @@ import (
 )
 
 // prefix names the tool everywhere: state dir, log file, agent_name prefix.
-const prefix = "tmux-subagents-claude"
+const prefix = "claudemux"
 
 // Claude --model choices offered by `spawn --model`. Newest first; keep in sync
 // with SKILL.md / tools-and-models.md.

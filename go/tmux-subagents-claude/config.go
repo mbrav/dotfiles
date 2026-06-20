@@ -210,7 +210,7 @@ func loglf(level, format string, a ...any) {
 
 	msg := fmt.Sprintf(format, a...)
 	_, _ = fmt.Fprintf(logWriter, "%s %-5s %s %s\n",
-		time.Now().Format("2006-01-02 15:04:05"), level, prefix, msg)
+		time.Now().Format("2006-01-02 15:04:05.000"), level, prefix, msg)
 }
 
 func logDebugf(f string, a ...any) { loglf("DEBUG", f, a...) }

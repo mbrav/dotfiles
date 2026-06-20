@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -69,7 +70,20 @@ func stateDir() string {
 }
 
 func logPath() string {
-	return envOr("TMUX_AGENT_LOG_PATH", filepath.Join("/tmp", prefix+".log"))
+	return envOr("TMUX_AGENT_LOG_PATH", defaultLogPath())
+}
+
+func defaultLogPath() string {
+	if runtime.GOOS == "darwin" {
+		return filepath.Join(homeDir(), "Library", "Logs", prefix+".log")
+	}
+
+	xdgState := os.Getenv("XDG_STATE_HOME")
+	if xdgState == "" {
+		xdgState = filepath.Join(homeDir(), ".local", "state")
+	}
+
+	return filepath.Join(xdgState, prefix, prefix+".log")
 }
 
 func logEnabled() bool { return envBool("TMUX_AGENT_LOG", true) }
@@ -193,7 +207,10 @@ func setupLogging() {
 		return
 	}
 
-	f, err := os.OpenFile(logPath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	p := logPath()
+	_ = os.MkdirAll(filepath.Dir(p), 0o755)
+
+	f, err := os.OpenFile(p, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err == nil {
 		logWriter = f
 	}

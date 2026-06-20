@@ -4,15 +4,23 @@ description: Orchestrates parallel Claude Code subagents in tmux panes under a d
 ---
 # Tmux Agents — Claude
 
-Parallel Claude Code subagents in tmux panes. CLI: `~/.config/scripts/tmux-subagents-claude`.
+Parallel Claude Code subagents in tmux panes. CLI: `tmux-subagents-claude` (Go binary on `PATH`).
 
 - [references/tools-and-models.md](references/tools-and-models.md) — model/tools/permissions
 - [references/technicalities.md](references/technicalities.md) — architecture, state, concurrency, troubleshooting
 
+## Install
+
+```bash
+go install github.com/mbrav/dotfiles/go/tmux-subagents-claude@latest   # -> ~/go/bin
+```
+
+Source in `go/`; `~/go/bin` is on `PATH` (bash + fish). For local dev: `cd go && go build -o ~/go/bin/tmux-subagents-claude ./tmux-subagents-claude`.
+
 ## Setup
 
 ```bash
-~/.config/scripts/tmux-subagents-claude cleanup --all   # before/after batch
+tmux-subagents-claude cleanup --all   # before/after batch
 ```
 
 ## Workflow
@@ -20,28 +28,28 @@ Parallel Claude Code subagents in tmux panes. CLI: `~/.config/scripts/tmux-subag
 1. **Spawn** all agents upfront (parallelism starts immediately):
 
    ```bash
-   ~/.config/scripts/tmux-subagents-claude spawn <task> '<prompt>' [options]
+   tmux-subagents-claude spawn <task> '<prompt>' [options]
    ```
 
 2. **Collect results:**
 
    ```bash
-   ~/.config/scripts/tmux-subagents-claude result <task> --wait    # block until idle, print reply
-   ~/.config/scripts/tmux-subagents-claude result <task>           # non-blocking; exit 1 if no reply yet
-   ~/.config/scripts/tmux-subagents-claude status                  # snapshot table (current project)
-   ~/.config/scripts/tmux-subagents-claude status <task>           # bare status word — grep/script-friendly
+   tmux-subagents-claude result <task> --wait    # block until idle, print reply
+   tmux-subagents-claude result <task>           # non-blocking; exit 1 if no reply yet
+   tmux-subagents-claude status                  # snapshot table (current project)
+   tmux-subagents-claude status <task>           # bare status word — grep/script-friendly
    ```
 
 3. **Follow up / inspect / manage:**
 
    ```bash
-   ~/.config/scripts/tmux-subagents-claude prompt  <task> '<text>' [--wait]   # send prompt, optionally block
-   ~/.config/scripts/tmux-subagents-claude recap   <task>                     # send /recap to agent
-   ~/.config/scripts/tmux-subagents-claude compact <task> [description]       # send /compact to agent
-   ~/.config/scripts/tmux-subagents-claude capture <task> [full|log|stop]     # raw terminal (expensive)
-   ~/.config/scripts/tmux-subagents-claude cleanup <task>                     # kill one agent
-   ~/.config/scripts/tmux-subagents-claude cleanup --all                      # kill all in window
-   ~/.config/scripts/tmux-subagents-claude cleanup --prune                    # drop dead entries
+   tmux-subagents-claude prompt  <task> '<text>' [--wait]   # send prompt, optionally block
+   tmux-subagents-claude recap   <task>                     # send /recap to agent
+   tmux-subagents-claude compact <task> [description]       # send /compact to agent
+   tmux-subagents-claude capture <task> [full|log|stop]     # raw terminal (expensive)
+   tmux-subagents-claude cleanup <task>                     # kill one agent
+   tmux-subagents-claude cleanup --all                      # kill all in window
+   tmux-subagents-claude cleanup --prune                    # drop dead entries
    ```
 
 ## Rules
@@ -70,7 +78,7 @@ See [tools-and-models.md](references/tools-and-models.md) for model/tools per ta
 ## Resurrect
 
 ```bash
-~/.config/scripts/tmux-subagents-claude resurrect <task> <session-uuid>
+tmux-subagents-claude resurrect <task> <session-uuid>
 ```
 
 Session ID from spawn output or `status`. Creates new pane, resumes exact conversation (JSONL preserved).

@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# dotcheck — read-only health audit of the dotfile symlinks (inverse of dotinstall).
+# For every entry dotinstall would symlink, report exactly one state:
+#   OK      - $HOME path is a symlink resolving to the matching repo file
+#   WRONG   - a symlink exists but points elsewhere
+#   NOTLINK - a real file/dir exists (not a symlink) — install would skip/clobber it
+#   MISSING - nothing exists at the target — not installed yet
+# Changes nothing. Exit code: 0 when every item is OK or MISSING,
+# 1 when any item is WRONG or NOTLINK (drift detected).
+set -euo pipefail
+
+script_dir="$(dirname "$(realpath "$0")")"
+# Repo root is two levels above .config/scripts (scripts -> .config -> dotfiles -> root)
+dot_dir="$(realpath "${script_dir}/../../../")"
+
+# shellcheck source=_util
+source "${script_dir}/_util"
+
+function usage() {
+  ran_col_str "dotfiles symlink health check"
+  echo -e "${YELLOW}${BOLD}Usage:${CLEAR} dotcheck [-h]"
+  cmd_arg_help \
+    "-h, --help   Show this help and exit" \
+    "(no args)    Audit every symlink dotinstall would create, read-only." \
+    "States       OK / WRONG / NOTLINK / MISSING (see header)." \
+    "Exit code    0 if all OK or MISSING, 1 if any WRONG or NOTLINK (drift)."
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+# Counters
+ok=0
+wrong=0
+notlink=0
+missing=0
+
+# Audit a single target/source pair.
+# $1 - target path under $HOME
+# $2 - source path in the repo
+function check_link() {
+  local target="$1" source="$2"
+  local expected actual kind
+
+  expected="$(realpath "$source")"
+
+  if [[ -L "$target" ]]; then
+    # Resolve the link; realpath may fail on a broken link, fall back to the raw target
+    if ! actual="$(realpath "$target" 2>/dev/null)"; then
+      actual="$(readlink "$target")"
+    fi
+    if [[ "$actual" == "$expected" ]]; then
+      success_msg "${target} -> ${expected}" "[OK]     "
+      ok=$((ok + 1))
+    else
+      # error_msg returns non-zero when no exit code is given; guard against set -e
+      error_msg "${target} -> ${actual} (expected ${expected})" "" "[WRONG]  " || true
+      wrong=$((wrong + 1))
+    fi
+  elif [[ -e "$target" ]]; then
+    [[ -d "$target" ]] && kind="dir" || kind="file"
+    warning_msg "${target} is a real ${kind}, not a symlink (install would skip/clobber)" "[NOTLINK]"
+    notlink=$((notlink + 1))
+  else
+    info_msg "${target} not installed" "[MISSING]"
+    missing=$((missing + 1))
+  fi
+}
+
+ran_col_str "${script_id:-mbrav/dotfiles} symlink check"
+info_msg "Repo root: ${dot_dir}"
+echo
+
+# Set 1: entries under dotfiles/.config/* -> ~/.config/<entry>
+dir_ls=($(ls -A "${dot_dir}/dotfiles/.config"))
+for item in "${dir_ls[@]}"; do
+  check_link "${HOME}/.config/${item}" "${dot_dir}/dotfiles/.config/${item}"
+done
+
+# Set 2: top-level files under dotfiles/* (no directories, mirrors dotinstall) -> ~/<entry>
+dir_ls=($(ls -Ap "${dot_dir}/dotfiles" | grep -v /))
+for item in "${dir_ls[@]}"; do
+  check_link "${HOME}/${item}" "${dot_dir}/dotfiles/${item}"
+done
+
+echo
+info_msg "Summary: ${ok} OK, ${wrong} wrong, ${notlink} not-link, ${missing} missing"
+
+if ((wrong > 0 || notlink > 0)); then
+  warning_msg "Drift detected — run ./install.sh to repair."
+  exit 1
+fi
+
+success_msg "All tracked dotfiles are correctly linked (or simply not yet installed)."
+exit 0

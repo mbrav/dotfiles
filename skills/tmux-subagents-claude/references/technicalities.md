@@ -1,12 +1,12 @@
 # Tmux Agents — Technicalities
 
-Architecture behind [SKILL.md](../SKILL.md). Model/tools selection: [tools-and-models.md](tools-and-models.md). Commands: `~/.config/scripts/tmux-subagents-claude`.
+Architecture behind [SKILL.md](../SKILL.md). Model/tools selection: [tools-and-models.md](tools-and-models.md). Commands: `tmux-subagents-claude` (Go binary on `PATH`; source in [`go/tmux-subagents-claude/`](../../../go/tmux-subagents-claude)).
 
 ## Session layout
 
 - **main**: interactive session (e.g., window `obsidian`)
 - **agents**: detached session, one window per source window (e.g., `agents:obsidian`). Each agent = pane.
-- **`__keeper__`**: anchor window (`sleep 2147483647`) keeps session alive
+- **`__keeper__`**: anchor window (`tail -F` the log file) keeps session alive
 - **Prefix+a**: jump to mirror window
 
 Agents referenced by task name, looked up in state file.
@@ -65,7 +65,7 @@ Names sanitized: `/`→`-`, space→`_`.
 
 Without anchor: last pane exit → window closes → session destroyed → `status`/`result`/`capture` fail.
 
-Fix: persistent `__keeper__` window (`sleep 2147483647`). Dead agents show `dead` (clear with `cleanup --prune`) or recover via `resurrect`.
+Fix: persistent `__keeper__` window running `exec tail -n +1 -F <logpath>` — `tail -F` never exits (so the session never empties) and doubles as a live log view when attached. Dead agents show `dead` (clear with `cleanup --prune`) or recover via `resurrect`.
 
 ## Concurrency model
 
@@ -136,9 +136,20 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 - **Tasks**: `TaskCreate`, `TaskUpdate`, `TaskList`
 - **IDE**: `LSP`
 
+## Implementation
+
+Single Go binary (stdlib only), `module github.com/mbrav/dotfiles/go`, package in
+`go/tmux-subagents-claude/`. Layered files: `config.go` (constants + env-driven
+`Config` + logging), `tmux.go` (tmux primitives), `state.go` (window/state store),
+`claude.go` (transcript/session readers), `session.go` (agents session + keeper +
+panes), `tui.go` (the TUI driver), `agent.go` (`resolveAgent`), `status.go`
+(`projectScope`/`buildRows`), `commands.go`, `main.go` (CLI). Tunable timing lives
+in `Config` (env `TMUX_AGENT_*`, e.g. `TMUX_AGENT_WAIT_TIMEOUT`). Build/test:
+`cd go && go test ./... && go build -o ~/go/bin/tmux-subagents-claude ./tmux-subagents-claude`.
+
 ## Related files
 
-- `~/.config/scripts/tmux-subagents-claude` — CLI
+- `tmux-subagents-claude` — CLI (Go binary in `~/go/bin`); source in `go/tmux-subagents-claude/`
 - `~/.config/tmux/agents.sh` — Dracula agent count segment
 - `~/.config/scripts/_util` — bash helpers + `dedup_window_name`
 - `~/.config/tmux/tmux-named-session.sh` — Prefix+a navigation

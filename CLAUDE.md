@@ -45,7 +45,9 @@ When adding a shell-wide alias or env var, put it in `_aliases` (not in `config.
 
 **Fish functions** live in `dotfiles/.config/fish/functions/*.fish` (autoloaded), e.g. `start_tmux` is invoked at the end of `config.fish`.
 
-**Skills** (`skills/`) — Claude Code skills (`tmux-subagents-claude`, `tmux-agents-codex`) for orchestrating agents in tmux panes. `dotfiles/.config/scripts/tmux-subagents-claude` symlinks to the skill's `agent.py`.
+**Skills** (`skills/`) — Claude Code skills (`tmux-subagents-claude`, `tmux-agents-codex`) for orchestrating agents in tmux panes. The `tmux-subagents-claude` skill is backed by a standalone Go program (see below), not a script in `scripts/`.
+
+**Go programs** (`go/`) — `module github.com/mbrav/dotfiles/go`, stdlib-only. `go/tmux-subagents-claude/` is the orchestrator CLI behind the `tmux-subagents-claude` skill; install with `go install github.com/mbrav/dotfiles/go/tmux-subagents-claude@latest` (lands in `~/go/bin`, which is on `PATH`). Build/test: `cd go && go test ./... && go vet ./...`. Validate before committing with `gofmt -l`, `go vet`, and `go test`.
 
 ## Security
 

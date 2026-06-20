@@ -220,6 +220,35 @@ def jsonl_path(meta: dict) -> Path:
     return path
 
 
+def session_cwd(session_id: str) -> str | None:
+    """Recover the working directory a session was created in, from its JSONL.
+
+    Claude stores each session under ``~/.claude/projects/<encoded-cwd>/<uuid>.jsonl``
+    and records the real ``cwd`` inside the log entries. This is the source of
+    truth that survives ``cleanup`` popping the in-memory metadata, so resurrect
+    can ``cd`` back to the original project dir (``claude --resume`` only finds a
+    session when launched from the dir it was created in). Returns None if no
+    matching JSONL exists or it carries no cwd.
+    """
+    base = Path.home() / ".claude" / "projects"
+    matches = list(base.glob(f"*/{session_id}.jsonl")) if base.exists() else []
+    for jsonl in matches:
+        try:
+            with jsonl.open() as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    cwd = json.loads(line).get("cwd")
+                    if cwd:
+                        log.debug("session_cwd %s -> %s", session_id, cwd)
+                        return cwd
+        except (OSError, json.JSONDecodeError):
+            continue
+    log.debug("session_cwd %s -> not found", session_id)
+    return None
+
+
 def extract_last_response(jsonl: Path) -> str | None:
     """Return text of the last end_turn assistant message in the JSONL log, or None."""
     if not jsonl.exists():
@@ -768,21 +797,47 @@ def cmd_result(args: argparse.Namespace) -> None:
         print(result)
 
 
+def project_scope(cwd: str) -> str:
+    """Return the git repo root containing *cwd*, or *cwd* itself if not in a repo.
+
+    ``status`` scopes by this so any directory inside a repo sees the same agents:
+    an agent spawned from a subdirectory (e.g. ``<repo>/skills/.../scripts``) still
+    belongs to the same project as the repo root you usually run commands from.
+    Directories outside any git repo fall back to exact-cwd scoping.
+    """
+    try:
+        r = subprocess.run(
+            ["git", "-C", cwd, "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return cwd
+    root = r.stdout.strip()
+    return root if r.returncode == 0 and root else cwd
+
+
 def _status_rows(
-    win: str, statuses: dict[str, str], cwd_filter: str | None = None
+    win: str, statuses: dict[str, str], scope_root: str | None = None
 ) -> list[tuple[str, str, str, str, str, str]]:
     """Build (project, pane, task, session, status, context) rows for one window's agents.
 
-    If *cwd_filter* is given, only agents spawned from that working directory are
-    included. Window state is keyed by window NAME, which can repeat across
-    projects, so the cwd filter is what actually scopes a view to one project.
+    If *scope_root* is given, only agents whose recorded cwd is that directory or a
+    subdirectory of it are included. Window state is keyed by window NAME, which can
+    repeat across projects, so this path-based scope is what actually confines a view
+    to one project (the repo root, via :func:`project_scope`).
     """
     data = load_win(win)
     panes = live_panes()
     rows = []
     for task, meta in data["agents"].items():
-        if cwd_filter is not None and meta.get("cwd") != cwd_filter:
-            continue
+        if scope_root is not None:
+            agent_cwd = os.path.realpath(meta.get("cwd", ""))
+            if not (
+                agent_cwd == scope_root or agent_cwd.startswith(scope_root + os.sep)
+            ):
+                continue
         sid = meta.get("session_id", "?")
         pane = meta.get("pane_id", "?")
         agent_name = meta.get("agent_name", f"subagent-{win}-{task}")
@@ -826,11 +881,18 @@ def cmd_status(args: argparse.Namespace) -> None:
             win = json.loads(sf.read_text()).get("window", sf.stem)
             rows.extend(_status_rows(win, statuses))
     else:
-        # Default: scope to the current project (cwd), not just the window name.
-        rows = _status_rows(get_win(), statuses, cwd_filter=os.getcwd())
+        # Default: scope to the current project (its git repo root), across every
+        # window file -- so agents spawned from any subdirectory of this repo show
+        # up regardless of the current tmux window name, while other repos stay out.
+        scope_root = os.path.realpath(project_scope(os.getcwd()))
+        rows = []
+        for sf in sorted(STATE_DIR.glob("*.json")) if STATE_DIR.exists() else []:
+            win = json.loads(sf.read_text()).get("window", sf.stem)
+            rows.extend(_status_rows(win, statuses, scope_root=scope_root))
 
     if task_filter:
-        rows = [r for r in rows if r[1] == task_filter]
+        # Row tuple is (win, pane, task, sid, status, context) -- match on task (r[2]).
+        rows = [r for r in rows if r[2] == task_filter]
         if not rows:
             log.error("status: task '%s' not found", task_filter)
             print(f"unknown-task: {task_filter}", file=sys.stderr)
@@ -868,20 +930,25 @@ def cmd_resurrect(args: argparse.Namespace) -> None:
     log.debug("resurrect agent=%s pane=%s", agent_name, pane_id)
     tmux("select-layout", "-t", target, "even-horizontal")
 
-    tmux(
-        "send-keys",
-        "-t",
-        pane_id,
-        shlex.join(["claude", "--resume", session_id]),
-        "Enter",
+    # ``claude --resume`` only finds a session when launched from the directory it
+    # was created in (Claude keys sessions by project dir). The new pane inherits
+    # the agents session's cwd, which is usually NOT the agent's original dir, so
+    # cd there first. Recover the original cwd from the JSONL (survives cleanup);
+    # fall back to the caller's cwd if the transcript is gone. ``&&`` keeps resume
+    # from running in the wrong dir if cd fails (valid in bash and fish 3.0+).
+    cwd = session_cwd(session_id) or os.getcwd()
+    log.info("resurrect agent=%s session=%s cwd=%s", agent_name, session_id, cwd)
+    resume_cmd = (
+        f"cd {shlex.quote(cwd)} && {shlex.join(['claude', '--resume', session_id])}"
     )
+    tmux("send-keys", "-t", pane_id, resume_cmd, "Enter")
 
     data = load_win(win)
     data["agents_window_id"] = win_id
     data["agents"][args.task] = {
         "pane_id": pane_id,
         "session_id": session_id,
-        "cwd": os.getcwd(),
+        "cwd": cwd,
         "agent_name": agent_name,
     }
     save_win(win, data)

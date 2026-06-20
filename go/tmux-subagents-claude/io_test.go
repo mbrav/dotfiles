@@ -12,10 +12,14 @@ import (
 
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+
+	err := os.MkdirAll(filepath.Dir(path), 0o755)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+
+	err = os.WriteFile(path, []byte(content), 0o644)
+	if err != nil {
 		t.Fatal(err)
 	}
 }
@@ -23,7 +27,9 @@ func writeFile(t *testing.T, path, content string) {
 func TestJSONLPath(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+
 	meta := Agent{CWD: "/a/b_c", SessionID: "sid-1"}
+
 	want := filepath.Join(home, ".claude", "projects", "-a-b-c", "sid-1.jsonl")
 	if got := jsonlPath(meta); got != want {
 		t.Errorf("jsonlPath = %q, want %q", got, want)
@@ -38,10 +44,12 @@ func TestLastResponse(t *testing.T) {
 {"type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"older"}]}}
 {"type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"l1"},{"type":"thinking","text":"hidden"},{"type":"text","text":"l2"}]}}
 `)
+
 	got, ok := lastResponse(jf)
 	if !ok {
 		t.Fatal("expected a response")
 	}
+
 	if got != "l1\nl2" {
 		t.Errorf("lastResponse = %q, want %q (last end_turn, text blocks joined, non-text ignored)", got, "l1\nl2")
 	}
@@ -50,6 +58,7 @@ func TestLastResponse(t *testing.T) {
 	jf2 := filepath.Join(dir, "none.jsonl")
 	writeFile(t, jf2, `{"type":"assistant","message":{"stop_reason":"tool_use","content":[{"type":"text","text":"x"}]}}
 `)
+
 	if _, ok := lastResponse(jf2); ok {
 		t.Error("expected no response when no end_turn present")
 	}
@@ -72,9 +81,11 @@ func TestSessionStatuses(t *testing.T) {
 	if st["aaa"] != "busy" {
 		t.Errorf("aaa = %q, want busy", st["aaa"])
 	}
+
 	if st["bbb"] != "idle" {
 		t.Errorf("bbb = %q, want idle (default)", st["bbb"])
 	}
+
 	if _, ok := st["bad"]; ok {
 		t.Error("malformed session file should be skipped")
 	}
@@ -87,10 +98,12 @@ func TestSessionCWD(t *testing.T) {
 	writeFile(t, jf, `{"type":"control"}
 {"type":"user","cwd":"/real/project/dir","message":{}}
 `)
+
 	got, ok := sessionCWD("sid-9")
 	if !ok || got != "/real/project/dir" {
 		t.Errorf("sessionCWD = (%q,%v), want (/real/project/dir,true)", got, ok)
 	}
+
 	if _, ok := sessionCWD("does-not-exist"); ok {
 		t.Error("unknown session should report not found")
 	}
@@ -99,6 +112,7 @@ func TestSessionCWD(t *testing.T) {
 func TestBuildRows(t *testing.T) {
 	// Keep the test pure: realpath -> identity so cwd strings compare directly.
 	origRealpath := realpath
+
 	realpath = func(p string) string { return p }
 	defer func() { realpath = origRealpath }()
 
@@ -115,21 +129,30 @@ func TestBuildRows(t *testing.T) {
 	hasResponse := func(m Agent) bool { return m.SessionID == "s3" } // only c has a reply
 	paneCtx := func(string) string { return "CTX" }
 
-	rows := buildRows("win", agents, "/repo", panes, statuses, hasResponse, paneCtx)
+	rows := buildRows("win", agents, "/repo", rowDeps{
+		panes:       panes,
+		statuses:    statuses,
+		hasResponse: hasResponse,
+		paneCtx:     paneCtx,
+	})
 
 	// b excluded by scope; remaining sorted by task: a,c,d,e,f.
 	if len(rows) != 5 {
 		t.Fatalf("got %d rows, want 5 (b excluded by scope): %+v", len(rows), rows)
 	}
+
 	byTask := map[string]StatusRow{}
-	order := []string{}
+	order := make([]string, 0, len(rows))
+
 	for _, r := range rows {
 		byTask[r.Task] = r
 		order = append(order, r.Task)
 	}
+
 	if got := order; !equalSlice(got, []string{"a", "c", "d", "e", "f"}) {
 		t.Errorf("row order = %v, want [a c d e f] (sorted)", got)
 	}
+
 	checks := []struct {
 		task, status, pane, ctx string
 	}{
@@ -157,10 +180,12 @@ func equalSlice(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
 	}
+
 	return true
 }

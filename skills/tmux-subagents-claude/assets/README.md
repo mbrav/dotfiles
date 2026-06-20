@@ -34,7 +34,7 @@ tmux show -g automatic-rename   # must be 'off'
 tmux show -g allow-rename       # must be 'off'
 ```
 
-Then `~/.config/scripts/tmux-subagents-claude spawn smoke 'say hi'` lands an
+Then `tmux-subagents-claude spawn smoke 'say hi'` lands an
 agent in the `agents` session window named after your current window.
 
 ## Full reference config

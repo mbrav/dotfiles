@@ -5,6 +5,7 @@ package main
 // dependency-free so the rest of the program (and the tests) can rely on it.
 
 import (
+	"cmp"
 	"fmt"
 	"io"
 	"os"
@@ -59,6 +60,7 @@ func homeDir() string {
 	if h, err := os.UserHomeDir(); err == nil && h != "" {
 		return h
 	}
+
 	return os.Getenv("HOME")
 }
 
@@ -74,10 +76,7 @@ func logEnabled() bool { return envBool("TMUX_AGENT_LOG", true) }
 func logDebugOn() bool { return envBool("TMUX_AGENT_DEBUG", false) }
 
 func envOr(name, def string) string {
-	if v := os.Getenv(name); v != "" {
-		return v
-	}
-	return def
+	return cmp.Or(os.Getenv(name), def)
 }
 
 func envBool(name string, def bool) bool {
@@ -85,6 +84,7 @@ func envBool(name string, def bool) bool {
 	if v == "" {
 		return def
 	}
+
 	return v == "1" || v == "true" || v == "yes"
 }
 
@@ -93,9 +93,11 @@ func envFloat(name string, def float64) float64 {
 	if v == "" {
 		return def
 	}
+
 	if f, err := strconv.ParseFloat(v, 64); err == nil {
 		return f
 	}
+
 	return def
 }
 
@@ -104,9 +106,11 @@ func envInt(name string, def int) int {
 	if v == "" {
 		return def
 	}
+
 	if n, err := strconv.Atoi(v); err == nil {
 		return n
 	}
+
 	return def
 }
 
@@ -165,6 +169,7 @@ func ConfigFromEnv() Config {
 	c.VerifyTailLines = envInt("TMUX_AGENT_VERIFY_TAIL", c.VerifyTailLines)
 	c.VerifyNeedleLen = envInt("TMUX_AGENT_VERIFY_NEEDLE", c.VerifyNeedleLen)
 	c.CaptureScrollback = envInt("TMUX_AGENT_SCROLLBACK", c.CaptureScrollback)
+
 	return c
 }
 
@@ -187,41 +192,54 @@ func setupLogging() {
 	if !logEnabled() {
 		return
 	}
+
 	f, err := os.OpenFile(logPath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err == nil {
 		logWriter = f
 	}
 }
 
-func logl(level, format string, a ...any) {
+func loglf(level, format string, a ...any) {
 	if logWriter == nil {
 		return
 	}
+
 	if level == "DEBUG" && !logDebugOn() {
 		return
 	}
+
 	msg := fmt.Sprintf(format, a...)
-	fmt.Fprintf(logWriter, "%s %-5s %s %s\n",
+	_, _ = fmt.Fprintf(logWriter, "%s %-5s %s %s\n",
 		time.Now().Format("2006-01-02 15:04:05"), level, prefix, msg)
 }
 
-func logDebugf(f string, a ...any) { logl("DEBUG", f, a...) }
-func logInfof(f string, a ...any)  { logl("INFO", f, a...) }
-func logWarnf(f string, a ...any)  { logl("WARN", f, a...) }
-func logErrorf(f string, a ...any) { logl("ERROR", f, a...) }
+func logDebugf(f string, a ...any) { loglf("DEBUG", f, a...) }
+func logInfof(f string, a ...any)  { loglf("INFO", f, a...) }
+func logWarnf(f string, a ...any)  { loglf("WARN", f, a...) }
+func logErrorf(f string, a ...any) { loglf("ERROR", f, a...) }
 
 // ---------------------------------------------------------------------------
 // stderr / exit helpers (mirror the Python sys.exit semantics: 0 ok, 1 error,
 // 2 submission-or-wait failure).
 // ---------------------------------------------------------------------------
 
-func stderrln(format string, a ...any) {
-	fmt.Fprintf(os.Stderr, format+"\n", a...)
+func stderrlnf(format string, a ...any) {
+	_, _ = fmt.Fprintf(os.Stderr, format+"\n", a...)
 }
 
-func exitErr(code int, format string, a ...any) {
-	stderrln(format, a...)
+func exitErrf(code int, format string, a ...any) {
+	stderrlnf(format, a...)
 	os.Exit(code)
+}
+
+// isShellSafe reports whether r may appear unquoted in a POSIX shell word.
+func isShellSafe(r rune) bool {
+	switch {
+	case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+		return true
+	default:
+		return strings.ContainsRune("_-/.@", r)
+	}
 }
 
 // shellQuote mimics Python's shlex.quote: returns a POSIX-shell-safe single
@@ -230,18 +248,14 @@ func shellQuote(s string) string {
 	if s == "" {
 		return "''"
 	}
-	safe := true
+
 	for _, r := range s {
-		if !(r == '_' || r == '-' || r == '/' || r == '.' || r == '@' ||
-			(r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')) {
-			safe = false
-			break
+		if !isShellSafe(r) {
+			return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
 		}
 	}
-	if safe {
-		return s
-	}
-	return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
+
+	return s
 }
 
 // shellJoin mimics Python's shlex.join: shell-quote each part and space-join.
@@ -250,5 +264,6 @@ func shellJoin(parts []string) string {
 	for i, p := range parts {
 		q[i] = shellQuote(p)
 	}
+
 	return strings.Join(q, " ")
 }

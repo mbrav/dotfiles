@@ -10,6 +10,7 @@ func agentNameFor(win, task string, meta *Agent) string {
 	if meta != nil && meta.AgentName != "" {
 		return meta.AgentName
 	}
+
 	return "subagent-" + win + "-" + task
 }
 
@@ -29,16 +30,20 @@ type AgentRef struct {
 // mirroring the two distinct Python error paths (get_agent vs resolve_pane_id).
 func resolveAgent(win, task string, requireLive bool) AgentRef {
 	st := loadWin(win)
+
 	meta, ok := st.Agents[task]
 	if !ok {
 		logWarnf("resolveAgent: task '%s' not found in window '%s'", task, win)
-		exitErr(1, "No agent '%s' tracked for window '%s'", task, win)
+		exitErrf(1, "No agent '%s' tracked for window '%s'", task, win)
 	}
+
 	live := meta.PaneID != "" && livePanes()[meta.PaneID]
+
 	name := agentNameFor(win, task, &meta)
 	if requireLive && !live {
 		logWarnf("resolveAgent: task=%s pane=%s not found or dead (win=%s)", task, meta.PaneID, win)
-		exitErr(1, "pane not found: %s", task)
+		exitErrf(1, "pane not found: %s", task)
 	}
+
 	return AgentRef{Win: win, Task: task, Meta: meta, PaneID: meta.PaneID, Live: live, Name: name}
 }

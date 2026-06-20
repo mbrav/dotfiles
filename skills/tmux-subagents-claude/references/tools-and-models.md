@@ -60,20 +60,22 @@ Always scope `--tools` tightly regardless of mode — `Bash` is the blast radius
 
 ## Examples
 
+Flags precede the `<task> <prompt>` positionals (strict `flag` ordering).
+
 ```bash
 # Routine edit — Sonnet, scoped tools, prompts on
-~/.config/scripts/tmux-subagents-claude spawn fix-bug 'Fix the off-by-one in pagination' \
-  --model claude-sonnet-4-6 --tools 'Read,Edit,Grep,Glob'
+tmux-subagents-claude spawn --model claude-sonnet-4-6 --tools 'Read,Edit,Grep,Glob' \
+  fix-bug 'Fix the off-by-one in pagination'
 
 # Cheap parallel scan — Haiku, read-only
-~/.config/scripts/tmux-subagents-claude spawn audit-imports 'List unused imports across src/' \
-  --model claude-haiku-4-5-20251001 --tools 'Read,Grep,Glob'
+tmux-subagents-claude spawn --model claude-haiku-4-5-20251001 --tools 'Read,Grep,Glob' \
+  audit-imports 'List unused imports across src/'
 
 # Hard architecture task — Opus, broad tools
-~/.config/scripts/tmux-subagents-claude spawn redesign 'Propose a new caching layer; write an ADR' \
-  --model claude-opus-4-7 --tools 'Read,Write,Edit,Grep,Glob,WebSearch'
+tmux-subagents-claude spawn --model claude-opus-4-7 --tools 'Read,Write,Edit,Grep,Glob,WebSearch' \
+  redesign 'Propose a new caching layer; write an ADR'
 
 # Unattended with Bash — auto mode (default) keeps the pane from wedging
-~/.config/scripts/tmux-subagents-claude spawn migrate 'Run the DB migration and verify' \
-  --model claude-sonnet-4-6 --tools 'Read,Edit,Bash'
+tmux-subagents-claude spawn --model claude-sonnet-4-6 --tools 'Read,Edit,Bash' \
+  migrate 'Run the DB migration and verify'
 ```

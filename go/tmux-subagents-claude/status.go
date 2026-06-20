@@ -8,9 +8,11 @@ package main
 // buildRows is kept pure (deps injected) so it is unit-testable without tmux.
 
 import (
+	"cmp"
+	"maps"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -21,6 +23,7 @@ var runGitToplevel = func(cwd string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
+
 	return strings.TrimSpace(string(out)), true
 }
 
@@ -30,6 +33,7 @@ func projectScope(cwd string) string {
 	if root, ok := runGitToplevel(cwd); ok && root != "" {
 		return root
 	}
+
 	return cwd
 }
 
@@ -39,12 +43,15 @@ var realpath = func(p string) string {
 	if p == "" {
 		return p
 	}
+
 	if abs, err := filepath.Abs(p); err == nil {
 		p = abs
 	}
+
 	if resolved, err := filepath.EvalSymlinks(p); err == nil {
 		return resolved
 	}
+
 	return p
 }
 
@@ -55,6 +62,7 @@ func inScope(agentCWD, scopeRoot string) bool {
 	if scopeRoot == "" {
 		return true
 	}
+
 	return agentCWD == scopeRoot ||
 		strings.HasPrefix(agentCWD, scopeRoot+string(filepath.Separator))
 }
@@ -69,71 +77,84 @@ type StatusRow struct {
 	Context string
 }
 
-// buildRows is the pure core of status: given a window's agents and injected
-// views of the world (live panes, session statuses, a hasResponse probe, a
-// pane-context probe), it derives the display rows. scopeRoot "" = no filter.
-// Rows are sorted by task for deterministic output.
-func buildRows(
-	win string,
-	agents map[string]Agent,
-	scopeRoot string,
-	panes map[string]bool,
-	statuses map[string]string,
-	hasResponse func(Agent) bool,
-	paneCtx func(string) string,
-) []StatusRow {
-	tasks := make([]string, 0, len(agents))
-	for t := range agents {
-		tasks = append(tasks, t)
-	}
-	sort.Strings(tasks)
+// rowDeps are the injected views of the world buildRows needs. Bundling them
+// keeps buildRows pure (testable without tmux/filesystem) and within the
+// ≤4-parameter guideline.
+type rowDeps struct {
+	panes       map[string]bool     // live pane ids
+	statuses    map[string]string   // sessionID -> status
+	hasResponse func(Agent) bool    // does the transcript hold a completed reply?
+	paneCtx     func(string) string // pane id -> context-window usage string
+}
 
+// deriveStatus maps a pane's liveness and session status into a display status.
+// A dead pane is "dead"; a live pane with no session-status file yet is
+// "starting" (the file lags briefly); idle-with-no-completed-reply is "empty"
+// (fresh / awaiting first prompt) to disambiguate the idle trap.
+func deriveStatus(meta Agent, live bool, deps rowDeps) string {
+	if !live {
+		return "dead"
+	}
+
+	status, ok := deps.statuses[meta.SessionID]
+	if !ok {
+		return "starting"
+	}
+
+	if status == "idle" && !deps.hasResponse(meta) {
+		return "empty"
+	}
+
+	return status
+}
+
+// buildRows is the pure core of status: given a window's agents and injected
+// world-views, it derives the display rows. scopeRoot "" = no filter. Rows are
+// sorted by task for deterministic output.
+func buildRows(win string, agents map[string]Agent, scopeRoot string, deps rowDeps) []StatusRow {
 	var rows []StatusRow
-	for _, task := range tasks {
+
+	for _, task := range slices.Sorted(maps.Keys(agents)) {
 		meta := agents[task]
 		if scopeRoot != "" && !inScope(realpath(meta.CWD), scopeRoot) {
 			continue
 		}
-		sid := meta.SessionID
-		if sid == "" {
-			sid = "?"
-		}
-		pane := meta.PaneID
-		if pane == "" {
-			pane = "?"
-		}
-		live := panes[pane]
-		// A live pane is never "dead"; a missing status just means it is still
-		// starting (the claude session-status file lags briefly).
-		status := "dead"
-		if live {
-			if s, ok := statuses[meta.SessionID]; ok {
-				status = s
-			} else {
-				status = "starting"
-			}
-		}
-		// Disambiguate the idle trap: idle with no completed reply yet = "empty"
-		// (fresh / awaiting first prompt) vs "idle" (finished, output ready).
-		if status == "idle" && !hasResponse(meta) {
-			status = "empty"
-		}
+
+		pane := cmp.Or(meta.PaneID, "?")
+		live := deps.panes[pane]
+
 		context := "-"
 		if live {
-			context = paneCtx(pane)
+			context = deps.paneCtx(pane)
 		}
+
+		status := deriveStatus(meta, live, deps)
 		logDebugf("status agent=%s pane=%s status=%s context=%s",
 			agentNameFor(win, task, &meta), pane, status, context)
-		rows = append(rows, StatusRow{win, pane, task, sid, status, context})
+		rows = append(rows, StatusRow{
+			Project: win,
+			Pane:    pane,
+			Task:    task,
+			Session: cmp.Or(meta.SessionID, "?"),
+			Status:  status,
+			Context: context,
+		})
 	}
+
 	return rows
 }
 
 // statusRows is the IO wrapper around buildRows for one window.
 func statusRows(win string, statuses map[string]string, scopeRoot string) []StatusRow {
 	st := loadWin(win)
-	panes := livePanes()
-	return buildRows(win, st.Agents, scopeRoot, panes, statuses,
-		func(m Agent) bool { _, ok := lastResponse(jsonlPath(m)); return ok },
-		paneContext)
+
+	return buildRows(win, st.Agents, scopeRoot, rowDeps{
+		panes:    livePanes(),
+		statuses: statuses,
+		hasResponse: func(m Agent) bool {
+			_, ok := lastResponse(jsonlPath(m))
+			return ok
+		},
+		paneCtx: paneContext,
+	})
 }

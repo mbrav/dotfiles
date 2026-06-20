@@ -1,6 +1,6 @@
 ---
 name: tmux-subagents-claude
-description: Orchestrates parallel Claude Code subagents in tmux panes under a detached `agents` session. Use when spawning subagents for parallel tasks, delegating work, monitoring running agents, reading replies, sending follow-up prompts, managing context, or cleaning up finished panes. Each agent runs in a named pane mirroring the current window name.
+description: Orchestrate parallel Claude Code subagents in tmux panes via the `tmux-subagents-claude` CLI (a stdlib-Go binary on PATH). Spawns each agent as a named pane in a detached, crash-surviving `agents` session mirroring the current window. Use when delegating parallel tasks to subagents, spawning/monitoring running agents, reading replies, scoping status to the current project, sending follow-up prompts (prompt/recap/compact), resurrecting a crashed session, or cleaning up finished panes.
 ---
 # Tmux Agents — Claude
 
@@ -25,16 +25,16 @@ tmux-subagents-claude cleanup --all   # before/after batch
 
 ## Workflow
 
-1. **Spawn** all agents upfront (parallelism starts immediately):
+1. **Spawn** all agents upfront (parallelism starts immediately). Flags precede positionals:
 
    ```bash
-   tmux-subagents-claude spawn <task> '<prompt>' [options]
+   tmux-subagents-claude spawn [options] <task> '<prompt>'
    ```
 
 2. **Collect results:**
 
    ```bash
-   tmux-subagents-claude result <task> --wait    # block until idle, print reply
+   tmux-subagents-claude result --wait <task>    # block until idle, print reply
    tmux-subagents-claude result <task>           # non-blocking; exit 1 if no reply yet
    tmux-subagents-claude status                  # snapshot table (current project)
    tmux-subagents-claude status <task>           # bare status word — grep/script-friendly
@@ -43,7 +43,7 @@ tmux-subagents-claude cleanup --all   # before/after batch
 3. **Follow up / inspect / manage:**
 
    ```bash
-   tmux-subagents-claude prompt  <task> '<text>' [--wait]   # send prompt, optionally block
+   tmux-subagents-claude prompt  [--wait] <task> '<text>'   # send prompt, optionally block
    tmux-subagents-claude recap   <task>                     # send /recap to agent
    tmux-subagents-claude compact <task> [description]       # send /compact to agent
    tmux-subagents-claude capture <task> [full|log|stop]     # raw terminal (expensive)
@@ -67,6 +67,8 @@ tmux-subagents-claude cleanup --all   # before/after batch
 `prompt` repaints + clears line + verifies before sending. `prompt-not-submitted` exit = pane wedged: `capture` to inspect, then `cleanup` + `resurrect`. See [technicalities.md](references/technicalities.md#prompt-submission).
 
 ## Spawn options
+
+Flags must come **before** the `<task> <prompt>` positionals (e.g. `spawn --model M --tools T <task> '<prompt>'`).
 
 - `--model MODEL`: `claude-opus-4-8`, `claude-opus-4-7`, `claude-opus-4-5`, `claude-sonnet-4-6`, `claude-sonnet-4-5`, `claude-haiku-4-5`
 - `--tools TOOLS`: comma-separated, e.g. `Read,Edit,Bash`

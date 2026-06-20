@@ -62,10 +62,13 @@ func TestProjectScope(t *testing.T) {
 	defer func() { runGitToplevel = orig }()
 
 	runGitToplevel = func(string) (string, bool) { return "/repo/root", true }
+
 	if got := projectScope("/repo/root/sub"); got != "/repo/root" {
 		t.Errorf("projectScope in-repo = %q, want /repo/root", got)
 	}
+
 	runGitToplevel = func(string) (string, bool) { return "", false }
+
 	if got := projectScope("/tmp/x"); got != "/tmp/x" {
 		t.Errorf("projectScope outside-repo = %q, want /tmp/x (cwd fallback)", got)
 	}
@@ -75,10 +78,12 @@ func TestAgentNameFor(t *testing.T) {
 	if got := agentNameFor("win", "task", nil); got != "subagent-win-task" {
 		t.Errorf("fallback name = %q", got)
 	}
+
 	m := &Agent{AgentName: "custom-name"}
 	if got := agentNameFor("win", "task", m); got != "custom-name" {
 		t.Errorf("stored name = %q, want custom-name", got)
 	}
+
 	empty := &Agent{}
 	if got := agentNameFor("w", "t", empty); got != "subagent-w-t" {
 		t.Errorf("empty stored name should fall back, got %q", got)
@@ -87,18 +92,22 @@ func TestAgentNameFor(t *testing.T) {
 
 func TestAgentJSONRoundTrip(t *testing.T) {
 	a := Agent{PaneID: "%1", SessionID: "sid", CWD: "/x", AgentName: "n"}
+
 	b, err := json.Marshal(a)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var m map[string]any
 	if err := json.Unmarshal(b, &m); err != nil {
 		t.Fatal(err)
 	}
+
 	want := []string{"pane_id", "session_id", "cwd", "agent_name"}
 	if len(m) != len(want) {
 		t.Fatalf("Agent JSON has %d keys (%v), want exactly %v", len(m), m, want)
 	}
+
 	for _, k := range want {
 		if _, ok := m[k]; !ok {
 			t.Errorf("Agent JSON missing key %q", k)
@@ -110,26 +119,31 @@ func TestConfigFromEnv(t *testing.T) {
 	// Unset -> defaults.
 	t.Setenv("TMUX_AGENT_WAIT_TIMEOUT", "")
 	t.Setenv("TMUX_AGENT_WAIT_POLL", "")
+
 	if c := ConfigFromEnv(); c.WaitTimeout != 1800 || c.WaitPoll != 2 {
 		t.Errorf("defaults wrong: WaitTimeout=%v WaitPoll=%v", c.WaitTimeout, c.WaitPoll)
 	}
 	// Override.
 	t.Setenv("TMUX_AGENT_WAIT_TIMEOUT", "60")
+
 	if c := ConfigFromEnv(); c.WaitTimeout != 60 {
 		t.Errorf("override WaitTimeout=%v, want 60", c.WaitTimeout)
 	}
 	// Malformed -> default.
 	t.Setenv("TMUX_AGENT_WAIT_TIMEOUT", "not-a-number")
+
 	if c := ConfigFromEnv(); c.WaitTimeout != 1800 {
 		t.Errorf("malformed should fall back to default, got %v", c.WaitTimeout)
 	}
 	// <=0 means infinite (still parsed as the value; waitDeadline interprets it).
 	t.Setenv("TMUX_AGENT_WAIT_TIMEOUT", "0")
+
 	if c := ConfigFromEnv(); c.WaitTimeout != 0 {
 		t.Errorf("zero timeout = %v, want 0", c.WaitTimeout)
 	}
 	// Int override.
 	t.Setenv("TMUX_AGENT_VERIFY_TAIL", "9")
+
 	if c := ConfigFromEnv(); c.VerifyTailLines != 9 {
 		t.Errorf("VerifyTailLines=%v, want 9", c.VerifyTailLines)
 	}
@@ -161,15 +175,19 @@ func TestShellQuoteJoin(t *testing.T) {
 	if got := shellQuote("plain-path/ok.txt"); got != "plain-path/ok.txt" {
 		t.Errorf("safe string should be unquoted, got %q", got)
 	}
+
 	if got := shellQuote("has space"); got != "'has space'" {
 		t.Errorf("space should be quoted, got %q", got)
 	}
+
 	if got := shellQuote("it's"); got != `'it'"'"'s'` {
 		t.Errorf("single quote escaping wrong, got %q", got)
 	}
+
 	if got := shellJoin([]string{"claude", "--resume", "abc"}); got != "claude --resume abc" {
 		t.Errorf("shellJoin = %q", got)
 	}
+
 	if got := shellJoin([]string{"a", "b c"}); got != "a 'b c'" {
 		t.Errorf("shellJoin quoting = %q", got)
 	}
@@ -181,6 +199,7 @@ func TestPaneContextRegex(t *testing.T) {
 	if got := contextRe.FindString(line); got != "90.0k/1000.0k (9.0%)" {
 		t.Errorf("context regex = %q, want 90.0k/1000.0k (9.0%%)", got)
 	}
+
 	if contextRe.FindString("no usage here") != "" {
 		t.Error("regex should not match a line without usage")
 	}

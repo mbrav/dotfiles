@@ -35,8 +35,10 @@ func jsonlPath(meta Agent) string {
 	if cwd == "" {
 		cwd, _ = os.Getwd()
 	}
+
 	p := filepath.Join(claudeProjects(), cwdToProjectDir(cwd), meta.SessionID+".jsonl")
 	logDebugf("jsonlPath cwd=%s -> %s", cwd, p)
+
 	return p
 }
 
@@ -45,6 +47,7 @@ func jsonlPath(meta Agent) string {
 func newJSONLScanner(f *os.File) *bufio.Scanner {
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)
+
 	return sc
 }
 
@@ -66,37 +69,47 @@ func lastResponse(jsonlFile string) (string, bool) {
 	f, err := os.Open(jsonlFile)
 	if err != nil {
 		logDebugf("lastResponse: JSONL not found: %s", jsonlFile)
+
 		return "", false
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var last string
+
 	found := false
+
 	sc := newJSONLScanner(f)
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
 		if line == "" {
 			continue
 		}
+
 		var rec jsonlRecord
 		if err := json.Unmarshal([]byte(line), &rec); err != nil {
 			logWarnf("lastResponse: bad JSON line in %s: %v", jsonlFile, err)
+
 			continue
 		}
+
 		if rec.Type != "assistant" || rec.Message.StopReason != "end_turn" {
 			continue
 		}
+
 		var texts []string
+
 		for _, c := range rec.Message.Content {
 			if c.Type == "text" {
 				texts = append(texts, c.Text)
 			}
 		}
+
 		if len(texts) > 0 {
 			last = strings.Join(texts, "\n")
 			found = true
 		}
 	}
+
 	return last, found
 }
 
@@ -111,27 +124,35 @@ func sessionCWD(sessionID string) (string, bool) {
 		if err != nil {
 			continue
 		}
+
 		sc := newJSONLScanner(f)
 		for sc.Scan() {
 			line := strings.TrimSpace(sc.Text())
 			if line == "" {
 				continue
 			}
+
 			var rec struct {
 				CWD string `json:"cwd"`
 			}
 			if err := json.Unmarshal([]byte(line), &rec); err != nil {
 				continue
 			}
+
 			if rec.CWD != "" {
-				f.Close()
+				_ = f.Close()
+
 				logDebugf("sessionCWD %s -> %s", sessionID, rec.CWD)
+
 				return rec.CWD, true
 			}
 		}
-		f.Close()
+
+		_ = f.Close()
 	}
+
 	logDebugf("sessionCWD %s -> not found", sessionID)
+
 	return "", false
 }
 
@@ -140,28 +161,35 @@ func sessionCWD(sessionID string) (string, bool) {
 func sessionStatuses() map[string]string {
 	statuses := map[string]string{}
 	dir := filepath.Join(homeDir(), ".claude", "sessions")
+
 	matches, _ := filepath.Glob(filepath.Join(dir, "*.json"))
 	for _, p := range matches {
 		data, err := os.ReadFile(p)
 		if err != nil {
 			logWarnf("sessionStatuses: skipping %s: %v", filepath.Base(p), err)
+
 			continue
 		}
+
 		var s struct {
 			SessionID string `json:"sessionId"`
 			Status    string `json:"status"`
 		}
 		if err := json.Unmarshal(data, &s); err != nil {
 			logWarnf("sessionStatuses: skipping %s: %v", filepath.Base(p), err)
+
 			continue
 		}
+
 		if s.SessionID != "" {
 			st := s.Status
 			if st == "" {
 				st = "idle"
 			}
+
 			statuses[s.SessionID] = st
 		}
 	}
+
 	return statuses
 }

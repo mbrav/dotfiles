@@ -17,7 +17,7 @@ type WindowTarget struct {
 // ensureAgentsSession ensures the detached `agents` session exists, anchored by
 // the persistent keeper window so it survives all agent panes exiting.
 func ensureAgentsSession() {
-	_, stderr, code := tmuxResult(
+	stderr, code := tmuxResult(
 		"new-session", "-d", "-s", "agents", "-n", keeperWindow, keeperCmd(),
 	)
 	if code == 0 {
@@ -25,27 +25,42 @@ func ensureAgentsSession() {
 		// Detached new-session defaults to window-size manual; switch to latest
 		// so panes resize to the attaching client instead of the creation size.
 		_ = tmuxRun("set-option", "-t", "agents", "window-size", "latest")
+
 		return
 	}
+
 	if strings.Contains(stderr, "duplicate session") {
-		names := map[string]bool{}
-		if out, err := tmuxOutput("list-windows", "-t", "agents", "-F", "#{window_name}"); err == nil {
-			for _, n := range strings.Split(out, "\n") {
-				if n != "" {
-					names[n] = true
-				}
+		ensureKeeperWindow()
+
+		return
+	}
+
+	logErrorf("ensureAgentsSession: unexpected tmux error (rc=%d): %s", code, stderr)
+	exitErrf(1, "tmux new-session failed (rc=%d): %s", code, stderr)
+}
+
+// ensureKeeperWindow adds the keeper window to an already-existing agents
+// session when it is missing (e.g. after a manual kill of the keeper).
+func ensureKeeperWindow() {
+	names := map[string]bool{}
+
+	if out, err := tmuxOutput("list-windows", "-t", "agents", "-F", "#{window_name}"); err == nil {
+		for n := range strings.SplitSeq(out, "\n") {
+			if n != "" {
+				names[n] = true
 			}
 		}
-		if !names[keeperWindow] {
-			_, _, _ = tmuxResult("new-window", "-d", "-t", "agents", "-n", keeperWindow, keeperCmd())
-			logInfof("keeper window added to existing agents session")
-		} else {
-			logDebugf("ensureAgentsSession: session exists, keeper present")
-		}
+	}
+
+	if names[keeperWindow] {
+		logDebugf("ensureAgentsSession: session exists, keeper present")
+
 		return
 	}
-	logErrorf("ensureAgentsSession: unexpected tmux error (rc=%d): %s", code, stderr)
-	exitErr(1, "tmux new-session failed (rc=%d): %s", code, stderr)
+
+	_, _ = tmuxResult("new-window", "-d", "-t", "agents", "-n", keeperWindow, keeperCmd())
+
+	logInfof("keeper window added to existing agents session")
 }
 
 // agentsWindowID returns the window id (@N) of the exact-named window in the
@@ -54,16 +69,21 @@ func agentsWindowID(win string) (string, bool) {
 	out, err := tmuxOutput("list-windows", "-t", "agents", "-F", "#{window_id} #{window_name}")
 	if err != nil {
 		logDebugf("agentsWindowID %s: agents session not found", win)
+
 		return "", false
 	}
-	for _, line := range strings.Split(out, "\n") {
+
+	for line := range strings.SplitSeq(out, "\n") {
 		wid, name, _ := strings.Cut(line, " ")
 		if name == win {
 			logDebugf("agentsWindowID %s -> %s", win, wid)
+
 			return wid, true
 		}
 	}
+
 	logDebugf("agentsWindowID %s -> not found", win)
+
 	return "", false
 }
 
@@ -73,14 +93,18 @@ func agentsWindowID(win string) (string, bool) {
 // transcript lands under the expected project-dir slug.
 func ensureAgentsWindow(win, cwd string) WindowTarget {
 	ensureAgentsSession()
+
 	if winID, ok := agentsWindowID(win); ok {
 		logDebugf("ensureAgentsWindow: window exists win=%s id=%s", win, winID)
+
 		return WindowTarget{Target: "agents:" + winID, Fresh: false, WindowID: winID}
 	}
+
 	out := mustTmuxOut("new-window", "-t", "agents", "-n", win, "-c", cwd,
 		"-P", "-F", "#{window_id} #{pane_id}")
 	winID, paneID, _ := strings.Cut(out, " ")
 	logInfof("agents window created: win=%s id=%s pane=%s", win, winID, paneID)
+
 	return WindowTarget{Target: "agents:" + winID, Fresh: true, InitialPane: paneID, WindowID: winID}
 }
 
@@ -90,5 +114,6 @@ func makeAgentPane(wt WindowTarget, cwd string) string {
 	if wt.Fresh {
 		return wt.InitialPane
 	}
+
 	return mustTmuxOut("split-window", "-t", wt.Target, "-c", cwd, "-d", "-P", "-F", "#{pane_id}")
 }

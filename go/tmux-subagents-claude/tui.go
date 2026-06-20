@@ -21,6 +21,7 @@ func capturePane(pane string) string {
 	if err != nil {
 		return ""
 	}
+
 	return out
 }
 
@@ -32,14 +33,17 @@ var contextRe = regexp.MustCompile(`\d+(?:\.\d+)?k/\d+(?:\.\d+)?k\s*\(\d+(?:\.\d
 // or "-" if none (pane starting/dead or footer not rendered).
 func paneContext(pane string) string {
 	match := ""
-	for _, line := range strings.Split(capturePane(pane), "\n") {
+
+	for line := range strings.SplitSeq(capturePane(pane), "\n") {
 		if m := contextRe.FindString(line); m != "" {
 			match = strings.Join(strings.Fields(m), " ")
 		}
 	}
+
 	if match == "" {
 		return "-"
 	}
+
 	return match
 }
 
@@ -56,19 +60,27 @@ func forceRedraw(pane string) {
 	hs, err := tmuxOutput("display-message", "-p", "-t", pane, "#{window_height}")
 	if err != nil {
 		logWarnf("forceRedraw: failed to read height for pane %s: %v", pane, err)
+
 		return
 	}
+
 	h, err := strconv.Atoi(hs)
 	if err != nil {
 		logWarnf("forceRedraw: bad height %q for pane %s", hs, pane)
+
 		return
 	}
+
 	if err := tmuxRun("resize-window", "-t", pane, "-y", strconv.Itoa(h-1)); err != nil {
 		logWarnf("forceRedraw: resize failed for pane %s: %v", pane, err)
+
 		return
 	}
+
 	sleep(cfg.RedrawSettle)
+
 	_ = tmuxRun("resize-window", "-t", pane, "-y", strconv.Itoa(h))
+
 	sleep(cfg.RedrawAfter)
 }
 
@@ -78,11 +90,13 @@ func forceRedraw(pane string) {
 func pasteText(pane, text string) {
 	buf := "sp_" + strconv.FormatInt(time.Now().UnixMilli(), 10)
 	load := exec.Command("tmux", "load-buffer", "-b", buf, "-")
+
 	load.Stdin = strings.NewReader(text)
 	if err := load.Run(); err != nil {
 		logErrorf("pasteText: load-buffer failed: %v", err)
-		exitErr(1, "tmux load-buffer failed: %v", err)
+		exitErrf(1, "tmux load-buffer failed: %v", err)
 	}
+
 	mustTmux("paste-buffer", "-p", "-t", pane, "-b", buf)
 	_ = tmuxRun("delete-buffer", "-b", buf)
 }
@@ -104,12 +118,15 @@ func verifySubmittedFrom(snapshot, text string, tailLines, needleLen int) bool {
 	if ts == "" {
 		return true
 	}
+
 	lines := strings.Split(ts, "\n")
 	lastLine := lines[len(lines)-1]
+
 	runes := []rune(lastLine)
 	if len(runes) > needleLen {
 		runes = runes[len(runes)-needleLen:]
 	}
+
 	needle := string(runes)
 	if needle == "" {
 		return true
@@ -119,17 +136,18 @@ func verifySubmittedFrom(snapshot, text string, tailLines, needleLen int) bool {
 	for len(snap) > 0 && strings.TrimSpace(snap[len(snap)-1]) == "" {
 		snap = snap[:len(snap)-1]
 	}
-	start := len(snap) - tailLines
-	if start < 0 {
-		start = 0
-	}
+
+	start := max(len(snap)-tailLines, 0)
+
 	tail := strings.Join(snap[start:], "\n")
+
 	return !strings.Contains(tail, needle)
 }
 
 // verifySubmitted captures the pane and runs the pure verifier.
 func verifySubmitted(pane, text string) bool {
 	sleep(cfg.VerifySettle)
+
 	return verifySubmittedFrom(capturePane(pane), text, cfg.VerifyTailLines, cfg.VerifyNeedleLen)
 }
 
@@ -143,17 +161,21 @@ func sendPrompt(pane, text string, verify bool) bool {
 	pasteText(pane, text)
 	sleep(cfg.PasteSettle)
 	mustTmux("send-keys", "-t", pane, "Enter")
+
 	if !verify {
 		return true
 	}
+
 	if verifySubmitted(pane, text) {
 		return true
 	}
+
 	logWarnf("prompt verify failed once, retrying")
 	resetInputLine(pane)
 	pasteText(pane, text)
 	sleep(cfg.PasteSettle)
 	mustTmux("send-keys", "-t", pane, "Enter")
+
 	return verifySubmitted(pane, text)
 }
 
@@ -163,14 +185,18 @@ func waitForPromptReady(pane string) bool {
 	deadline := time.Now().Add(dur(cfg.SpawnReadyTimeout))
 	for time.Now().Before(deadline) {
 		sleep(cfg.SpawnPoll)
+
 		out, err := tmuxOutput("capture-pane", "-t", pane, "-p")
 		if err != nil {
 			logWarnf("waitForPromptReady: pane %s vanished", pane)
+
 			return false
 		}
+
 		if strings.Contains(out, "❯") {
 			return true
 		}
 	}
+
 	return false
 }

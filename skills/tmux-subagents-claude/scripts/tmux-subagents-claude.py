@@ -319,7 +319,9 @@ def ensure_agents_session() -> None:
         log.info("agents session created (keeper window: %s)", KEEPER_WINDOW)
         # detached new-session defaults to window-size manual; override so panes
         # resize to the attaching client rather than staying stuck at creation size.
-        subprocess.run(["tmux", "set-option", "-t", "agents", "window-size", "latest"], check=False)
+        subprocess.run(
+            ["tmux", "set-option", "-t", "agents", "window-size", "latest"], check=False
+        )
         return
     if "duplicate session" in r.stderr:
         try:
@@ -477,7 +479,7 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     # Repaint so Claude fills the (possibly resized) pane and anchors its input
     # box to the bottom before we paste the initial prompt.
     _force_redraw(pane_id)
-    tmux("send-keys", "-t", pane_id, "-l", args.prompt)
+    _paste_text(pane_id, args.prompt)
     tmux("send-keys", "-t", pane_id, "Enter")
 
     extras = []
@@ -554,6 +556,25 @@ def _force_redraw(pane_id: str) -> None:
         log.warning("_force_redraw: failed for pane %s: %s", pane_id, e)
 
 
+def _paste_text(pane_id: str, text: str) -> None:
+    """Paste text via tmux load-buffer + paste-buffer -p (bracketed paste mode).
+
+    send-keys -l converts bare \\n to Enter presses, splitting multiline prompts
+    into separate submissions. Bracketed paste wraps the content in \\x1b[200~…\\x1b[201~
+    so the receiving app sees it as a single paste block and preserves newlines.
+    """
+    buf = f"sp_{int(time.time() * 1000)}"
+    subprocess.run(
+        ["tmux", "load-buffer", "-b", buf, "-"],
+        input=text.encode(),
+        check=True,
+    )
+    try:
+        tmux("paste-buffer", "-p", "-t", pane_id, "-b", buf)
+    finally:
+        subprocess.run(["tmux", "delete-buffer", "-b", buf], check=False)
+
+
 def _reset_input_line(pane_id: str) -> None:
     """Clear the Claude input buffer before pasting.
 
@@ -594,7 +615,7 @@ def _send_prompt(pane_id: str, text: str, verify: bool = True) -> bool:
     # verification.
     _force_redraw(pane_id)
     _reset_input_line(pane_id)
-    tmux("send-keys", "-t", pane_id, "-l", text)
+    _paste_text(pane_id, text)
     time.sleep(0.05)
     tmux("send-keys", "-t", pane_id, "Enter")
     if not verify:
@@ -603,7 +624,7 @@ def _send_prompt(pane_id: str, text: str, verify: bool = True) -> bool:
         return True
     log.warning("prompt verify failed once, retrying")
     _reset_input_line(pane_id)
-    tmux("send-keys", "-t", pane_id, "-l", text)
+    _paste_text(pane_id, text)
     time.sleep(0.05)
     tmux("send-keys", "-t", pane_id, "Enter")
     return _verify_submitted(pane_id, text)

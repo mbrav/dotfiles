@@ -29,6 +29,22 @@ func capturePane(pane string) string {
 // "... 90.0k/1000.0k (9.0%)" -> "90.0k/1000.0k (9.0%)".
 var contextRe = regexp.MustCompile(`\d+(?:\.\d+)?k/\d+(?:\.\d+)?k\s*\(\d+(?:\.\d+)?%\)`)
 
+// classifyWait refines a bare `waiting` status by inspecting a pane snapshot for
+// the signature of Claude's interactive permission dialog ("Do you want to
+// proceed?" with numbered options and an "Esc to cancel" footer). Returns
+// "permission" on a match, else "". A detached pane has no one to answer such a
+// dialog, so surfacing `waiting:permission` tells the operator a keystroke is
+// needed — something the JSONL transcript cannot reveal (the gated tool_use is
+// not flushed while pending). Pure (snapshot in, no IO) so it is unit-testable.
+func classifyWait(snapshot string) string {
+	if strings.Contains(snapshot, "Do you want to proceed?") &&
+		strings.Contains(snapshot, "Esc to cancel") {
+		return "permission"
+	}
+
+	return ""
+}
+
 // paneContext extracts the last context-window usage match from a pane footer,
 // or "-" if none (pane starting/dead or footer not rendered).
 func paneContext(pane string) string {

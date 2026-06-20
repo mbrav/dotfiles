@@ -88,6 +88,7 @@ Parallel agents as long as each in different window (unique + stable names):
 - `idle`: pane live, reply ready
 - `busy`: pane live, working
 - `waiting`: blocked on a prompt (permission/question). NOT done — `result --wait` may return a stale prior reply; inspect via `capture`.
+- `waiting:permission`: `waiting` refined by one `capture-pane` when Claude's permission dialog ("Do you want to proceed?" + "Esc to cancel" footer) is detected. The JSONL can't reveal this — a permission-gated `tool_use` is **not flushed to the transcript while pending**, so the transcript just freezes at the last completed `tool_result`. Only `~/.claude/sessions/*.json` knows it's `waiting`; the pane snapshot classifies the dialog. Needs a human keystroke (detached pane can't answer).
 - `starting`: pane live, session-status file pending
 - `dead`: pane gone (clear with `cleanup --prune`)
 

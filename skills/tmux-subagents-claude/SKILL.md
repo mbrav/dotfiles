@@ -93,7 +93,8 @@ Session ID from spawn output or `status`. Creates new pane, resumes exact conver
 | `empty` | live, no reply yet |
 | `idle` | live, reply ready |
 | `busy` | working |
-| `waiting` | blocked on permission/question — NOT done; `result --wait` may return stale reply |
+| `waiting` | blocked on a prompt — NOT done; `result --wait` may return stale reply |
+| `waiting:permission` | blocked on a permission dialog ("Do you want to proceed?") — needs a human keystroke; a detached pane can't answer. `capture` to see the command, then decline/allow or `cleanup`+`resurrect` |
 | `starting` | status file pending |
 | `dead` | pane gone — run `cleanup --prune` |
 

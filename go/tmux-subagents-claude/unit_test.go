@@ -204,3 +204,29 @@ func TestPaneContextRegex(t *testing.T) {
 		t.Error("regex should not match a line without usage")
 	}
 }
+
+func TestClassifyWait(t *testing.T) {
+	dialog := ` Bash command
+   rtk ls -d ../dotfiles/skills/*
+   Run shell command
+
+ Do you want to proceed?
+ ❯ 1. Yes
+   2. Yes, and don't ask again for: rtk ls *
+   3. No
+
+ Esc to cancel · Tab to amend · ctrl+e to explain`
+	if got := classifyWait(dialog); got != "permission" {
+		t.Errorf("classifyWait(dialog) = %q, want permission", got)
+	}
+
+	// A normal working/idle pane (footer only) is not a permission prompt.
+	if got := classifyWait("↑601 ↓131 R84.9k W1.9k $0.042 90.0k/1000.0k (9.0%)"); got != "" {
+		t.Errorf("classifyWait(footer) = %q, want empty", got)
+	}
+
+	// The proceed header alone (no dialog footer) does not match.
+	if got := classifyWait("Do you want to proceed? (discussing in prose)"); got != "" {
+		t.Errorf("classifyWait(prose) = %q, want empty", got)
+	}
+}

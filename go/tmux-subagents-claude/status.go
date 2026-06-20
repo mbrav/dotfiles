@@ -85,6 +85,7 @@ type rowDeps struct {
 	statuses    map[string]string   // sessionID -> status
 	hasResponse func(Agent) bool    // does the transcript hold a completed reply?
 	paneCtx     func(string) string // pane id -> context-window usage string
+	waitKind    func(string) string // pane id -> waiting sub-kind (e.g. "permission"), "" if none
 }
 
 // deriveStatus maps a pane's liveness and session status into a display status.
@@ -129,6 +130,15 @@ func buildRows(win string, agents map[string]Agent, scopeRoot string, deps rowDe
 		}
 
 		status := deriveStatus(meta, live, deps)
+		// Refine a bare `waiting` into e.g. `waiting:permission` when the pane is
+		// sitting on an interactive dialog only a human can answer. Only the few
+		// waiting panes pay the extra capture.
+		if status == "waiting" && live && deps.waitKind != nil {
+			if kind := deps.waitKind(pane); kind != "" {
+				status += ":" + kind
+			}
+		}
+
 		logDebugf("status agent=%s pane=%s status=%s context=%s",
 			agentNameFor(win, task, &meta), pane, status, context)
 		rows = append(rows, StatusRow{
@@ -155,6 +165,7 @@ func statusRows(win string, statuses map[string]string, scopeRoot string) []Stat
 			_, ok := lastResponse(jsonlPath(m))
 			return ok
 		},
-		paneCtx: paneContext,
+		paneCtx:  paneContext,
+		waitKind: func(pane string) string { return classifyWait(capturePane(pane)) },
 	})
 }

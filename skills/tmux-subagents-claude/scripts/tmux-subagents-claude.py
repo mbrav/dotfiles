@@ -303,10 +303,14 @@ def agents_window_id(win: str) -> str | None:
 # crash, the sandbox suspend/resume killing processes, or simply finishing)
 # closes the only window in the agents session and tmux destroys the WHOLE
 # session -- which then makes status/result/capture/cleanup fail with
-# ``no sessions`` / ``can't find window: agents``. The keeper runs a long sleep
-# so the session is never empty and always survives.
+# ``no sessions`` / ``can't find window: agents``. The keeper tails the log file
+# so the session is never empty (tail -F never exits) and doubles as a live
+# view of orchestration activity when the agents session is attached.
 KEEPER_WINDOW = "__keeper__"
-KEEPER_CMD = "exec sleep 2147483647"
+# ``-F`` follows by name and retries if the file is missing/rotated, so the
+# keeper survives even if the log doesn't exist yet. ``-n +1`` shows existing
+# contents from the top rather than only new lines.
+KEEPER_CMD = f"exec tail -n +1 -F {shlex.quote(LOG_PATH)}"
 
 
 def ensure_agents_session() -> None:

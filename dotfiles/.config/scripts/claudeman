@@ -1,0 +1,273 @@
+#!/usr/bin/env bash
+# claudeman — interactive Claude Code session manager.
+# Lists sessions in fzf; actions: resume / delete / rename.
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "$(realpath "$0")")" && pwd)"
+# shellcheck source=_util
+source "${script_dir}/_util"
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  echo "Usage: csess [-a]"
+  echo "  Lists Claude Code sessions for the current directory in fzf."
+  echo "  -a  show sessions from all projects"
+  echo "  -h  show help"
+  echo "  Actions: resume | delete | rename"
+  exit 0
+fi
+
+for dep in fzf jq rg; do
+  command -v "$dep" >/dev/null || error_msg "Missing dependency: $dep" 1
+done
+
+SHOW_ALL=0
+[[ "${1:-}" == "-a" || "${1:-}" == "--all" ]] && SHOW_ALL=1
+
+CLAUDE_DIR="${HOME}/.claude"
+SESSIONS_DIR="${CLAUDE_DIR}/sessions"
+PROJECTS_DIR="${CLAUDE_DIR}/projects"
+
+cwd_slug=$(printf '%s' "$PWD" | sed 's/[^a-zA-Z0-9]/-/g')
+project_dir="${PROJECTS_DIR}/${cwd_slug}"
+
+if [[ $SHOW_ALL -eq 0 ]]; then
+  [[ -d "$project_dir" ]] || error_msg "No Claude sessions for: $PWD" 1
+fi
+
+# ── Global live-session index (populated by index_live_sessions) ──────────────
+declare -A live_name live_status live_file live_real_cwd
+declare -A live_cwd_name live_cwd_status live_cwd_file live_cwd_uuid live_cwd_started live_cwd_real
+
+# Scan ~/.claude/sessions/*.json; index by sessionId (primary) + cwd-slug
+# (fallback for early-startup race where PID is alive but sessionId not yet written).
+index_live_sessions() {
+  local f pid data fsid fname fstatus fcwd fstarted slug existing
+  for f in "${SESSIONS_DIR}"/*.json; do
+    [[ -f "$f" ]] || continue
+    pid=$(basename "$f" .json)
+    kill -0 "$pid" 2>/dev/null || continue
+    data=$(jq -r '"\(.sessionId // "")\t\(.name // "")\t\(.status // "?")\t\(.cwd // "")\t\(.startedAt // 0)"' \
+      "$f" 2>/dev/null) || continue
+    IFS=$'\t' read -r fsid fname fstatus fcwd fstarted <<<"$data"
+
+    if [[ -n "$fsid" ]]; then
+      live_name[$fsid]="${fname:-—}"
+      live_status[$fsid]="$fstatus"
+      live_file[$fsid]="$f"
+      live_real_cwd[$fsid]="$fcwd"
+    fi
+
+    if [[ -n "$fcwd" ]]; then
+      slug=$(printf '%s' "$fcwd" | sed 's/[^a-zA-Z0-9]/-/g')
+      existing="${live_cwd_started[$slug]:-0}"
+      if ((fstarted >= existing)); then
+        live_cwd_name[$slug]="${fname:-—}"
+        live_cwd_status[$slug]="$fstatus"
+        live_cwd_file[$slug]="$f"
+        live_cwd_uuid[$slug]="${fsid:-}"
+        live_cwd_started[$slug]="$fstarted"
+        live_cwd_real[$slug]="$fcwd"
+      fi
+    fi
+  done
+}
+
+# Print name\tcwd extracted from a JSONL file (for dead sessions).
+# Name: first custom-title entry. cwd: first entry with .cwd field.
+jsonl_meta() {
+  local jsonl="$1"
+  local name cwd
+  name=$(grep -m1 '"type":"custom-title"' "$jsonl" 2>/dev/null |
+    jq -r '.customTitle // empty' 2>/dev/null || true)
+  cwd=$(grep -m1 '"cwd"' "$jsonl" 2>/dev/null |
+    jq -r '.cwd // empty' 2>/dev/null || true)
+  printf '%s\t%s' "${name:-}" "${cwd:-}"
+}
+
+# Print mtime-sorted JSONL paths: all projects (SHOW_ALL=1) or current project.
+collect_jsonl_files() {
+  if [[ $SHOW_ALL -eq 1 ]]; then
+    rg --files --null --glob '*.jsonl' --max-depth 2 "$PROJECTS_DIR" 2>/dev/null |
+      xargs -0 stat -f '%m %N' 2>/dev/null |
+      sort -rn | awk '{print $2}' || true
+  else
+    ls -t "${project_dir}"/*.jsonl 2>/dev/null || true
+  fi
+}
+
+# Draw a progress bar to stderr. Usage: bar elapsed_pct bar_width
+# Only renders when stderr is a terminal.
+bar() {
+  [[ -t 2 ]] || return 0
+  ((filled = $1 * $2 / 100))
+  printf -v prog "%${filled}s"
+  printf -v empty "%$(($2 - filled))s"
+  printf 'Indexing sessions: [%s%s] %3d%%\r' "${prog// /-}" "${empty}" "$1" >&2
+}
+
+# Build tab-separated session list from JSONL files.
+# Columns: sid \t name \t status \t date \t size \t alive \t session_file \t cwd_slug \t real_cwd
+build_session_list() {
+  local -a files
+  mapfile -t files < <(collect_jsonl_files)
+  local total="${#files[@]}" i=0 pct
+  local jsonl sid jsonl_slug real_cwd name status sf alive cwd_uuid meta date size
+
+  for jsonl in "${files[@]}"; do
+    [[ -f "$jsonl" ]] || continue
+    ((i++))
+    ((pct = i * 100 / total))
+    bar "$pct" 30
+
+    sid=$(basename "$jsonl" .jsonl)
+    jsonl_slug=$(basename "$(dirname "$jsonl")")
+    real_cwd=""
+
+    if [[ ${live_file[$sid]+set} == set ]]; then
+      name="${live_name[$sid]:-—}"
+      status="${live_status[$sid]:-?}"
+      sf="${live_file[$sid]}"
+      real_cwd="${live_real_cwd[$sid]:-}"
+      alive="live"
+    elif [[ ${live_cwd_uuid[$jsonl_slug]+set} == set ]]; then
+      cwd_uuid="${live_cwd_uuid[$jsonl_slug]}"
+      if [[ -z "$cwd_uuid" || "$cwd_uuid" == "$sid" ]]; then
+        name="${live_cwd_name[$jsonl_slug]:-—}"
+        status="${live_cwd_status[$jsonl_slug]:-?}"
+        sf="${live_cwd_file[$jsonl_slug]}"
+        real_cwd="${live_cwd_real[$jsonl_slug]:-}"
+        alive="live"
+      else
+        name="—"
+        status="dead"
+        sf=""
+        alive="dead"
+      fi
+    else
+      name="—"
+      status="dead"
+      sf=""
+      alive="dead"
+    fi
+
+    if [[ "$alive" == "dead" ]]; then
+      meta=$(jsonl_meta "$jsonl")
+      jsonl_name="${meta%%$'\t'*}"
+      jsonl_cwd="${meta#*$'\t'}"
+      [[ -n "$jsonl_name" ]] && name="$jsonl_name"
+      [[ -z "$real_cwd" ]] && real_cwd="$jsonl_cwd"
+    fi
+
+    [[ -z "$name" ]] && name="—"
+    date=$(date -r "$jsonl" "+%Y-%m-%d %H:%M")
+    size="$(($(wc -c <"$jsonl") / 1024))k"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$sid" "$name" "$status" "$date" "$size" "$alive" "$sf" "$jsonl_slug" "$real_cwd"
+  done
+  # Clear the bar line
+  [[ -t 2 ]] && printf '%*s\r' "$(tput cols 2>/dev/null || echo 80)" "" >&2
+}
+
+# Run fzf session picker; print selected sid or exit 0 on cancel.
+pick_session() {
+  local list="$1" fzf_lines header
+  if [[ $SHOW_ALL -eq 1 ]]; then
+    fzf_lines=$(printf '%s' "$list" | awk -F'\t' '{
+        mark = ($6 == "live") ? "●" : "○"
+        printf "%s  %-36s  %-10s  %-16s  %-6s  %-32s  %s\n", mark, $1, $3, $4, $5, $2, $8
+    }')
+    header="     UUID                                  STATUS      DATE              SIZE    NAME                              PROJECT"
+  else
+    fzf_lines=$(printf '%s' "$list" | awk -F'\t' '{
+        mark = ($6 == "live") ? "●" : "○"
+        printf "%s  %-36s  %-10s  %-16s  %-6s  %s\n", mark, $1, $3, $4, $5, $2
+    }')
+    header="     UUID                                  STATUS      DATE              SIZE    NAME"
+  fi
+
+  local sel
+  sel=$(printf '%s\n' "$fzf_lines" | fzf \
+    --ansi \
+    --header="$header" \
+    --prompt="Session › " \
+    --layout=reverse \
+    --border \
+    --height=50%) || {
+    info_msg "Cancelled."
+    exit 0
+  }
+  echo "$sel" | awk '{print $2}'
+}
+
+# Run fzf action picker; print selected action or exit 0 on cancel.
+pick_action() {
+  local name="$1"
+  printf 'resume\ndelete\nrename' | fzf \
+    --prompt="Action [${name}] › " \
+    --layout=reverse \
+    --border \
+    --height=20% || {
+    info_msg "Cancelled."
+    exit 0
+  }
+}
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+
+while true; do
+  index_live_sessions
+
+  list=$(build_session_list)
+  [[ -n "$list" ]] || error_msg "No sessions found." 1
+
+  sid=$(pick_session "$list")
+  entry=$(printf '%s' "$list" | awk -F'\t' -v s="$sid" '$1==s')
+  name=$(echo "$entry" | cut -f2)
+  alive=$(echo "$entry" | cut -f6)
+  sf=$(echo "$entry" | cut -f7)
+  jsonl_slug=$(echo "$entry" | cut -f8)
+  real_cwd=$(echo "$entry" | cut -f9)
+  jsonl="${PROJECTS_DIR}/${jsonl_slug}/${sid}.jsonl"
+
+  action=$(pick_action "$name")
+
+  case "$action" in
+
+  resume)
+    if [[ -n "$real_cwd" && -d "$real_cwd" ]]; then
+      info_msg "Resuming: ${name} (${sid}) in ${real_cwd}"
+      cd "$real_cwd"
+    else
+      info_msg "Resuming: ${name} (${sid})"
+    fi
+    exec claude --resume "$sid"
+    ;;
+
+  delete)
+    warning_msg "About to permanently delete:"
+    echo "  ${BOLD}JSONL   :${CLEAR} ${jsonl}"
+    [[ -n "$sf" ]] && echo "  ${BOLD}Session :${CLEAR} ${sf}"
+    yes_no_prompt "Delete session '${name}'?" || {
+      info_msg "Aborted."
+      continue
+    }
+    rm -f "$jsonl"
+    [[ -n "$sf" ]] && rm -f "$sf"
+    success_msg "Deleted ${sid}"
+    ;;
+
+  rename)
+    if [[ "$alive" != "live" ]]; then
+      warning_msg "Session is not live — cannot rename."
+      info_msg "To set name on resume: claude --resume ${sid} --name <new-name>"
+      continue
+    fi
+    read -r -p "${CYAN}New name for '${name}': ${CLEAR}" new_name
+    [[ -z "$new_name" ]] && error_msg "Name cannot be empty." 1
+    tmp=$(mktemp)
+    jq --arg n "$new_name" '.name = $n' "$sf" >"$tmp" && mv "$tmp" "$sf"
+    success_msg "Renamed to '${new_name}'"
+    ;;
+
+  esac
+done

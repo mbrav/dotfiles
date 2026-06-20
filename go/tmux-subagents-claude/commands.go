@@ -162,10 +162,6 @@ func cmdResult(task string, wait bool) {
 	fmt.Println(res)
 }
 
-// ---------------------------------------------------------------------------
-// bounded --wait helpers (replace the old infinite while-True loops)
-// ---------------------------------------------------------------------------
-
 // waitDeadline returns the zero Time when WaitTimeout<=0 (infinite).
 func waitDeadline() time.Time {
 	if cfg.WaitTimeout <= 0 {

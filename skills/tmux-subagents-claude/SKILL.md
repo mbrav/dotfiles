@@ -15,8 +15,6 @@ Parallel Claude Code subagents in tmux panes. CLI: `tmux-subagents-claude` (Go b
 go install github.com/mbrav/dotfiles/go/tmux-subagents-claude@latest   # -> ~/go/bin
 ```
 
-Source in `go/`; `~/go/bin` is on `PATH` (bash + fish). For local dev: `cd go && go build -o ~/go/bin/tmux-subagents-claude ./tmux-subagents-claude`.
-
 ## Setup
 
 ```bash

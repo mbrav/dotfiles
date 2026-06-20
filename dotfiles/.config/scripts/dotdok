@@ -24,16 +24,6 @@ fi
 
 ran_col_str "Utility for running mbrav dotfiles inside an ephemeral container"
 
-for ((i = 0; i <= 100; i++)); do
-  # Pure bash micro sleeps (for the example).
-  sleep 0.1
-
-  # Print the bar.
-  progress_bar "$i"
-done
-
-exit 0
-
 # Display help
 display_help() {
   cat <<EOF

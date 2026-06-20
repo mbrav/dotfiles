@@ -30,6 +30,7 @@ commands:
   cleanup    <task | --all | --prune>
   recap      <task>
   compact    <task> [description]
+  redraw
 
 flags must precede positionals (e.g. result --wait foo)
 
@@ -71,6 +72,7 @@ var dispatch = map[string]func([]string){
 	"cleanup":   runCleanup,
 	"recap":     runRecap,
 	"compact":   runCompact,
+	"redraw":    runRedraw,
 }
 
 // ---------------------------------------------------------------------------
@@ -235,4 +237,10 @@ func runCompact(args []string) {
 	}
 
 	cmdCompact(pos[0], desc)
+}
+
+func runRedraw(args []string) {
+	fs := newFlagSet("redraw", "redraw")
+	parseFlags(fs, args, 0, 0)
+	cmdRedraw()
 }

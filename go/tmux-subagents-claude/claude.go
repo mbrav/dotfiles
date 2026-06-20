@@ -51,15 +51,22 @@ func newJSONLScanner(f *os.File) *bufio.Scanner {
 	return sc
 }
 
+type contentBlock struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+// jsonlRecord decodes a transcript line. Content is kept raw because the schema
+// is polymorphic: assistant messages store an array of blocks, but user
+// messages store a plain string. Decoding it eagerly into []contentBlock would
+// fail (and warn-spam) on every user line; we decode it lazily, only for the
+// assistant/end_turn lines we actually read.
 type jsonlRecord struct {
 	Type    string `json:"type"`
 	CWD     string `json:"cwd"`
 	Message struct {
-		StopReason string `json:"stop_reason"`
-		Content    []struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
-		} `json:"content"`
+		StopReason string          `json:"stop_reason"`
+		Content    json.RawMessage `json:"content"`
 	} `json:"message"`
 }
 
@@ -96,21 +103,38 @@ func lastResponse(jsonlFile string) (string, bool) {
 			continue
 		}
 
-		var texts []string
-
-		for _, c := range rec.Message.Content {
-			if c.Type == "text" {
-				texts = append(texts, c.Text)
-			}
-		}
-
-		if len(texts) > 0 {
-			last = strings.Join(texts, "\n")
+		if text, ok := joinTextBlocks(rec.Message.Content); ok {
+			last = text
 			found = true
 		}
 	}
 
 	return last, found
+}
+
+// joinTextBlocks decodes raw assistant message content and joins its text
+// blocks with newlines. Returns ("", false) when content is not an array of
+// blocks (e.g. an unexpected string) or carries no text — so callers skip the
+// line quietly instead of warning.
+func joinTextBlocks(raw json.RawMessage) (string, bool) {
+	var blocks []contentBlock
+	if err := json.Unmarshal(raw, &blocks); err != nil {
+		return "", false
+	}
+
+	var texts []string
+
+	for _, c := range blocks {
+		if c.Type == "text" {
+			texts = append(texts, c.Text)
+		}
+	}
+
+	if len(texts) == 0 {
+		return "", false
+	}
+
+	return strings.Join(texts, "\n"), true
 }
 
 // sessionCWD recovers the directory a session was created in, by scanning its

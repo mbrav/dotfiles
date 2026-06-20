@@ -84,6 +84,42 @@ func forceRedraw(pane string) {
 	sleep(cfg.RedrawAfter)
 }
 
+// redrawWindowPanes forces every pane in a window to repaint after a layout
+// change. select-layout rebalances pane *widths*, but Claude's TUI (v2.1.x)
+// only reliably reflows on a width SIGWINCH — a height-only nudge (forceRedraw)
+// leaves narrowed neighbors showing stale, wrong-width frames that bleed across
+// borders. One window-level width nudge (one column out and back) delivers
+// SIGWINCH to every pane at once: cheaper and more correct than nudging each
+// pane individually with a height-only redraw. Cosmetic only — orchestration
+// reads per-pane grids and is unaffected.
+func redrawWindowPanes(target string) {
+	ws, err := tmuxOutput("display-message", "-p", "-t", target, "#{window_width}")
+	if err != nil {
+		logWarnf("redrawWindowPanes: failed to read width for %s: %v", target, err)
+
+		return
+	}
+
+	w, err := strconv.Atoi(ws)
+	if err != nil {
+		logWarnf("redrawWindowPanes: bad width %q for %s", ws, target)
+
+		return
+	}
+
+	if err := tmuxRun("resize-window", "-t", target, "-x", strconv.Itoa(w-1)); err != nil {
+		logWarnf("redrawWindowPanes: resize failed for %s: %v", target, err)
+
+		return
+	}
+
+	sleep(cfg.RedrawSettle)
+
+	_ = tmuxRun("resize-window", "-t", target, "-x", strconv.Itoa(w))
+
+	sleep(cfg.RedrawAfter)
+}
+
 // pasteText pastes text via tmux load-buffer + paste-buffer -p (bracketed
 // paste), so multiline prompts arrive as one block instead of being split into
 // separate submissions by embedded newlines.

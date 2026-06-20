@@ -52,8 +52,11 @@ func cmdSpawn(task, prompt, model, tools, effort, permMode string) {
 	st.Agents[task] = Agent{PaneID: paneID, SessionID: sessionID, CWD: cwd, AgentName: agentName}
 	saveWin(win, st)
 
-	// Side-by-side horizontal layout: | Agent 1 | Agent 2 | Agent 3 |
-	mustTmux("select-layout", "-t", wt.Target, "even-horizontal")
+	// Tiled grid keeps panes usable-width as the agent count grows (6 panes ->
+	// ~3x2 instead of six ~30-col vertical strips). Then repaint every pane so
+	// the just-narrowed neighbors don't keep stale, wrong-width Claude frames.
+	mustTmux("select-layout", "-t", wt.Target, "tiled")
+	redrawWindowPanes(wt.Target)
 
 	// Start claude interactively; the prompt is pasted after startup (passing it
 	// as a CLI arg makes claude treat it as a system prompt and stay idle).
@@ -319,10 +322,24 @@ func cmdResurrect(task, sessionID string) {
 		cwd, _ = os.Getwd()
 	}
 
+	// The recorded cwd can be stale: the original dir may have been moved or
+	// deleted since the session ran. If so, `cd <gone> && claude --resume`
+	// short-circuits on the failed cd and the pane dies on arrival. Fall back
+	// to the caller's cwd so the resume still launches.
+	if fi, err := os.Stat(cwd); err != nil || !fi.IsDir() {
+		logWarnf("resurrect: recorded cwd %q is gone; falling back to current dir", cwd)
+		stderrlnf("warning: original session dir %q no longer exists; resuming from "+
+			"current dir. `claude --resume` keys sessions by directory, so it may "+
+			"report \"No conversation found\".", cwd)
+
+		cwd, _ = os.Getwd()
+	}
+
 	wt := ensureAgentsWindow(win, cwd)
 	paneID := makeAgentPane(wt, cwd)
 	logDebugf("resurrect agent=%s pane=%s", agentName, paneID)
-	mustTmux("select-layout", "-t", wt.Target, "even-horizontal")
+	mustTmux("select-layout", "-t", wt.Target, "tiled")
+	redrawWindowPanes(wt.Target)
 
 	logInfof("resurrect agent=%s session=%s cwd=%s", agentName, sessionID, cwd)
 	// && keeps resume from running in the wrong dir if cd fails (bash + fish 3.0+).
@@ -335,6 +352,33 @@ func cmdResurrect(task, sessionID string) {
 	saveWin(win, st)
 	logInfof("resurrected agent=%s pane=%s session=%s", agentName, paneID, sessionID)
 	fmt.Printf("Resurrected %s in pane %s (session: %s)\n", agentName, paneID, sessionID)
+}
+
+// ---------------------------------------------------------------------------
+// redraw
+// ---------------------------------------------------------------------------
+
+// cmdRedraw repaints every pane in the current project's agents window,
+// recovering the stale frames Claude's TUI leaves after a tmux resize (a layout
+// rebalance, or a client attaching/resizing). Purely cosmetic for the attached
+// human view; orchestration reads per-pane grids and never depended on it.
+func cmdRedraw() {
+	win := getWin()
+
+	winID, ok := agentsWindowID(win)
+	if !ok {
+		fmt.Println("no agents window for this project")
+
+		return
+	}
+
+	target := "agents:" + winID
+	logInfof("redraw win=%s target=%s", win, target)
+	// Re-tile first so an older even-horizontal window (cramped strips) is
+	// normalized to the grid, then repaint to clear any stale frames.
+	mustTmux("select-layout", "-t", target, "tiled")
+	redrawWindowPanes(target)
+	fmt.Printf("Re-tiled and repainted panes in %s\n", target)
 }
 
 // ---------------------------------------------------------------------------

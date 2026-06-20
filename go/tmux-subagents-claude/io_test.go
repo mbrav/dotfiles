@@ -40,6 +40,7 @@ func TestLastResponse(t *testing.T) {
 	dir := t.TempDir()
 	jf := filepath.Join(dir, "t.jsonl")
 	writeFile(t, jf, `{"type":"user","message":{"role":"user"}}
+{"type":"user","message":{"role":"user","content":"a plain string, not an array"}}
 {"type":"assistant","message":{"stop_reason":"tool_use","content":[{"type":"text","text":"ignore tool_use"}]}}
 {"type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"older"}]}}
 {"type":"assistant","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"l1"},{"type":"thinking","text":"hidden"},{"type":"text","text":"l2"}]}}

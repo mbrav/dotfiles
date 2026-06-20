@@ -47,6 +47,7 @@ tmux-subagents-claude cleanup --all   # before/after batch
    tmux-subagents-claude recap   <task>                     # send /recap to agent
    tmux-subagents-claude compact <task> [description]       # send /compact to agent
    tmux-subagents-claude capture <task> [full|log|stop]     # raw terminal (expensive)
+   tmux-subagents-claude redraw                             # re-tile + repaint panes (fix garbled attached view)
    tmux-subagents-claude cleanup <task>                     # kill one agent
    tmux-subagents-claude cleanup --all                      # kill all in window
    tmux-subagents-claude cleanup --prune                    # drop dead entries

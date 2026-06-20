@@ -28,7 +28,7 @@ Parallel Claude Code subagents in tmux panes. CLI: `~/.config/scripts/tmux-subag
    ```bash
    ~/.config/scripts/tmux-subagents-claude result <task> --wait    # block until idle, print reply
    ~/.config/scripts/tmux-subagents-claude result <task>           # non-blocking; exit 1 if no reply yet
-   ~/.config/scripts/tmux-subagents-claude status                  # snapshot table (all agents)
+   ~/.config/scripts/tmux-subagents-claude status                  # snapshot table (current project)
    ~/.config/scripts/tmux-subagents-claude status <task>           # bare status word — grep/script-friendly
    ```
 
@@ -63,6 +63,7 @@ Parallel Claude Code subagents in tmux panes. CLI: `~/.config/scripts/tmux-subag
 - `--model MODEL`: `claude-opus-4-8`, `claude-opus-4-7`, `claude-opus-4-5`, `claude-sonnet-4-6`, `claude-sonnet-4-5`, `claude-haiku-4-5`
 - `--tools TOOLS`: comma-separated, e.g. `Read,Edit,Bash`
 - `--effort LEVEL`: `low`, `medium`, `high`, `xhigh`, `max`, `auto`
+- `--permission-mode MODE`: `auto` (default), `acceptEdits`, `dontAsk`, `default`, `plan`. Default `auto` proceeds without prompting and avoids the "Bypass Permissions mode" warning that wedges a fresh pane.
 
 See [tools-and-models.md](references/tools-and-models.md) for model/tools per task type.
 

@@ -87,6 +87,18 @@ MODELS = [
 
 EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max", "auto"]
 
+# claude --permission-mode choices. "auto" lets the agent proceed without the
+# one-time "Bypass Permissions mode" confirmation screen that wedges a freshly
+# spawned pane (nothing types the accept keystroke).
+PERMISSION_MODES = [
+    "auto",
+    "acceptEdits",
+    "dontAsk",
+    "default",
+    "plan",
+]
+DEFAULT_PERMISSION_MODE = "auto"
+
 
 # ---------------------------------------------------------------------------
 # tmux primitives
@@ -445,7 +457,9 @@ def cmd_spawn(args: argparse.Namespace) -> None:
     # not as a CLI arg (which claude treats as a system prompt, leaving it idle).
     parts = ["claude", "--session-id", session_id]
     parts.extend(["--name", agent_name])
-    parts.append("--dangerously-skip-permissions")
+
+    perm_mode = getattr(args, "permission_mode", None) or DEFAULT_PERMISSION_MODE
+    parts.extend(["--permission-mode", perm_mode])
 
     if getattr(args, "model", None):
         parts.extend(["--model", args.model])
@@ -489,6 +503,7 @@ def cmd_spawn(args: argparse.Namespace) -> None:
         extras.append(f"tools={args.tools}")
     if getattr(args, "effort", None):
         extras.append(f"effort={args.effort}")
+    extras.append(f"perm={perm_mode}")
     extra_str = f" [{', '.join(extras)}]" if extras else ""
     log.info(
         "spawned agent=%s pane=%s session=%s%s",
@@ -750,13 +765,20 @@ def cmd_result(args: argparse.Namespace) -> None:
 
 
 def _status_rows(
-    win: str, statuses: dict[str, str]
+    win: str, statuses: dict[str, str], cwd_filter: str | None = None
 ) -> list[tuple[str, str, str, str, str, str]]:
-    """Build (project, pane, task, session, status, context) rows for one window's agents."""
+    """Build (project, pane, task, session, status, context) rows for one window's agents.
+
+    If *cwd_filter* is given, only agents spawned from that working directory are
+    included. Window state is keyed by window NAME, which can repeat across
+    projects, so the cwd filter is what actually scopes a view to one project.
+    """
     data = load_win(win)
     panes = live_panes()
     rows = []
     for task, meta in data["agents"].items():
+        if cwd_filter is not None and meta.get("cwd") != cwd_filter:
+            continue
         sid = meta.get("session_id", "?")
         pane = meta.get("pane_id", "?")
         agent_name = meta.get("agent_name", f"subagent-{win}-{task}")
@@ -800,7 +822,8 @@ def cmd_status(args: argparse.Namespace) -> None:
             win = json.loads(sf.read_text()).get("window", sf.stem)
             rows.extend(_status_rows(win, statuses))
     else:
-        rows = _status_rows(get_win(), statuses)
+        # Default: scope to the current project (cwd), not just the window name.
+        rows = _status_rows(get_win(), statuses, cwd_filter=os.getcwd())
 
     if task_filter:
         rows = [r for r in rows if r[1] == task_filter]
@@ -1068,6 +1091,17 @@ def main() -> None:
         choices=EFFORT_LEVELS,
         help=f"thinking effort level: {', '.join(EFFORT_LEVELS)}",
     )
+    p_spawn.add_argument(
+        "--permission-mode",
+        metavar="MODE",
+        choices=PERMISSION_MODES,
+        default=DEFAULT_PERMISSION_MODE,
+        help=(
+            "permission mode passed to claude --permission-mode "
+            f"(default: {DEFAULT_PERMISSION_MODE}). Choices: "
+            f"{', '.join(PERMISSION_MODES)}."
+        ),
+    )
 
     p_prompt = sub.add_parser("prompt", help="send a follow-up prompt to an agent pane")
     p_prompt.add_argument("task")
@@ -1100,13 +1134,15 @@ def main() -> None:
     p_resurrect.add_argument("session_id", help="session UUID from the original spawn")
 
     p_status = sub.add_parser(
-        "status", help="status table of agents for the current window"
+        "status", help="status table of agents for the current project"
     )
     p_status.add_argument(
         "task", nargs="?", default=None, help="show status for a single agent"
     )
     p_status.add_argument(
-        "--all", action="store_true", help="show agents across all windows"
+        "--all",
+        action="store_true",
+        help="show agents across all projects (not just the current cwd)",
     )
 
     p_capture = sub.add_parser("capture", help="capture or stream pane terminal output")

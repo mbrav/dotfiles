@@ -1,6 +1,6 @@
 # Spawning Guide — Models, Tools, Permissions
 
-Choose `--model`, `--tools`, `--dangerously-skip-permissions`. Syntax in [SKILL.md](../SKILL.md).
+Choose `--model`, `--tools`, `--permission-mode`. Syntax in [SKILL.md](../SKILL.md).
 
 Default: account model + full tools. Narrow per task.
 
@@ -39,13 +39,24 @@ Full: `Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob`, `Agent`, `WebFetch`, `Web
 
 Read-only: no `Write`/`Edit`/`Bash`. `Bash` = blast radius (add only when needed). Start narrow.
 
-## `--dangerously-skip-permissions`
+## `--permission-mode`
 
-Bypass all permission prompts — no confirmation on edits/commands.
+Spawned agents run in a detached pane with **no human at the keyboard**, so any
+interactive permission prompt wedges them. The mode controls how the agent
+handles permissions without a human in the loop.
 
-**Only on explicit user request** (e.g., "skip", "unattended", "auto-approve"). Removes human-in-loop safety.
+Default: **`auto`** — proceeds without prompting and without the one-time "Bypass
+Permissions mode" warning screen (which would otherwise stall a fresh pane). This
+is the right default for unattended panes.
 
-Without ask: omit. Default safe. With ask: still scope `--tools` tightly.
+Choices (passed straight to `claude --permission-mode`):
+
+- **`auto`** (default) — auto-proceed, no scary warning. Use for almost everything.
+- **`acceptEdits`** — auto-accept file edits; still prompts for other actions (will wedge if a non-edit prompt fires).
+- **`dontAsk`** — never ask.
+- **`default`** / **`plan`** — standard / plan-only; will wedge on the first prompt since no one can answer.
+
+Always scope `--tools` tightly regardless of mode — `Bash` is the blast radius.
 
 ## Examples
 
@@ -62,8 +73,7 @@ Without ask: omit. Default safe. With ask: still scope `--tools` tightly.
 ~/.config/scripts/tmux-subagents-claude spawn redesign 'Propose a new caching layer; write an ADR' \
   --model claude-opus-4-7 --tools 'Read,Write,Edit,Grep,Glob,WebSearch'
 
-# Unattended — ONLY because user explicitly asked to skip permissions
+# Unattended with Bash — auto mode (default) keeps the pane from wedging
 ~/.config/scripts/tmux-subagents-claude spawn migrate 'Run the DB migration and verify' \
-  --model claude-sonnet-4-6 --tools 'Read,Edit,Bash' \
-  --dangerously-skip-permissions
+  --model claude-sonnet-4-6 --tools 'Read,Edit,Bash'
 ```

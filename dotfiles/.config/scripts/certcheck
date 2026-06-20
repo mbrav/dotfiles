@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# Check TLS certificate expiry for one or more hosts
+set -euo pipefail
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util"
+
+# Defaults
+warn_days=30
+port=443
+
+function usage() {
+  ran_col_str "TLS certificate expiry checker"
+  echo -e "${YELLOW}${BOLD}Usage:${CLEAR} certcheck [-d DAYS] [-p PORT] <host> [host2 ...]"
+  cmd_arg_help \
+    "-h          Show this help and exit" \
+    "-d DAYS     Warn threshold in days (default: ${warn_days})" \
+    "-p PORT     Port to connect to (default: ${port})" \
+    "<host...>   One or more hostnames to check"
+}
+
+# Parse flags
+while getopts ":hd:p:" opt; do
+  case "${opt}" in
+  h)
+    usage
+    exit 0
+    ;;
+  d)
+    [[ "${OPTARG}" =~ ^[0-9]+$ ]] || error_msg "Invalid -d value: ${OPTARG} (must be a positive integer)" 2
+    warn_days="${OPTARG}"
+    ;;
+  p)
+    [[ "${OPTARG}" =~ ^[0-9]+$ ]] || error_msg "Invalid -p value: ${OPTARG} (must be a positive integer)" 2
+    port="${OPTARG}"
+    ;;
+  :)
+    error_msg "Option -${OPTARG} requires an argument" 2
+    ;;
+  \?)
+    error_msg "Unknown option: -${OPTARG}" 2
+    ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+# Require at least one host
+[[ $# -ge 1 ]] || {
+  usage
+  error_msg "No host provided" 2
+}
+
+# Check requirements
+command -v openssl >/dev/null || error_msg "Please install openssl" 1
+
+# Fetch the certificate notAfter date for a host:port.
+# Arguments:
+#   $1 - host
+#   $2 - port
+# Output:
+#   Prints the raw notAfter date string (e.g. "Jun 20 12:00:00 2026 GMT") on success.
+# Returns:
+#   0 on success, non-zero if the host is unreachable or no cert is returned.
+function fetch_enddate() {
+  local host="$1" cport="$2" sclient enddate
+  # Beware set -e: capture output and status via if-guards so failures don't abort the script.
+  if ! sclient=$(openssl s_client -connect "${host}:${cport}" -servername "${host}" </dev/null 2>/dev/null); then
+    return 1
+  fi
+  if ! enddate=$(echo "${sclient}" | openssl x509 -noout -enddate 2>/dev/null); then
+    return 1
+  fi
+  # Strip leading "notAfter="
+  enddate="${enddate#notAfter=}"
+  [[ -n "${enddate}" ]] || return 1
+  echo "${enddate}"
+}
+
+# Track overall failure for final exit code
+fail=0
+
+ran_col_str "TLS certificate expiry checker"
+info_msg "Warn threshold: ${warn_days} day(s), port: ${port}"
+
+now_epoch=$(date +%s)
+
+for host in "$@"; do
+  enddate=""
+  if ! enddate=$(fetch_enddate "${host}" "${port}"); then
+    warning_msg "${host}:${port} - unreachable or no certificate"
+    fail=1
+    continue
+  fi
+
+  # Convert expiry to epoch; guard against parse failures.
+  exp_epoch=""
+  if ! exp_epoch=$(date -d "${enddate}" +%s 2>/dev/null); then
+    warning_msg "${host}:${port} - could not parse expiry date: ${enddate}"
+    fail=1
+    continue
+  fi
+
+  days_left=$(((exp_epoch - now_epoch) / 86400))
+
+  if ((days_left < 0)); then
+    error_msg "${host}:${port} - EXPIRED $((-days_left)) day(s) ago (${enddate})"
+    fail=1
+  elif ((days_left <= warn_days)); then
+    warning_msg "${host}:${port} - expires in ${days_left} day(s) (${enddate})"
+  else
+    success_msg "${host}:${port} - valid, expires in ${days_left} day(s) (${enddate})"
+  fi
+done
+
+exit "${fail}"

@@ -4,64 +4,38 @@ description: Top-level "manager of managers" layer over tmux-subagents-claude (t
 ---
 # Tmux Agents — Claude (manager of managers)
 
-You sit at the **top of an agent tree**. Your direct children are themselves managers: each runs the
-[tmux-subagents-claude](../tmux-subagents-claude/SKILL.md) skill (the `claudemux` CLI) to spawn and
-drive *its own* subagents. Your job is to brief your children, route work down to them, aggregate
-their reports, and tear the tree down cleanly — not to micromanage the leaves.
+You sit at top of agent tree. Direct children are themselves managers — each runs `claudemux` to
+spawn and drive *its own* subagents. Brief children, route work, aggregate reports, tear down cleanly.
 
 ```
 master (YOU)
-├── agent-dotfiles          ← your direct child (a manager)
-│   ├── implementer         ← its subagent (your grandchild)
+├── agent-dotfiles          ← direct child (manager)
+│   ├── implementer         ← grandchild (DON'T address directly)
 │   └── reviewer
-└── agent-obsidian          ← your direct child (a manager)
+└── agent-obsidian          ← direct child (manager)
     ├── editor
     └── organizer
 ```
 
-This is `claudemux`'s **forest** state model: every project has one state file holding a `master`
-(set by `init`/`enlist` — the orchestrator in that window) plus an `agents` roster. A child that
-`init`s or `enlist`s in its own project becomes the master of its own sub-roster. See
-[technicalities.md](../tmux-subagents-claude/references/technicalities.md#state-model--one-json-per-project)
-for the full model.
+Built on [tmux-subagents-claude](../tmux-subagents-claude/SKILL.md) (`claudemux` CLI) — inherit all
+its rules. This skill adds only the tree layer.
 
 ## Two iron rules
 
-**1. `master` is you.** Every `claudemux status` lists a `master` row — that is *this session*, the
-orchestrator, not a managed agent. The roster commands (`prompt`/`result`/`capture`/`despawn`/
-`dismiss`) act on the `agents` roster, and master isn't in it, so targeting it fails with
-`No agent 'master' tracked`. Don't prompt master, don't try its session UUID, don't capture it —
-when you read `status`, mentally skip the master row and operate only on the agents below it. (A
-session that wastes turns trying to "ping master" is talking to itself.)
+**1. `master` is you.** `claudemux status` always shows a `master` row — that's *this session*.
+Roster commands (`prompt`/`result`/`capture`/`despawn`) act on the `agents` list; master isn't in it.
+Never target master. Skip it when reading `status`.
 
-**2. Drive only your direct children.** Your `claudemux status` (no `--all`) shows *your* roster
-only — your direct children, never their subagents. Grandchildren live in a different project's
-state file that your commands don't load. So you **cannot** address a grandchild directly; to do
-anything to one, you **delegate**: prompt the owning child to act on its own roster. Think one hop
-at a time.
+**2. Drive only direct children.** `claudemux status` (no `--all`) loads *your* roster only.
+Grandchildren live in a different state file. To act on one, **delegate** to the owning child — never
+address a grandchild yourself.
 
-## Built on tmux-subagents-claude
+## Fleet check → build the tree
 
-This skill adds only the tree layer. For the actual CLI surface — `spawn`, `prompt`, `result`,
-`status`, `recap`, `compact`, `despawn`, `hire`, `enlist`, `dismiss`, `resurrect` — use
-[tmux-subagents-claude](../tmux-subagents-claude/SKILL.md), and inherit its rules verbatim:
-
-- `prompt … --wait` baselines the prior reply so you get a *fresh* one; run it **foreground** (never
-  background `--wait` with `&` — the reply is lost).
-- `idle`/`empty` don't prove your latest prompt landed — confirm via the reply body.
-- Status values and the `CONTEXT` column mean the same here as there.
-
-## Check on the fleet → build the tree
-
-The most common request ("check on the agents", "how are your agents' subagents doing", "list every
-agent and its subagents") is a **two-level gather**:
-
-1. `claudemux status` — your direct roster. Skip the `master` row (rule 1).
-2. For **each** direct child, `prompt --wait` it to run its own `status` and report its subagents —
-   with a freshness token (see below).
-3. Assemble a tree + per-child table and report up.
-
-Output template (mirror this):
+1. `claudemux status` — your roster. Skip `master` row.
+2. For each child, `prompt --wait` it to run its own `claudemux status` and report subagents (use
+   freshness token per child).
+3. Assemble tree + tables; flag deltas.
 
 ```
 master (me)
@@ -72,51 +46,35 @@ master (me)
     └── editor        🟢 idle  (Opus)
 ```
 
-Flag changes between checks (an agent that vanished, context climbing, a subagent stuck `starting`).
+## Freshness
 
-## Talk to a child reliably (freshness)
+Every child prompt can collide with stale reply or wedged input line. Guard every status/report prompt:
 
-Every interaction with a child is a *remote prompt into another Claude's pane*, so a prior reply can
-linger or stray keystrokes can wedge the input line — you then read a **stale** answer and don't
-notice. Guard every status/report prompt:
+- Prefix: `Ignore any leftover input text.`
+- Require: `Reply starting with token <UNIQUE>` — verify token before trusting body. Missing → resend.
+- Run **foreground** (`--wait`, never `&`).
 
-- Prefix it with `Ignore any leftover input text.`
-- Require `Reply starting with token <UNIQUE>` (e.g. `OBS-LIST`, `DOT-DOWN`) and **verify the token
-  appears** before trusting the body. No token → the prompt didn't land fresh; resend.
-- Run **foreground** so the reply isn't lost to backgrounding.
-
-If a child won't take a fresh prompt, it's wedged: `capture` it to see the pane, then recover per the
-parent skill's [Stuck agent](../tmux-subagents-claude/SKILL.md#stuck-agent) guidance (have it
-`despawn`+`resurrect`, or do so yourself if it's your direct child).
+Wedged child: `capture` to inspect → have it `despawn`+`resurrect`, or do so yourself.
 
 ## Delegate downward
 
-To act on a **grandchild**, prompt the child that owns it — phrase it as an instruction for the child
-to run against its own roster:
+To act on grandchild, prompt the child that owns it:
 
 - *"Ask your `editor` to report what it's done, then summarize."*
-- *"Despawn your subagent `ingester` for good: `claudemux despawn ingester` then `despawn --prune`."*
+- *"Run `claudemux despawn ingester` then `despawn --prune`."*
 - *"Run `claudemux status` and list every subagent you manage."*
 
-You orchestrate one hop down; the child orchestrates the hop below it.
+## Recursive teardown (leaves-first)
 
-## Recursive teardown (order matters)
+1. `claudemux compact <heavy-child>` — free context before more work.
+2. Prompt **each** child: *"`claudemux despawn --all` then `despawn --prune`."* (delegated)
+3. `claudemux despawn <child>` for each child from **your** roster.
+4. `claudemux status` — confirm only `master` remains.
 
-Tear the tree down **leaves-first**, so nothing is orphaned:
-
-1. `compact` any heavy child first (frees its context before it does work) — e.g.
-   `claudemux compact agent-dotfiles`.
-2. Tell **each** child to clear its own roster: *"`claudemux despawn --all` then `despawn --prune`."*
-   (delegated — you can't reach the grandchildren yourself).
-3. Then `despawn` the children from **your** roster.
-
-**Enlisted caveat:** if a child was `enlist`ed (it registered itself; you only *reference* its pane),
-`despawn`/`dismiss` will only **untrack** it — its pane keeps running as a live session. Surface this
-to the user (`Untracked enlisted <name> (pane … left running)`); if they want it actually killed, say
-so — it must be terminated from inside that session or by killing the pane directly.
+**Enlisted caveat:** `despawn`/`dismiss` on an enlisted child only untracks — pane keeps running.
+Surface to user; they must kill it from inside or via tmux directly.
 
 ## More
 
 [references/orchestration-patterns.md](references/orchestration-patterns.md) — copy-paste freshness
-prompts, the full tree-build walkthrough, the teardown checklist, the enlisted-vs-owned table, a
-context-watch note, and a short FAQ.
+prompts, teardown checklist, enlisted-vs-owned table, context-watch note, FAQ.

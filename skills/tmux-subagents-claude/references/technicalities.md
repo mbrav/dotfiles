@@ -147,10 +147,20 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 
 ## Master & roster (`init` / `hire` / `dismiss`)
 
-- `init [session-id]`: record the orchestrating **master** in the project state
-  (`master` field, `agent-<project>`). Session id defaults to
-  `$CLAUDE_CODE_SESSION_ID` (the session running the command). Bootstraps a master
-  that then spawns/hires. *(Not in SKILL.md — it is the master's own setup step.)*
+- `init [--model M] [--tools T] [--effort L] [--permission-mode P] [session-id]`:
+  register the project's `master`.
+  - **No `session-id`** → **spawn a fresh master**: a split pane in the **current
+    window** (beside the human, not the detached agents session) running a
+    brand-new claude session (generated UUID) named `agent-<project>`. Starts idle
+    (no prompt). The attached client drives the resize, so no manual redraw.
+  - **With `session-id`** → **adopt an existing session** as the master (no new
+    pane): records that session with the current pane (`$TMUX_PANE`) and cwd as
+    `agent-<project>`. Intended for a running session to register itself, e.g.
+    `init "$CLAUDE_CODE_SESSION_ID"`.
+
+  Either way the master lives in the current window and is the orchestrator you
+  work in to spawn/hire. *(Not in SKILL.md — it is the master's own bootstrap
+  step.)*
 - `hire <session-id>`: adopt an existing session (by UUID) into this project's
   roster. Resumes it in a pane in the session's **original** project dir
   (recovered via `sessionCWD`) but tracks it here, so it appears in `status` (no

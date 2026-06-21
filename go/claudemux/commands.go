@@ -366,32 +366,71 @@ func resurrectInto(win, callerKey, task, sessionID, agentName string) {
 // init / hire / dismiss (master + roster management)
 // ---------------------------------------------------------------------------
 
-// cmdInit records the orchestrating (master) agent in the current project's
-// state file. The session id comes from the arg or $CLAUDE_CODE_SESSION_ID (the
-// session running this command); the agent name is agent-<project>. Not part of
-// the subagent-orchestration surface documented in SKILL.md — it bootstraps a
-// master that then spawns/hires.
-func cmdInit(sessionID string) {
+// cmdInit registers the project's `master`. With no sessionID it spawns a fresh
+// master agent in the CURRENT window (a split pane alongside the human) running a
+// brand-new claude session (generated UUID) named agent-<project>. With a
+// sessionID it adopts that already-running session as the master instead — no new
+// pane — recording the current pane/cwd (intended for a running session to
+// register itself, e.g. `init $CLAUDE_CODE_SESSION_ID`). Either way the master
+// lives in the current window, NOT the detached agents session. Not part of the
+// subagent surface documented in SKILL.md.
+func cmdInit(sessionID, model, tools, effort, permMode string) {
 	win := getWin()
 	cwd, _ := os.Getwd()
-
-	if sessionID == "" {
-		sessionID = os.Getenv("CLAUDE_CODE_SESSION_ID")
-	}
-
-	if sessionID == "" {
-		exitErrf(2, "init: no session id (pass one or set $CLAUDE_CODE_SESSION_ID)")
-	}
-
 	agentName := "agent-" + filepath.Base(projectScope(cwd))
+
+	if sessionID != "" {
+		key := projectKey()
+		st := loadState(key)
+		st.Window = win
+		st.Master = &Agent{PaneID: os.Getenv("TMUX_PANE"), SessionID: sessionID, CWD: cwd, AgentName: agentName}
+		saveState(key, st)
+
+		logInfof("init adopt master=%s session=%s pane=%s key=%s", agentName, sessionID, os.Getenv("TMUX_PANE"), key)
+		fmt.Printf("Initialized master %s from existing session %s\n", agentName, sessionID)
+
+		return
+	}
+
+	logInfof("init master=%s win=%s (fresh)", agentName, win)
+
+	// Split the current window's pane (anchored to $TMUX_PANE when set), so the
+	// master lives beside the human. The attached client drives SIGWINCH, so no
+	// manual retile/redraw is needed (unlike the detached agents session).
+	split := []string{"split-window"}
+	if tp := os.Getenv("TMUX_PANE"); tp != "" {
+		split = append(split, "-t", tp)
+	}
+
+	split = append(split, "-c", cwd, "-P", "-F", "#{pane_id}")
+	paneID := mustTmuxOut(split...)
+	sessionID := newUUID()
+
 	key := projectKey()
 	st := loadState(key)
 	st.Window = win
-	st.Master = &Agent{PaneID: os.Getenv("TMUX_PANE"), SessionID: sessionID, CWD: cwd, AgentName: agentName}
+	st.Master = &Agent{PaneID: paneID, SessionID: sessionID, CWD: cwd, AgentName: agentName}
 	saveState(key, st)
 
-	logInfof("init master agent=%s session=%s key=%s", agentName, sessionID, key)
-	fmt.Printf("Initialized master %s (session: %s)\n", agentName, sessionID)
+	// Start claude idle (no prompt); --name sets the real session name.
+	parts := []string{"claude", "--session-id", sessionID, "--name", agentName, "--permission-mode", permMode}
+	if model != "" {
+		parts = append(parts, "--model", model)
+	}
+
+	if tools != "" {
+		parts = append(parts, "--allowedTools", tools)
+	}
+
+	if effort != "" {
+		parts = append(parts, "--effort", effort)
+	}
+
+	mustTmux("send-keys", "-t", paneID, shellJoin(parts), "Enter")
+
+	logInfof("init master=%s pane=%s session=%s key=%s", agentName, paneID, sessionID, key)
+	fmt.Printf("Initialized master %s in pane %s (current window) [session: %s]\n",
+		agentName, paneID, sessionID)
 }
 
 // cmdHire adopts an existing session (by UUID) into the current project's
@@ -642,8 +681,17 @@ func cleanupAll(win string) {
 		}
 	}
 
-	removeStateFile(key)
-	logDebugf("cleanup --all: removed state file for key=%s", key)
+	// The master lives in the current window (not the agents session) and is never
+	// in st.Agents, so the loop above leaves it running. Keep its record too —
+	// only drop the file when there's no master to preserve.
+	if st.Master != nil {
+		st.Agents = map[string]Agent{}
+		saveState(key, st)
+		logDebugf("cleanup --all: kept master, cleared agents key=%s", key)
+	} else {
+		removeStateFile(key)
+		logDebugf("cleanup --all: removed state file for key=%s", key)
+	}
 }
 
 func cleanupPrune() {
@@ -653,53 +701,7 @@ func cleanupPrune() {
 	removed := 0
 
 	for _, e := range iterStateFiles() {
-		base := filepath.Base(e.Path)
-		if e.State == nil {
-			_ = os.Remove(e.Path)
-
-			fmt.Printf("Removed unreadable: %s\n", base)
-			logInfof("prune: removed unreadable %s", base)
-
-			removed++
-
-			continue
-		}
-
-		st := e.State
-		dead := make([]string, 0)
-
-		for t, m := range st.Agents {
-			if !panes[m.PaneID] {
-				dead = append(dead, t)
-			}
-		}
-
-		slices.Sort(dead)
-
-		for _, t := range dead {
-			// Prune's name fallback is the TASK name (not subagent-win-task).
-			name := st.Agents[t].AgentName
-			if name == "" {
-				name = t
-			}
-
-			logInfof("prune: dead agent '%s' in %s (pane %s)", name, base, st.Agents[t].PaneID)
-			delete(st.Agents, t)
-			fmt.Printf("Pruned dead agent '%s' from %s\n", name, base)
-
-			removed++
-		}
-
-		if len(st.Agents) > 0 {
-			if b, err := json.MarshalIndent(st, "", "  "); err == nil {
-				_ = os.WriteFile(e.Path, b, 0o644)
-			}
-		} else {
-			_ = os.Remove(e.Path)
-
-			logInfof("prune: removed empty %s", base)
-			fmt.Printf("Removed empty: %s\n", base)
-		}
+		removed += pruneEntry(e, panes)
 	}
 
 	plural := "ies"
@@ -709,6 +711,54 @@ func cleanupPrune() {
 
 	logInfof("prune: %d dead entr%s removed", removed, plural)
 	fmt.Printf("%d dead entr%s pruned\n", removed, plural)
+}
+
+// pruneEntry drops dead agents from one state file, rewriting it — or removing
+// it when neither agents nor a master remain. An unreadable file is removed
+// outright. The master record (and its pane) is never touched. Returns the count
+// of removed entries (1 for an unreadable file, else the number of dead agents).
+func pruneEntry(e stateFileEntry, panes map[string]bool) int {
+	base := filepath.Base(e.Path)
+	if e.State == nil {
+		_ = os.Remove(e.Path)
+
+		fmt.Printf("Removed unreadable: %s\n", base)
+		logInfof("prune: removed unreadable %s", base)
+
+		return 1
+	}
+
+	st := e.State
+	dead := make([]string, 0)
+
+	for t, m := range st.Agents {
+		if !panes[m.PaneID] {
+			dead = append(dead, t)
+		}
+	}
+
+	slices.Sort(dead)
+
+	for _, t := range dead {
+		// Prune's name fallback is the TASK name (not subagent-win-task).
+		name := cmp.Or(st.Agents[t].AgentName, t)
+		logInfof("prune: dead agent '%s' in %s (pane %s)", name, base, st.Agents[t].PaneID)
+		delete(st.Agents, t)
+		fmt.Printf("Pruned dead agent '%s' from %s\n", name, base)
+	}
+
+	if len(st.Agents) > 0 || st.Master != nil {
+		if b, err := json.MarshalIndent(st, "", "  "); err == nil {
+			_ = os.WriteFile(e.Path, b, 0o644)
+		}
+	} else {
+		_ = os.Remove(e.Path)
+
+		logInfof("prune: removed empty %s", base)
+		fmt.Printf("Removed empty: %s\n", base)
+	}
+
+	return len(dead)
 }
 
 // ---------------------------------------------------------------------------

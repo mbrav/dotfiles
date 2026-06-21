@@ -29,7 +29,7 @@ commands:
   resurrect  <task> <session-id>
   hire       <session-id>
   dismiss    <session-id>
-  init       [session-id]
+  init       [--model M] [--tools T] [--effort L] [--permission-mode P] [session-id]
   capture    <task> [full|log|stop]
   cleanup    <task | --all | --prune>
   recap      <task>
@@ -253,7 +253,11 @@ func runDismiss(args []string) {
 }
 
 func runInit(args []string) {
-	fs := newFlagSet("init", "init [session-id]")
+	fs := newFlagSet("init", "init [--model M] [--tools T] [--effort L] [--permission-mode P] [session-id]")
+	model := fs.String("model", "", "claude model")
+	tools := fs.String("tools", "", "comma-separated allowed tools")
+	effort := fs.String("effort", "", "reasoning effort level")
+	perm := fs.String("permission-mode", defaultPermissionMode, "claude permission mode")
 	pos := parseFlags(fs, args, 0, 1)
 
 	sessionID := ""
@@ -261,7 +265,21 @@ func runInit(args []string) {
 		sessionID = pos[0]
 	}
 
-	cmdInit(sessionID)
+	if *model != "" {
+		validateChoice("--model", *model, models)
+	}
+
+	if *effort != "" {
+		validateChoice("--effort", *effort, effortLevels)
+	}
+
+	if *perm == "" {
+		*perm = defaultPermissionMode
+	}
+
+	validateChoice("--permission-mode", *perm, permissionModes)
+
+	cmdInit(sessionID, *model, *tools, *effort, *perm)
 }
 
 func runCapture(args []string) {

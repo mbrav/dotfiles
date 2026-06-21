@@ -2,10 +2,12 @@ package main
 
 // status.go — project scoping and status-row construction.
 //
-// Status is keyed by window NAME (which can repeat across projects), so the
-// real "one project" confinement is path-based: an agent belongs to the current
-// view if its recorded cwd is inside the current git repo root (projectScope).
-// buildRows is kept pure (deps injected) so it is unit-testable without tmux.
+// State is keyed by project (one file per project; see state.go), so the "one
+// project" confinement is simply *which file is loaded*: `status` reads the
+// current project's file and shows every agent in it (including agents hired
+// from other projects, whose cwd points elsewhere). `projectScope` is still
+// used to derive that project key. buildRows is kept pure (deps injected) so it
+// is unit-testable without tmux.
 
 import (
 	"cmp"
@@ -55,18 +57,6 @@ var realpath = func(p string) string {
 	return p
 }
 
-// inScope reports whether agentCWD is scopeRoot or a subdirectory of it. The
-// trailing separator guards the boundary so "/repo" excludes "/repo-other".
-// An empty scopeRoot includes everything (used by `status --all`).
-func inScope(agentCWD, scopeRoot string) bool {
-	if scopeRoot == "" {
-		return true
-	}
-
-	return agentCWD == scopeRoot ||
-		strings.HasPrefix(agentCWD, scopeRoot+string(filepath.Separator))
-}
-
 // StatusRow is one row of the status table.
 type StatusRow struct {
 	Project string
@@ -109,18 +99,15 @@ func deriveStatus(meta Agent, live bool, deps rowDeps) string {
 	return status
 }
 
-// buildRows is the pure core of status: given a window's agents and injected
-// world-views, it derives the display rows. scopeRoot "" = no filter. Rows are
-// sorted by task for deterministic output.
-func buildRows(win string, agents map[string]Agent, scopeRoot string, deps rowDeps) []StatusRow {
-	var rows []StatusRow
+// buildRows is the pure core of status: given a project's agents and injected
+// world-views, it derives the display rows, sorted by task for deterministic
+// output. No cwd filter — the caller already chose which project's roster to
+// show by selecting the state file.
+func buildRows(win string, agents map[string]Agent, deps rowDeps) []StatusRow {
+	rows := make([]StatusRow, 0, len(agents))
 
 	for _, task := range slices.Sorted(maps.Keys(agents)) {
 		meta := agents[task]
-		if scopeRoot != "" && !inScope(realpath(meta.CWD), scopeRoot) {
-			continue
-		}
-
 		pane := cmp.Or(meta.PaneID, "?")
 		live := deps.panes[pane]
 
@@ -154,11 +141,9 @@ func buildRows(win string, agents map[string]Agent, scopeRoot string, deps rowDe
 	return rows
 }
 
-// statusRows is the IO wrapper around buildRows for one window.
-func statusRows(win string, statuses map[string]string, scopeRoot string) []StatusRow {
-	st := loadWin(win)
-
-	return buildRows(win, st.Agents, scopeRoot, rowDeps{
+// liveRowDeps is the production rowDeps wired to tmux + Claude's on-disk state.
+func liveRowDeps(statuses map[string]string) rowDeps {
+	return rowDeps{
 		panes:    livePanes(),
 		statuses: statuses,
 		hasResponse: func(m Agent) bool {
@@ -167,5 +152,36 @@ func statusRows(win string, statuses map[string]string, scopeRoot string) []Stat
 		},
 		paneCtx:  paneContext,
 		waitKind: func(pane string) string { return classifyWait(capturePane(pane)) },
-	})
+	}
+}
+
+// statusRowsFromState is the IO wrapper around buildRows for one project's
+// state. When a master is recorded (via `init`), it is prepended as a row
+// labelled `master` so the roster's head is visible alongside its agents.
+func statusRowsFromState(st WinState, statuses map[string]string) []StatusRow {
+	deps := liveRowDeps(statuses)
+
+	rows := make([]StatusRow, 0, len(st.Agents)+1)
+
+	if st.Master != nil {
+		m := *st.Master
+		pane := cmp.Or(m.PaneID, "?")
+		live := deps.panes[pane]
+
+		context := "-"
+		if live {
+			context = deps.paneCtx(pane)
+		}
+
+		rows = append(rows, StatusRow{
+			Project: st.Window,
+			Pane:    pane,
+			Task:    "master",
+			Session: cmp.Or(m.SessionID, "?"),
+			Status:  deriveStatus(m, live, deps),
+			Context: context,
+		})
+	}
+
+	return append(rows, buildRows(st.Window, st.Agents, deps)...)
 }

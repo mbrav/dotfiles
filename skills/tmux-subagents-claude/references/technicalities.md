@@ -31,27 +31,38 @@ tmux display-message -p -t "$TMUX_PANE" '#{window_name}'
 
 Anchoring = independent of focus. Untargeted `display-message` drifts (causes `no sessions` / `pane not found`).
 
-## State model — one JSON per window
+## State model — one JSON per project
+
+The file is named with **Claude's own `~/.claude/projects/` slug convention**: the
+git repo root (or cwd) with every non-alphanumeric char → `-` (`cwdToProjectDir`
+applied to `projectScope(cwd)`). Every command from anywhere inside a repo
+resolves to the same key, so one project has exactly one roster.
 
 ```
-~/.local/share/claudemux/<window>.json
+~/.local/share/claudemux/<project-slug>.json
+    e.g.  -home-x-dev-github-com-mbrav-obsidian.json
 ```
 
 ```json
 {
   "window": "obsidian",
   "agents_window_id": "@72",
+  "master": {"pane_id": "%21", "session_id": "<uuid>", "cwd": "<path>", "agent_name": "agent-obsidian"},
   "agents": {
     "test-1": {"pane_id": "%134", "session_id": "<uuid>", "cwd": "<path>", "agent_name": "subagent-obsidian-test-1"}
   }
 }
 ```
 
-- `window`: source window name
+- `window`: source window name (the agents-session mirror window + agent naming)
 - `agents_window_id`: tmux window id in `agents` session
+- `master`: optional, set by `init` — the orchestrating agent (`agent-<project>`)
 - `agents`: task name → `{pane_id, session_id, cwd, agent_name}`
 
-Names sanitized: `/`→`-`, space→`_`.
+A hired agent's `cwd` may point at *another* repo (it resumes in its own project
+dir) while it lives in this project's roster — that is intentional. Per-project
+files each carrying a `master` + `agents` form a forest: a hired worker that runs
+`init` in its own project becomes a master of its own sub-roster.
 
 ## How panes are created
 
@@ -130,9 +141,36 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 
 ## Cleanup semantics
 
-- `cleanup <task>`: kill pane, drop from state
+- `cleanup <task>`: kill pane, drop from state (preserves `master` if set)
 - `cleanup --all`: kill all in window, remove state file
 - `cleanup --prune`: drop dead panes + empty/unreadable files (all windows)
+
+## Master & roster (`init` / `hire` / `dismiss`)
+
+- `init [session-id]`: record the orchestrating **master** in the project state
+  (`master` field, `agent-<project>`). Session id defaults to
+  `$CLAUDE_CODE_SESSION_ID` (the session running the command). Bootstraps a master
+  that then spawns/hires. *(Not in SKILL.md — it is the master's own setup step.)*
+- `hire <session-id>`: adopt an existing session (by UUID) into this project's
+  roster. Resumes it in a pane in the session's **original** project dir
+  (recovered via `sessionCWD`) but tracks it here, so it appears in `status` (no
+  `--all`) even with a foreign `cwd`. Internally shares the `resurrect` core. The
+  roster task (and stored `agent_name`) come from the session's **own name** —
+  the live `~/.claude/sessions/*.json` `name`, else the transcript `custom-title`
+  (same source as claudeman's NAME column), falling back to `hired-<sid[:8]>` when
+  unnamed. One argument is all it needs (no positional-order trap with
+  `resurrect`).
+- `dismiss <session-id>`: the teardown of `hire` — kills the pane and removes the
+  entry (located by session UUID; searches the current project first, then all
+  project files). `spawn`/`cleanup` are the fresh-session pair; `hire`/`dismiss`
+  the pre-existing-session pair.
+
+## Status scoping
+
+`status` (no `--all`) loads **only the current project's state file** and shows
+every agent in it (plus the `master` row if present) — the chosen file *is* the
+scope, so hired agents from other repos still appear. `status --all` iterates
+every project file under `STATE_DIR`. There is no per-agent cwd filter.
 
 ## Tools
 

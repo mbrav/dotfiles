@@ -5,6 +5,7 @@ package main
 // into both the pane (-c) and the stored metadata.
 
 import (
+	"cmp"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -47,10 +48,12 @@ func cmdSpawn(task, prompt, model, tools, effort, permMode string) {
 	logDebugf("spawn agent=%s pane=%s fresh_window=%v", agentName, paneID, wt.Fresh)
 
 	sessionID := newUUID()
-	st := loadWin(win)
+	key := projectKey()
+	st := loadState(key)
+	st.Window = win
 	st.AgentsWindowID = wt.WindowID
 	st.Agents[task] = Agent{PaneID: paneID, SessionID: sessionID, CWD: cwd, AgentName: agentName}
-	saveWin(win, st)
+	saveState(key, st)
 
 	// Tiled grid keeps panes usable-width as the agent count grows (6 panes ->
 	// ~3x2 instead of six ~30-col vertical strips). Then repaint every pane so
@@ -230,24 +233,23 @@ func waitWhileBusy(name, sessionID, jsonl string) {
 func cmdStatus(taskFilter string, all bool) {
 	statuses := sessionStatuses()
 
-	scopeRoot := ""
-
-	if !all {
-		// Scope to the current project's git repo root, across every window file,
-		// so agents spawned from any subdir of this repo show up while other
-		// repos stay out.
-		cwd, _ := os.Getwd()
-		scopeRoot = realpath(projectScope(cwd))
-	}
-
 	var rows []StatusRow
 
-	for _, e := range iterStateFiles() {
-		if e.State == nil {
-			continue
-		}
+	if all {
+		// Every project's roster.
+		for _, e := range iterStateFiles() {
+			if e.State == nil {
+				continue
+			}
 
-		rows = append(rows, statusRows(e.State.Window, statuses, scopeRoot)...)
+			rows = append(rows, statusRowsFromState(*e.State, statuses)...)
+		}
+	} else {
+		// Just this project's roster (the chosen state file IS the scope), so
+		// hired agents from other repos still show.
+		st := loadState(projectKey())
+		st.Window = cmp.Or(st.Window, getWin())
+		rows = statusRowsFromState(st, statuses)
 	}
 
 	if taskFilter != "" {
@@ -307,8 +309,17 @@ func printStatusTable(rows []StatusRow) {
 
 func cmdResurrect(task, sessionID string) {
 	win := getWin()
-	agentName := "subagent-" + win + "-" + task
-	logInfof("resurrect agent=%s session=%s win=%s", agentName, sessionID, win)
+	resurrectInto(win, projectKey(), task, sessionID, "subagent-"+win+"-"+task)
+}
+
+// resurrectInto creates a pane that resumes sessionID and registers it under
+// `task` (with stored agent_name `agentName`) in the project file identified by
+// callerKey. The pane runs in the session's ORIGINAL cwd (recovered from the
+// transcript) so `claude --resume` finds it and the transcript keeps landing
+// under the right project slug — even when callerKey is a *different* project
+// (the `hire` case). Shared by `resurrect` and `hire`.
+func resurrectInto(win, callerKey, task, sessionID, agentName string) {
+	logInfof("resurrect agent=%s session=%s win=%s key=%s", agentName, sessionID, win, callerKey)
 
 	// claude --resume only finds a session when launched from the directory it
 	// was created in. Recover that cwd from the transcript (survives cleanup);
@@ -342,12 +353,158 @@ func cmdResurrect(task, sessionID string) {
 	resumeCmd := "cd " + shellQuote(cwd) + " && " + shellJoin([]string{"claude", "--resume", sessionID})
 	mustTmux("send-keys", "-t", paneID, resumeCmd, "Enter")
 
-	st := loadWin(win)
+	st := loadState(callerKey)
+	st.Window = win
 	st.AgentsWindowID = wt.WindowID
 	st.Agents[task] = Agent{PaneID: paneID, SessionID: sessionID, CWD: cwd, AgentName: agentName}
-	saveWin(win, st)
+	saveState(callerKey, st)
 	logInfof("resurrected agent=%s pane=%s session=%s", agentName, paneID, sessionID)
 	fmt.Printf("Resurrected %s in pane %s (session: %s)\n", agentName, paneID, sessionID)
+}
+
+// ---------------------------------------------------------------------------
+// init / hire / dismiss (master + roster management)
+// ---------------------------------------------------------------------------
+
+// cmdInit records the orchestrating (master) agent in the current project's
+// state file. The session id comes from the arg or $CLAUDE_CODE_SESSION_ID (the
+// session running this command); the agent name is agent-<project>. Not part of
+// the subagent-orchestration surface documented in SKILL.md — it bootstraps a
+// master that then spawns/hires.
+func cmdInit(sessionID string) {
+	win := getWin()
+	cwd, _ := os.Getwd()
+
+	if sessionID == "" {
+		sessionID = os.Getenv("CLAUDE_CODE_SESSION_ID")
+	}
+
+	if sessionID == "" {
+		exitErrf(2, "init: no session id (pass one or set $CLAUDE_CODE_SESSION_ID)")
+	}
+
+	agentName := "agent-" + filepath.Base(projectScope(cwd))
+	key := projectKey()
+	st := loadState(key)
+	st.Window = win
+	st.Master = &Agent{PaneID: os.Getenv("TMUX_PANE"), SessionID: sessionID, CWD: cwd, AgentName: agentName}
+	saveState(key, st)
+
+	logInfof("init master agent=%s session=%s key=%s", agentName, sessionID, key)
+	fmt.Printf("Initialized master %s (session: %s)\n", agentName, sessionID)
+}
+
+// cmdHire adopts an existing session (by UUID) into the current project's
+// roster: it resumes the session in a pane (in the session's ORIGINAL project,
+// recovered from the transcript) and tracks it here, so `status` lists it even
+// though its cwd points at another repo. The roster task (and stored agent_name)
+// come from the session's own name — one argument is all it needs. `dismiss` is
+// the teardown.
+func cmdHire(sessionID string) {
+	win := getWin()
+
+	if _, ok := sessionCWD(sessionID); !ok {
+		exitErrf(1, "hire: no transcript found for session %s (unknown session)", sessionID)
+	}
+
+	task, agentName := hireIdentity(sessionID)
+	logInfof("hire session=%s task=%s name=%s win=%s", sessionID, task, agentName, win)
+	resurrectInto(win, projectKey(), task, sessionID, agentName)
+}
+
+// hireIdentity derives the roster task key and stored agent_name for a hired
+// session from its existing session name, falling back to hired-<sid[:8]> when
+// the session is unnamed.
+func hireIdentity(sessionID string) (task, agentName string) {
+	name := sessionName(sessionID)
+	if name == "" {
+		fallback := "hired-" + shortSession(sessionID)
+
+		return fallback, fallback
+	}
+
+	return sanitizeTask(name), name
+}
+
+// taskSanitizer maps a free-form session name to a single path/shell-friendly
+// token usable as a roster task key.
+var taskSanitizer = strings.NewReplacer("/", "-", " ", "-", "\t", "-")
+
+func sanitizeTask(s string) string {
+	return strings.Trim(taskSanitizer.Replace(s), "-")
+}
+
+// cmdDismiss stops managing the agent with the given session UUID: it kills its
+// pane and removes it from state (the inverse of hire). It searches the current
+// project first, then every project file, so a UUID can be dismissed from
+// anywhere.
+func cmdDismiss(sessionID string) {
+	key, task, st, ok := findAgentBySession(sessionID)
+	if !ok {
+		logWarnf("dismiss: no managed agent with session %s", sessionID)
+		exitErrf(1, "dismiss: no managed agent with session %s", sessionID)
+	}
+
+	meta := st.Agents[task]
+	logInfof("dismiss session=%s task=%s key=%s pane=%s", sessionID, task, key, meta.PaneID)
+
+	if !killPane(meta.PaneID) {
+		logWarnf("dismiss: pane %s already dead for session %s", meta.PaneID, sessionID)
+	}
+
+	delete(st.Agents, task)
+
+	if len(st.Agents) == 0 && st.Master == nil {
+		removeStateFile(key)
+		logDebugf("dismiss: state file removed (empty) key=%s", key)
+	} else {
+		saveState(key, st)
+	}
+
+	fmt.Printf("Dismissed '%s' (session %s); killed pane %s\n", task, sessionID, meta.PaneID)
+}
+
+// shortSession returns the first 8 chars of a session id (or the whole thing if
+// shorter) for a default task name.
+func shortSession(sessionID string) string {
+	if len(sessionID) > 8 {
+		return sessionID[:8]
+	}
+
+	return sessionID
+}
+
+// findAgentBySession locates the tracked agent with the given session id,
+// checking the current project first, then all project files. Returns the
+// project key, task name, that project's loaded state, and whether found.
+func findAgentBySession(sessionID string) (string, string, WinState, bool) {
+	cur := projectKey()
+	if st := loadState(cur); st.Agents != nil {
+		for task, m := range st.Agents {
+			if m.SessionID == sessionID {
+				return cur, task, st, true
+			}
+		}
+	}
+
+	for _, e := range iterStateFiles() {
+		if e.State == nil {
+			continue
+		}
+
+		key := strings.TrimSuffix(filepath.Base(e.Path), ".json")
+		if key == cur {
+			continue
+		}
+
+		for task, m := range e.State.Agents {
+			if m.SessionID == sessionID {
+				return key, task, *e.State, true
+			}
+		}
+	}
+
+	return "", "", WinState{}, false
 }
 
 // ---------------------------------------------------------------------------
@@ -451,14 +608,15 @@ func cmdCleanup(task string, all, prune bool) {
 		logWarnf("cleanup: pane %s already dead for agent '%s'", ref.PaneID, ref.Name)
 	}
 
-	st := loadWin(win)
+	key := projectKey()
+	st := loadState(key)
 	delete(st.Agents, task)
 
-	if len(st.Agents) > 0 {
-		saveWin(win, st)
+	if len(st.Agents) > 0 || st.Master != nil {
+		saveState(key, st)
 	} else {
-		removeWinFile(win)
-		logDebugf("cleanup: state file removed (no agents left) win=%s", win)
+		removeStateFile(key)
+		logDebugf("cleanup: state file removed (no agents left) key=%s", key)
 	}
 
 	logInfof("cleanup done agent=%s pane=%s", ref.Name, ref.PaneID)
@@ -468,7 +626,9 @@ func cmdCleanup(task string, all, prune bool) {
 func cleanupAll(win string) {
 	logInfof("cleanup --all win=%s", win)
 
-	st := loadWin(win)
+	key := projectKey()
+	st := loadState(key)
+
 	for _, task := range slices.Sorted(maps.Keys(st.Agents)) {
 		meta := st.Agents[task]
 
@@ -482,8 +642,8 @@ func cleanupAll(win string) {
 		}
 	}
 
-	removeWinFile(win)
-	logDebugf("cleanup --all: removed state file for win=%s", win)
+	removeStateFile(key)
+	logDebugf("cleanup --all: removed state file for key=%s", key)
 }
 
 func cleanupPrune() {

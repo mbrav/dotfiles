@@ -27,6 +27,9 @@ commands:
   result     [--wait] <task>
   status     [--all] [task]
   resurrect  <task> <session-id>
+  hire       <session-id>
+  dismiss    <session-id>
+  init       [session-id]
   capture    <task> [full|log|stop]
   cleanup    <task | --all | --prune>
   recap      <task>
@@ -76,6 +79,9 @@ var dispatch = map[string]func([]string){
 	"result":    runResult,
 	"status":    runStatus,
 	"resurrect": runResurrect,
+	"hire":      runHire,
+	"dismiss":   runDismiss,
+	"init":      runInit,
 	"capture":   runCapture,
 	"cleanup":   runCleanup,
 	"recap":     runRecap,
@@ -232,6 +238,30 @@ func runResurrect(args []string) {
 	fs := newFlagSet("resurrect", "resurrect <task> <session-id>")
 	pos := parseFlags(fs, args, 2, 2)
 	cmdResurrect(pos[0], pos[1])
+}
+
+func runHire(args []string) {
+	fs := newFlagSet("hire", "hire <session-id>")
+	pos := parseFlags(fs, args, 1, 1)
+	cmdHire(pos[0])
+}
+
+func runDismiss(args []string) {
+	fs := newFlagSet("dismiss", "dismiss <session-id>")
+	pos := parseFlags(fs, args, 1, 1)
+	cmdDismiss(pos[0])
+}
+
+func runInit(args []string) {
+	fs := newFlagSet("init", "init [session-id]")
+	pos := parseFlags(fs, args, 0, 1)
+
+	sessionID := ""
+	if len(pos) == 1 {
+		sessionID = pos[0]
+	}
+
+	cmdInit(sessionID)
 }
 
 func runCapture(args []string) {

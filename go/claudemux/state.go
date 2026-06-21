@@ -1,14 +1,20 @@
 package main
 
-// state.go — window resolution + the consolidated per-window JSON state store.
+// state.go — window resolution + the consolidated per-project JSON state store.
 //
-// State is keyed by the source window's (stable, deduped) NAME, one file per
-// window under STATE_DIR. The schema is frozen for compatibility with existing
-// files and the agents.sh / Prefix+a tmux integration:
+// State is keyed by PROJECT, one file per project under STATE_DIR named with
+// Claude's own ~/.claude/projects/ slug convention (every non-alphanumeric char
+// -> "-", via cwdToProjectDir applied to the git-root/cwd). The window name is
+// still recorded inside (for the agents-session mirror window + agent naming):
 //
-//	~/.local/share/tmux-subagents-claude/<winkey>.json
-//	{ "window": "...", "agents_window_id": "@65",
+//	~/.local/share/claudemux/<project-slug>.json
+//	{ "window": "obsidian", "agents_window_id": "@65",
+//	  "master": {pane_id, session_id, cwd, agent_name},   // optional, set by `init`
 //	  "agents": { "<task>": {pane_id, session_id, cwd, agent_name} } }
+//
+// Per-project files each carrying a Master + Agents form a forest: a hired
+// worker that runs `init` in its own project gets its own file with itself as
+// master and its own sub-roster.
 
 import (
 	"encoding/json"
@@ -18,10 +24,8 @@ import (
 	"strings"
 )
 
-// winNameReplacer makes a window name filesystem-safe: "/"->"-", " "->"_".
-var winNameReplacer = strings.NewReplacer("/", "-", " ", "_")
-
-// Agent is one tracked subagent. JSON tags are frozen (existing on-disk files).
+// Agent is one tracked subagent (also reused for the master). JSON tags are
+// frozen (existing on-disk files).
 type Agent struct {
 	PaneID    string `json:"pane_id"`
 	SessionID string `json:"session_id"`
@@ -29,10 +33,11 @@ type Agent struct {
 	AgentName string `json:"agent_name"`
 }
 
-// WinState is the full state for one source window.
+// WinState is the full state for one project.
 type WinState struct {
 	Window         string           `json:"window"`
 	AgentsWindowID string           `json:"agents_window_id"`
+	Master         *Agent           `json:"master,omitempty"` // set by `init`; absent otherwise
 	Agents         map[string]Agent `json:"agents"`
 }
 
@@ -53,68 +58,74 @@ func getWin() string {
 	return win
 }
 
-// winKey is a filesystem-safe key for a window name.
-func winKey(win string) string {
-	return winNameReplacer.Replace(win)
+// projectKey is the state key for the current working directory's project: the
+// git repo root (or cwd) encoded with Claude's projects/ slug convention. All
+// commands from anywhere inside a repo resolve to the same key, so one project
+// has exactly one roster file.
+func projectKey() string {
+	cwd, _ := os.Getwd()
+
+	key := cwdToProjectDir(realpath(projectScope(cwd)))
+	logDebugf("projectKey cwd=%s -> %s", cwd, key)
+
+	return key
 }
 
-// winFile is the state file path for a window (creating STATE_DIR on demand).
-func winFile(win string) string {
+// stateFile is the state file path for a project key (creating STATE_DIR on
+// demand).
+func stateFile(key string) string {
 	_ = os.MkdirAll(stateDir(), 0o755)
 
-	return filepath.Join(stateDir(), winKey(win)+".json")
+	return filepath.Join(stateDir(), key+".json")
 }
 
-// loadWin loads a window's state, or an empty skeleton if absent/unreadable.
-func loadWin(win string) WinState {
-	sf := winFile(win)
+// loadState loads a project's state, or an empty skeleton if absent/unreadable.
+// Window is left as stored (callers stamp the current window name before save).
+func loadState(key string) WinState {
+	sf := stateFile(key)
 
 	data, err := os.ReadFile(sf)
 	if err != nil {
-		logDebugf("loadWin %s: no state file, returning empty", win)
+		logDebugf("loadState %s: no state file, returning empty", key)
 
-		return WinState{Window: win, Agents: map[string]Agent{}}
+		return WinState{Agents: map[string]Agent{}}
 	}
 
 	var st WinState
 	if err := json.Unmarshal(data, &st); err != nil {
-		logWarnf("loadWin %s: parse error (%v), returning empty state", win, err)
+		logWarnf("loadState %s: parse error (%v), returning empty state", key, err)
 
-		return WinState{Window: win, Agents: map[string]Agent{}}
-	}
-
-	if st.Window == "" {
-		st.Window = win
+		return WinState{Agents: map[string]Agent{}}
 	}
 
 	if st.Agents == nil {
 		st.Agents = map[string]Agent{}
 	}
 
-	logDebugf("loadWin %s: %d agent(s) from %s", win, len(st.Agents), sf)
+	logDebugf("loadState %s: %d agent(s) from %s", key, len(st.Agents), sf)
 
 	return st
 }
 
-// saveWin persists a window's state (2-space indent, matching the prior format).
-func saveWin(win string, st WinState) {
+// saveState persists a project's state (2-space indent, matching the prior format).
+func saveState(key string, st WinState) {
 	b, err := json.MarshalIndent(st, "", "  ")
 	if err != nil {
-		logErrorf("saveWin %s: marshal error: %v", win, err)
-		exitErrf(1, "failed to encode state for window %q: %v", win, err)
+		logErrorf("saveState %s: marshal error: %v", key, err)
+		exitErrf(1, "failed to encode state for project %q: %v", key, err)
 	}
 
-	if err := os.WriteFile(winFile(win), b, 0o644); err != nil {
-		logErrorf("saveWin %s: write error: %v", win, err)
-		exitErrf(1, "failed to write state for window %q: %v", win, err)
+	if err := os.WriteFile(stateFile(key), b, 0o644); err != nil {
+		logErrorf("saveState %s: write error: %v", key, err)
+		exitErrf(1, "failed to write state for project %q: %v", key, err)
 	}
 
-	logDebugf("saveWin %s: %d agent(s) -> %s", win, len(st.Agents), winFile(win))
+	logDebugf("saveState %s: %d agent(s) -> %s", key, len(st.Agents), stateFile(key))
 }
 
-// removeWinFile deletes a window's state file (ignoring "not found").
-func removeWinFile(win string) {
-	_ = os.Remove(winFile(win))
+// removeStateFile deletes a project's state file (ignoring "not found").
+func removeStateFile(key string) {
+	_ = os.Remove(stateFile(key))
 }
 
 // stateFileEntry is one window state file from iterStateFiles. State is nil if

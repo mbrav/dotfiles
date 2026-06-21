@@ -29,7 +29,7 @@ type AgentRef struct {
 // is set, it also exits 1 with "pane not found: <task>" if the pane is dead —
 // mirroring the two distinct Python error paths (get_agent vs resolve_pane_id).
 func resolveAgent(win, task string, requireLive bool) AgentRef {
-	st := loadWin(win)
+	st := loadState(projectKey())
 
 	meta, ok := st.Agents[task]
 	if !ok {

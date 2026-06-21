@@ -180,6 +180,83 @@ func sessionCWD(sessionID string) (string, bool) {
 	return "", false
 }
 
+// sessionName returns a human-friendly name for a session: the live session
+// file's `name`, else a `custom-title` recorded in the transcript (the source
+// claudeman uses for dead sessions). "" if neither is found.
+func sessionName(sessionID string) string {
+	if n := sessionNameFromFile(sessionID); n != "" {
+		return n
+	}
+
+	return sessionNameFromTranscript(sessionID)
+}
+
+// sessionNameFromFile reads `name` from the live ~/.claude/sessions/*.json whose
+// sessionId matches (the session must still be running).
+func sessionNameFromFile(sessionID string) string {
+	matches, _ := filepath.Glob(filepath.Join(homeDir(), ".claude", "sessions", "*.json"))
+	for _, p := range matches {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+
+		var s struct {
+			SessionID string `json:"sessionId"`
+			Name      string `json:"name"`
+		}
+		if json.Unmarshal(data, &s) == nil && s.SessionID == sessionID {
+			return s.Name
+		}
+	}
+
+	return ""
+}
+
+// sessionNameFromTranscript reads the last `custom-title` recorded in a
+// session's transcript (survives the session ending).
+func sessionNameFromTranscript(sessionID string) string {
+	matches, _ := filepath.Glob(filepath.Join(claudeProjects(), "*", sessionID+".jsonl"))
+	for _, jf := range matches {
+		f, err := os.Open(jf)
+		if err != nil {
+			continue
+		}
+
+		title := scanCustomTitle(f)
+		_ = f.Close()
+
+		if title != "" {
+			return title
+		}
+	}
+
+	return ""
+}
+
+// scanCustomTitle returns the last custom-title text in a transcript, or "".
+func scanCustomTitle(f *os.File) string {
+	var title string
+
+	sc := newJSONLScanner(f)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+
+		var rec struct {
+			Type        string `json:"type"`
+			CustomTitle string `json:"customTitle"`
+		}
+		if json.Unmarshal([]byte(line), &rec) == nil && rec.Type == "custom-title" && rec.CustomTitle != "" {
+			title = rec.CustomTitle
+		}
+	}
+
+	return title
+}
+
 // sessionStatuses returns {sessionId: status} for all running claude sessions,
 // read from ~/.claude/sessions/*.json.
 func sessionStatuses() map[string]string {

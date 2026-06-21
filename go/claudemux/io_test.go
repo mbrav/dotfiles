@@ -110,36 +110,72 @@ func TestSessionCWD(t *testing.T) {
 	}
 }
 
+func TestSessionName(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	// Live session file `name` wins.
+	writeFile(t, filepath.Join(home, ".claude", "sessions", "200.json"),
+		`{"sessionId":"live-1","name":"my-live-agent"}`)
+
+	if got := sessionName("live-1"); got != "my-live-agent" {
+		t.Errorf("sessionName(live) = %q, want my-live-agent", got)
+	}
+
+	// No live file -> fall back to transcript custom-title (last one wins).
+	writeFile(t, filepath.Join(home, ".claude", "projects", "-slug", "dead-1.jsonl"),
+		`{"type":"user","message":{}}
+{"type":"custom-title","customTitle":"renamed-agent"}
+`)
+
+	if got := sessionName("dead-1"); got != "renamed-agent" {
+		t.Errorf("sessionName(transcript) = %q, want renamed-agent", got)
+	}
+
+	// Unknown session -> "".
+	if got := sessionName("nope"); got != "" {
+		t.Errorf("sessionName(unknown) = %q, want empty", got)
+	}
+}
+
+func TestSanitizeTask(t *testing.T) {
+	cases := map[string]string{
+		"subagent-dotfiles-smoke": "subagent-dotfiles-smoke", // already clean
+		"My Session":              "My-Session",              // space -> -
+		"a/b c":                   "a-b-c",                   // slash + space
+		"  trim ":                 "trim",                    // outer separators trimmed
+	}
+	for in, want := range cases {
+		if got := sanitizeTask(in); got != want {
+			t.Errorf("sanitizeTask(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 func TestBuildRows(t *testing.T) {
-	// Keep the test pure: realpath -> identity so cwd strings compare directly.
-	origRealpath := realpath
-
-	realpath = func(p string) string { return p }
-	defer func() { realpath = origRealpath }()
-
 	agents := map[string]Agent{
-		"a": {PaneID: "%1", SessionID: "s1", CWD: "/repo/sub"},   // in scope, busy
-		"b": {PaneID: "%2", SessionID: "s2", CWD: "/repo-other"}, // out of scope (boundary)
-		"c": {PaneID: "%3", SessionID: "s3", CWD: "/repo"},       // in scope, idle+resp
-		"d": {PaneID: "%4", SessionID: "s4", CWD: "/repo/x"},     // in scope, dead pane
-		"e": {PaneID: "%5", SessionID: "s5", CWD: "/repo/y"},     // in scope, live no-status
-		"f": {PaneID: "%6", SessionID: "s6", CWD: "/repo/z"},     // in scope, idle no-resp -> empty
+		"a": {PaneID: "%1", SessionID: "s1", CWD: "/repo/sub"},   // busy
+		"b": {PaneID: "%2", SessionID: "s2", CWD: "/repo-other"}, // foreign cwd (hired) -> dead pane
+		"c": {PaneID: "%3", SessionID: "s3", CWD: "/repo"},       // idle+resp
+		"d": {PaneID: "%4", SessionID: "s4", CWD: "/repo/x"},     // dead pane
+		"e": {PaneID: "%5", SessionID: "s5", CWD: "/repo/y"},     // live no-status
+		"f": {PaneID: "%6", SessionID: "s6", CWD: "/repo/z"},     // idle no-resp -> empty
 	}
 	panes := map[string]bool{"%1": true, "%3": true, "%5": true, "%6": true} // %2,%4 dead
 	statuses := map[string]string{"s1": "busy", "s3": "idle", "s6": "idle"}
 	hasResponse := func(m Agent) bool { return m.SessionID == "s3" } // only c has a reply
 	paneCtx := func(string) string { return "CTX" }
 
-	rows := buildRows("win", agents, "/repo", rowDeps{
+	rows := buildRows("win", agents, rowDeps{
 		panes:       panes,
 		statuses:    statuses,
 		hasResponse: hasResponse,
 		paneCtx:     paneCtx,
 	})
 
-	// b excluded by scope; remaining sorted by task: a,c,d,e,f.
-	if len(rows) != 5 {
-		t.Fatalf("got %d rows, want 5 (b excluded by scope): %+v", len(rows), rows)
+	// No cwd filter: every agent shows, sorted by task: a,b,c,d,e,f.
+	if len(rows) != 6 {
+		t.Fatalf("got %d rows, want 6 (no scope filter): %+v", len(rows), rows)
 	}
 
 	byTask := map[string]StatusRow{}
@@ -150,14 +186,15 @@ func TestBuildRows(t *testing.T) {
 		order = append(order, r.Task)
 	}
 
-	if got := order; !equalSlice(got, []string{"a", "c", "d", "e", "f"}) {
-		t.Errorf("row order = %v, want [a c d e f] (sorted)", got)
+	if got := order; !equalSlice(got, []string{"a", "b", "c", "d", "e", "f"}) {
+		t.Errorf("row order = %v, want [a b c d e f] (sorted)", got)
 	}
 
 	checks := []struct {
 		task, status, pane, ctx string
 	}{
 		{"a", "busy", "%1", "CTX"},
+		{"b", "dead", "%2", "-"}, // foreign-cwd hired agent, dead pane -> dead
 		{"c", "idle", "%3", "CTX"},
 		{"d", "dead", "%4", "-"},       // dead pane -> dead + no context
 		{"e", "starting", "%5", "CTX"}, // live, no session status yet

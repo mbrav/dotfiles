@@ -24,39 +24,6 @@ func TestCwdToProjectDir(t *testing.T) {
 	}
 }
 
-func TestWinKey(t *testing.T) {
-	cases := map[string]string{
-		"obsidian":  "obsidian",
-		"a/b":       "a-b",
-		"my window": "my_window",
-		"a/b c":     "a-b_c",
-	}
-	for in, want := range cases {
-		if got := winKey(in); got != want {
-			t.Errorf("winKey(%q) = %q, want %q", in, got, want)
-		}
-	}
-}
-
-func TestInScope(t *testing.T) {
-	cases := []struct {
-		agentCWD, scopeRoot string
-		want                bool
-	}{
-		{"/repo", "/repo", true},         // exact root
-		{"/repo/sub/dir", "/repo", true}, // subdir
-		{"/repo-other", "/repo", false},  // sibling sharing a prefix — boundary
-		{"/other", "/repo", false},       // unrelated
-		{"/anything", "", true},          // empty scope = include all
-		{"/repo", "/repo/sub", false},    // parent is not in child scope
-	}
-	for _, c := range cases {
-		if got := inScope(c.agentCWD, c.scopeRoot); got != c.want {
-			t.Errorf("inScope(%q, %q) = %v, want %v", c.agentCWD, c.scopeRoot, got, c.want)
-		}
-	}
-}
-
 func TestProjectScope(t *testing.T) {
 	orig := runGitToplevel
 	defer func() { runGitToplevel = orig }()

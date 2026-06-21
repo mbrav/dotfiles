@@ -46,6 +46,8 @@ claudemux cleanup --all   # before/after batch
    claudemux compact <task> [description]       # send /compact to agent
    claudemux capture <task> [full|log|stop]     # raw terminal (expensive)
    claudemux redraw                             # re-tile + repaint panes (fix garbled attached view)
+   claudemux hire    <session-uuid>             # adopt an existing session into this project's roster (task = its session name)
+   claudemux dismiss <session-uuid>             # stop managing a hired agent (kills its pane)
    claudemux cleanup <task>                     # kill one agent
    claudemux cleanup --all                      # kill all in window
    claudemux cleanup --prune                    # drop dead entries
@@ -60,6 +62,7 @@ claudemux cleanup --all   # before/after batch
 - **Spawn all** independent agents upfront, even if prompting later.
 - **`result` exit 0** = `end_turn` exists. NOT done — verify body.
 - **`cleanup --all`** = current window only. **`--prune`** = cross-window, preserves live agents.
+- **`hire`** = adopt an *existing* session (by UUID, e.g. from `claudeman` or another project) into this project's roster; it resumes in the session's **own** project dir but is tracked here, so it shows in `status` (no `--all`). **`dismiss`** = its teardown (kills the pane + untracks). Use `hire`/`dismiss` for pre-existing sessions; `spawn`/`cleanup` for fresh ones.
 
 ## Stuck agent
 

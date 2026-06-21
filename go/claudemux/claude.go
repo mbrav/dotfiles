@@ -13,7 +13,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"syscall"
 )
 
 var projectSlugRe = regexp.MustCompile(`[^a-zA-Z0-9]`)
@@ -255,6 +257,44 @@ func scanCustomTitle(f *os.File) string {
 	}
 
 	return title
+}
+
+// sessionIsLive reports whether a claude session with the given id is currently
+// running. Session files are named ~/.claude/sessions/<pid>.json; we match the
+// sessionId, then probe the pid for liveness (signal 0 — the check claudeman
+// does with `kill -0`). A stale file whose process has exited reads as not live.
+// Used by `hire` to refuse adopting a live session — `claude --resume` would
+// fork it into a new id — and steer it to `enlist` instead.
+func sessionIsLive(sessionID string) bool {
+	matches, _ := filepath.Glob(filepath.Join(homeDir(), ".claude", "sessions", "*.json"))
+	for _, p := range matches {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+
+		var s struct {
+			SessionID string `json:"sessionId"`
+		}
+		if json.Unmarshal(data, &s) != nil || s.SessionID != sessionID {
+			continue
+		}
+
+		pid, err := strconv.Atoi(strings.TrimSuffix(filepath.Base(p), ".json"))
+		if err != nil {
+			continue
+		}
+
+		if proc, err := os.FindProcess(pid); err == nil && proc.Signal(syscall.Signal(0)) == nil {
+			logDebugf("sessionIsLive %s -> live (pid %d)", sessionID, pid)
+
+			return true
+		}
+	}
+
+	logDebugf("sessionIsLive %s -> not live", sessionID)
+
+	return false
 }
 
 // sessionStatuses returns {sessionId: status} for all running claude sessions,

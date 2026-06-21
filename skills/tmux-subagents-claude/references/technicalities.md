@@ -49,7 +49,8 @@ resolves to the same key, so one project has exactly one roster.
   "agents_window_id": "@72",
   "master": {"pane_id": "%21", "session_id": "<uuid>", "cwd": "<path>", "agent_name": "agent-obsidian"},
   "agents": {
-    "test-1": {"pane_id": "%134", "session_id": "<uuid>", "cwd": "<path>", "agent_name": "subagent-obsidian-test-1"}
+    "test-1":   {"pane_id": "%134", "session_id": "<uuid>", "cwd": "<path>", "agent_name": "subagent-obsidian-test-1"},
+    "helper":   {"pane_id": "%97",  "session_id": "<uuid>", "cwd": "<other-repo>", "agent_name": "agent-foo", "enlisted": true}
   }
 }
 ```
@@ -57,7 +58,11 @@ resolves to the same key, so one project has exactly one roster.
 - `window`: source window name (the agents-session mirror window + agent naming)
 - `agents_window_id`: tmux window id in `agents` session
 - `master`: optional, set by `init` — the orchestrating agent (`agent-<project>`)
-- `agents`: task name → `{pane_id, session_id, cwd, agent_name}`
+- `agents`: task name → `{pane_id, session_id, cwd, agent_name[, enlisted]}`
+- `enlisted` (optional, `omitempty`): set by `enlist` — the agent is **referenced
+  in place**, not owned; the manager drives its pane but must never kill it on
+  `cleanup`/`dismiss`. Absent (false) for spawned/resurrected/hired agents, so the
+  on-disk schema stays byte-identical to the frozen 4-key form for those.
 
 A hired agent's `cwd` may point at *another* repo (it resumes in its own project
 dir) while it lives in this project's roster — that is intentional. Per-project
@@ -141,11 +146,15 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 
 ## Cleanup semantics
 
-- `cleanup <task>`: kill pane, drop from state (preserves `master` if set)
-- `cleanup --all`: kill all in window, remove state file
-- `cleanup --prune`: drop dead panes + empty/unreadable files (all windows)
+- `cleanup <task>`: kill pane, drop from state (preserves `master` if set). An
+  **enlisted** agent is referenced, not owned → untracked **without** killing.
+- `cleanup --all`: kill all owned panes in the window; **preserves** the `master`
+  and every **enlisted** agent (left running + still tracked); removes the file
+  only when nothing remains to track.
+- `cleanup --prune`: drop dead panes + empty/unreadable files (all windows). An
+  enlisted agent whose pane actually died is dead and is pruned like any other.
 
-## Master & roster (`init` / `hire` / `dismiss`)
+## Master & roster (`init` / `hire` / `enlist` / `dismiss`)
 
 - `init [--model M] [--tools T] [--effort L] [--permission-mode P] [session-id]`:
   register the project's `master`.
@@ -161,19 +170,39 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
   Either way the master lives in the current window and is the orchestrator you
   work in to spawn/hire. *(Not in SKILL.md — it is the master's own bootstrap
   step.)*
-- `hire <session-id>`: adopt an existing session (by UUID) into this project's
-  roster. Resumes it in a pane in the session's **original** project dir
-  (recovered via `sessionCWD`) but tracks it here, so it appears in `status` (no
-  `--all`) even with a foreign `cwd`. Internally shares the `resurrect` core. The
-  roster task (and stored `agent_name`) come from the session's **own name** —
+- `hire <session-id>`: adopt a **non-live** (dead/detached) session (by UUID) into
+  this project's roster. Resumes it in a pane in the session's **original** project
+  dir (recovered via `sessionCWD`) but tracks it here, so it appears in `status`
+  (no `--all`) even with a foreign `cwd`. Internally shares the `resurrect` core.
+  The roster task (and stored `agent_name`) come from the session's **own name** —
   the live `~/.claude/sessions/*.json` `name`, else the transcript `custom-title`
   (same source as claudeman's NAME column), falling back to `hired-<sid[:8]>` when
   unnamed. One argument is all it needs (no positional-order trap with
   `resurrect`).
-- `dismiss <session-id>`: the teardown of `hire` — kills the pane and removes the
-  entry (located by session UUID; searches the current project first, then all
-  project files). `spawn`/`cleanup` are the fresh-session pair; `hire`/`dismiss`
-  the pre-existing-session pair.
+  - **Live-aware**: `claude --resume` only reattaches with the same id when the
+    session is *not* running; resuming a **live** session makes Claude **fork a new
+    id** (the manager would then track the fork). So `hire` checks `sessionIsLive`
+    (matches the session file, probes its pid with signal 0) and **refuses** a live
+    session, pointing it at `enlist` instead.
+- `enlist <manager-dir> [task]`: the forkless adopt for a **live** session. Run
+  **from inside** the agent being managed (e.g. when a manager asks it to join):
+  it records that session's own `$TMUX_PANE` + `$CLAUDE_CODE_SESSION_ID` into the
+  manager's roster with `"enlisted": true` — **no resume, no new pane, no fork**.
+  The agent keeps running where it is; the manager drives it cross-window via the
+  server-global pane id (same primitive as `init`-adopt). `manager-dir` is the
+  manager's repo path (not the slug key — paths are dash-safe under std `flag`,
+  while keys start with `-`); `projectKeyForDir` resolves it to the manager's key.
+  The manager reads its own path from its cwd, or its key from the `project:`
+  header of `status`. Task defaults to the session's name (as `hire`); optional
+  positional overrides it. The manager must already exist (have run `init` /
+  spawned) or enlist errors. *(Not in SKILL.md — it is the worker's bootstrap into
+  a manager, the peer of `init`.)*
+- `dismiss <session-id>`: the teardown of `hire`/`enlist` — removes the entry
+  (located by session UUID; current project first, then all project files). For an
+  owned (hired/spawned) agent it **kills** the pane; for an **enlisted** agent it
+  leaves the pane **running** (the manager only referenced it). `spawn`/`cleanup`
+  are the fresh-session pair; `hire`+`enlist`/`dismiss` the pre-existing-session
+  pair.
 
 ## Status scoping
 

@@ -7,6 +7,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 )
 
@@ -89,6 +90,29 @@ func TestSessionStatuses(t *testing.T) {
 
 	if _, ok := st["bad"]; ok {
 		t.Error("malformed session file should be skipped")
+	}
+}
+
+func TestSessionIsLive(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sdir := filepath.Join(home, ".claude", "sessions")
+
+	// Live: a session file named after THIS process's pid.
+	writeFile(t, filepath.Join(sdir, strconv.Itoa(os.Getpid())+".json"), `{"sessionId":"live-sid","status":"busy"}`)
+	// Dead: a pid above pid_max, so signal-0 returns ESRCH.
+	writeFile(t, filepath.Join(sdir, "999999999.json"), `{"sessionId":"dead-sid"}`)
+
+	if !sessionIsLive("live-sid") {
+		t.Error("live-sid should be live (file named after current pid)")
+	}
+
+	if sessionIsLive("dead-sid") {
+		t.Error("dead-sid should be not live (defunct pid)")
+	}
+
+	if sessionIsLive("no-such-sid") {
+		t.Error("unknown session should be not live")
 	}
 }
 

@@ -82,6 +82,28 @@ func TestAgentJSONRoundTrip(t *testing.T) {
 	}
 }
 
+// TestAgentJSONEnlisted pins the omitempty contract: an enlisted agent adds
+// exactly one `enlisted` key (false omits it — verified by TestAgentJSONRoundTrip).
+func TestAgentJSONEnlisted(t *testing.T) {
+	eb, err := json.Marshal(Agent{PaneID: "%1", SessionID: "sid", CWD: "/x", AgentName: "n", Enlisted: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var em map[string]any
+	if err := json.Unmarshal(eb, &em); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(em) != 5 {
+		t.Fatalf("enlisted Agent JSON has %d keys (%v), want 5", len(em), em)
+	}
+
+	if v, ok := em["enlisted"]; !ok || v != true {
+		t.Errorf("enlisted Agent JSON should carry `enlisted: true`, got %v", em)
+	}
+}
+
 func TestConfigFromEnv(t *testing.T) {
 	// Unset -> defaults.
 	t.Setenv("TMUX_AGENT_WAIT_TIMEOUT", "")

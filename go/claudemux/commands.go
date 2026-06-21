@@ -235,6 +235,8 @@ func cmdStatus(taskFilter string, all bool) {
 
 	var rows []StatusRow
 
+	key := "" // set for the scoped (non --all) view; printed as the `project:` header
+
 	if all {
 		// Every project's roster.
 		for _, e := range iterStateFiles() {
@@ -246,8 +248,9 @@ func cmdStatus(taskFilter string, all bool) {
 		}
 	} else {
 		// Just this project's roster (the chosen state file IS the scope), so
-		// hired agents from other repos still show.
-		st := loadState(projectKey())
+		// hired/enlisted agents from other repos still show.
+		key = projectKey()
+		st := loadState(key)
 		st.Window = cmp.Or(st.Window, getWin())
 		rows = statusRowsFromState(st, statuses)
 	}
@@ -275,6 +278,12 @@ func cmdStatus(taskFilter string, all bool) {
 		fmt.Println("no sessions")
 
 		return
+	}
+
+	// Surface the scoped project's key so a manager can read its own key (to hand
+	// to a worker's `enlist <manager-key>`). Omitted for the cross-project --all view.
+	if key != "" {
+		fmt.Printf("project: %s\n", key)
 	}
 
 	printStatusTable(rows)
@@ -446,6 +455,16 @@ func cmdHire(sessionID string) {
 		exitErrf(1, "hire: no transcript found for session %s (unknown session)", sessionID)
 	}
 
+	// Resuming a LIVE session forks it into a new session id (the manager would
+	// then track the fork, not the real agent). Refuse, and steer the live
+	// session to register itself in place via `enlist` (no resume, no fork).
+	if sessionIsLive(sessionID) {
+		cwd, _ := os.Getwd()
+		exitErrf(1, "hire: session %s is live; resuming it would FORK a new session id. "+
+			"Have that session run `claudemux enlist %s` instead "+
+			"(registers it in place — no resume, no fork).", sessionID, projectScope(cwd))
+	}
+
 	task, agentName := hireIdentity(sessionID)
 	logInfof("hire session=%s task=%s name=%s win=%s", sessionID, task, agentName, win)
 	resurrectInto(win, projectKey(), task, sessionID, agentName)
@@ -473,6 +492,54 @@ func sanitizeTask(s string) string {
 	return strings.Trim(taskSanitizer.Replace(s), "-")
 }
 
+// cmdEnlist registers the CURRENT session (the one running this command) into
+// the manager project rooted at managerDir, as a REFERENCED — not owned — agent.
+// Unlike hire it resumes/spawns nothing: it records this pane ($TMUX_PANE) and
+// session ($CLAUDE_CODE_SESSION_ID) in place, so the manager drives it
+// cross-window without forking the session. Run from inside the agent being
+// managed (e.g. when a manager asks it to join). The roster task defaults to the
+// session's own name; an optional positional overrides it. managerDir is a path
+// (the manager's repo/cwd) rather than the slug key — paths are dash-safe under
+// std `flag`, and projectKeyForDir resolves it to the same key the manager uses.
+func cmdEnlist(managerDir, task string) {
+	pane := os.Getenv("TMUX_PANE")
+	sessionID := os.Getenv("CLAUDE_CODE_SESSION_ID")
+
+	if pane == "" || sessionID == "" {
+		exitErrf(1, "enlist must run inside a tmux pane AND a claude session "+
+			"(TMUX_PANE and CLAUDE_CODE_SESSION_ID must both be set)")
+	}
+
+	key := projectKeyForDir(managerDir)
+
+	// Only add to an existing roster — never conjure a project. The manager must
+	// have run `init` (or spawned agents) so its state file exists.
+	if _, err := os.Stat(stateFile(key)); err != nil {
+		exitErrf(1, "enlist: manager project %q (dir %s) not found — has it run `init`?", key, managerDir)
+	}
+
+	defTask, agentName := hireIdentity(sessionID)
+	if task == "" {
+		task = defTask
+	}
+
+	cwd, _ := os.Getwd()
+
+	st := loadState(key)
+	st.Agents[task] = Agent{
+		PaneID:    pane,
+		SessionID: sessionID,
+		CWD:       cwd,
+		AgentName: agentName,
+		Enlisted:  true,
+	}
+	saveState(key, st)
+
+	logInfof("enlist session=%s task=%s pane=%s key=%s", sessionID, task, pane, key)
+	fmt.Printf("Enlisted into %s as '%s' (session %s, pane %s) — referenced in place, not owned\n",
+		key, task, sessionID, pane)
+}
+
 // cmdDismiss stops managing the agent with the given session UUID: it kills its
 // pane and removes it from state (the inverse of hire). It searches the current
 // project first, then every project file, so a UUID can be dismissed from
@@ -485,9 +552,15 @@ func cmdDismiss(sessionID string) {
 	}
 
 	meta := st.Agents[task]
-	logInfof("dismiss session=%s task=%s key=%s pane=%s", sessionID, task, key, meta.PaneID)
+	logInfof("dismiss session=%s task=%s key=%s pane=%s enlisted=%v", sessionID, task, key, meta.PaneID, meta.Enlisted)
 
-	if !killPane(meta.PaneID) {
+	// An enlisted agent is referenced in place, not owned — leave its pane
+	// running (it's an independent session in its own window) and only untrack
+	// it. Otherwise kill the pane hire/spawn created.
+	switch {
+	case meta.Enlisted:
+		logInfof("dismiss: enlisted agent — leaving pane %s running", meta.PaneID)
+	case !killPane(meta.PaneID):
 		logWarnf("dismiss: pane %s already dead for session %s", meta.PaneID, sessionID)
 	}
 
@@ -500,7 +573,11 @@ func cmdDismiss(sessionID string) {
 		saveState(key, st)
 	}
 
-	fmt.Printf("Dismissed '%s' (session %s); killed pane %s\n", task, sessionID, meta.PaneID)
+	if meta.Enlisted {
+		fmt.Printf("Dismissed enlisted '%s' (session %s); left pane %s running\n", task, sessionID, meta.PaneID)
+	} else {
+		fmt.Printf("Dismissed '%s' (session %s); killed pane %s\n", task, sessionID, meta.PaneID)
+	}
 }
 
 // shortSession returns the first 8 chars of a session id (or the whole thing if
@@ -641,9 +718,13 @@ func cmdCleanup(task string, all, prune bool) {
 
 	// Single task: get_agent semantics (no liveness requirement), exits 1 if untracked.
 	ref := resolveAgent(win, task, false)
-	logInfof("cleanup agent=%s win=%s pane=%s", ref.Name, win, ref.PaneID)
+	logInfof("cleanup agent=%s win=%s pane=%s enlisted=%v", ref.Name, win, ref.PaneID, ref.Meta.Enlisted)
 
-	if !killPane(ref.PaneID) {
+	// Enlisted agents are referenced, not owned: untrack without killing.
+	switch {
+	case ref.Meta.Enlisted:
+		logInfof("cleanup: enlisted agent — leaving pane %s running", ref.PaneID)
+	case !killPane(ref.PaneID):
 		logWarnf("cleanup: pane %s already dead for agent '%s'", ref.PaneID, ref.Name)
 	}
 
@@ -659,7 +740,12 @@ func cmdCleanup(task string, all, prune bool) {
 	}
 
 	logInfof("cleanup done agent=%s pane=%s", ref.Name, ref.PaneID)
-	fmt.Printf("Killed pane %s (%s)\n", ref.PaneID, ref.Name)
+
+	if ref.Meta.Enlisted {
+		fmt.Printf("Untracked enlisted %s (pane %s left running)\n", ref.Name, ref.PaneID)
+	} else {
+		fmt.Printf("Killed pane %s (%s)\n", ref.PaneID, ref.Name)
+	}
 }
 
 func cleanupAll(win string) {
@@ -668,10 +754,22 @@ func cleanupAll(win string) {
 	key := projectKey()
 	st := loadState(key)
 
+	kept := map[string]Agent{}
+
 	for _, task := range slices.Sorted(maps.Keys(st.Agents)) {
 		meta := st.Agents[task]
-
 		name := agentNameFor(win, task, &meta)
+
+		// Enlisted agents are referenced in place (their own window/session), not
+		// part of this window's batch — leave them running and keep tracking them.
+		if meta.Enlisted {
+			kept[task] = meta
+			logInfof("cleanup: kept enlisted agent=%s pane=%s", name, meta.PaneID)
+			fmt.Printf("Left enlisted %s (pane %s) running\n", name, meta.PaneID)
+
+			continue
+		}
+
 		if killPane(meta.PaneID) {
 			logInfof("cleanup: killed pane=%s agent=%s", meta.PaneID, name)
 			fmt.Printf("Killed pane %s (%s)\n", meta.PaneID, name)
@@ -681,13 +779,14 @@ func cleanupAll(win string) {
 		}
 	}
 
-	// The master lives in the current window (not the agents session) and is never
-	// in st.Agents, so the loop above leaves it running. Keep its record too —
-	// only drop the file when there's no master to preserve.
-	if st.Master != nil {
-		st.Agents = map[string]Agent{}
+	// The master lives in the current window (never in st.Agents) and enlisted
+	// agents were just preserved above — both outlive a batch teardown. Keep the
+	// file when either remains; drop it only when nothing is left to track.
+	if st.Master != nil || len(kept) > 0 {
+		st.Agents = kept
 		saveState(key, st)
-		logDebugf("cleanup --all: kept master, cleared agents key=%s", key)
+		logDebugf("cleanup --all: kept master=%v enlisted=%d, cleared owned agents key=%s",
+			st.Master != nil, len(kept), key)
 	} else {
 		removeStateFile(key)
 		logDebugf("cleanup --all: removed state file for key=%s", key)

@@ -31,6 +31,11 @@ type Agent struct {
 	SessionID string `json:"session_id"`
 	CWD       string `json:"cwd"`
 	AgentName string `json:"agent_name"`
+	// Enlisted marks an agent adopted in place by `enlist`: the manager only
+	// REFERENCES this pane (an independent session in its own window) and must
+	// never kill it on cleanup/dismiss. omitempty keeps the frozen 4-key schema
+	// byte-identical when false.
+	Enlisted bool `json:"enlisted,omitempty"`
 }
 
 // WinState is the full state for one project.
@@ -65,8 +70,16 @@ func getWin() string {
 func projectKey() string {
 	cwd, _ := os.Getwd()
 
-	key := cwdToProjectDir(realpath(projectScope(cwd)))
-	logDebugf("projectKey cwd=%s -> %s", cwd, key)
+	return projectKeyForDir(cwd)
+}
+
+// projectKeyForDir is projectKey for an arbitrary directory: the git repo root
+// containing dir (or dir itself) encoded with Claude's projects/ slug
+// convention. Used by `enlist`, where a worker names the manager's directory and
+// must resolve it to the same key the manager's own commands produce.
+func projectKeyForDir(dir string) string {
+	key := cwdToProjectDir(realpath(projectScope(dir)))
+	logDebugf("projectKeyForDir dir=%s -> %s", dir, key)
 
 	return key
 }

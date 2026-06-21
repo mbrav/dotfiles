@@ -28,6 +28,7 @@ commands:
   status     [--all] [task]
   resurrect  <task> <session-id>
   hire       <session-id>
+  enlist     <manager-dir> [task]
   dismiss    <session-id>
   init       [--model M] [--tools T] [--effort L] [--permission-mode P] [session-id]
   capture    <task> [full|log|stop]
@@ -80,6 +81,7 @@ var dispatch = map[string]func([]string){
 	"status":    runStatus,
 	"resurrect": runResurrect,
 	"hire":      runHire,
+	"enlist":    runEnlist,
 	"dismiss":   runDismiss,
 	"init":      runInit,
 	"capture":   runCapture,
@@ -244,6 +246,18 @@ func runHire(args []string) {
 	fs := newFlagSet("hire", "hire <session-id>")
 	pos := parseFlags(fs, args, 1, 1)
 	cmdHire(pos[0])
+}
+
+func runEnlist(args []string) {
+	fs := newFlagSet("enlist", "enlist <manager-dir> [task]")
+	pos := parseFlags(fs, args, 1, 2)
+
+	task := ""
+	if len(pos) == 2 {
+		task = pos[1]
+	}
+
+	cmdEnlist(pos[0], task)
 }
 
 func runDismiss(args []string) {

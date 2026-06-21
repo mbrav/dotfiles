@@ -6,9 +6,9 @@ Default: account model + full tools. Narrow per task.
 
 ## Model selection
 
-- **Deep reasoning / architecture / hard debugging**: `claude-opus-4-7` (strongest; worth cost)
+- **Deep reasoning / architecture / hard debugging**: `claude-opus-4-8` (strongest; worth cost)
 - **General coding / edits / reviews / most subtasks**: `claude-sonnet-4-6` (best balance, default)
-- **Bulk/parallel scans / simple edits / log triage**: `claude-haiku-4-5-20251001` (fast + cheap)
+- **Bulk/parallel scans / simple edits / log triage**: `claude-haiku-4-5` (fast + cheap)
 
 Rules: Default Sonnet. Opus for complex/expensive-wrong-answer. Haiku for many concurrent agents. Match hardest step.
 
@@ -20,7 +20,7 @@ Rules: Default Sonnet. Opus for complex/expensive-wrong-answer. Haiku for many c
 
 `status` on-demand snapshot. Block with `result --wait` / `prompt --wait` to wait, don't re-run `status`.
 
-Fallbacks: `claude-opus-4-5`, `claude-sonnet-4-5`. Prefer newest.
+Fallbacks: `claude-opus-4-7`, `claude-opus-4-5`, `claude-sonnet-4-5`. Prefer newest.
 
 ## Tool selection
 
@@ -64,18 +64,18 @@ Flags precede the `<task> <prompt>` positionals (strict `flag` ordering).
 
 ```bash
 # Routine edit — Sonnet, scoped tools, prompts on
-tmux-subagents-claude spawn --model claude-sonnet-4-6 --tools 'Read,Edit,Grep,Glob' \
+claudemux spawn --model claude-sonnet-4-6 --tools 'Read,Edit,Grep,Glob' \
   fix-bug 'Fix the off-by-one in pagination'
 
 # Cheap parallel scan — Haiku, read-only
-tmux-subagents-claude spawn --model claude-haiku-4-5-20251001 --tools 'Read,Grep,Glob' \
+claudemux spawn --model claude-haiku-4-5 --tools 'Read,Grep,Glob' \
   audit-imports 'List unused imports across src/'
 
 # Hard architecture task — Opus, broad tools
-tmux-subagents-claude spawn --model claude-opus-4-7 --tools 'Read,Write,Edit,Grep,Glob,WebSearch' \
+claudemux spawn --model claude-opus-4-8 --tools 'Read,Write,Edit,Grep,Glob,WebSearch' \
   redesign 'Propose a new caching layer; write an ADR'
 
 # Unattended with Bash — auto mode (default) keeps the pane from wedging
-tmux-subagents-claude spawn --model claude-sonnet-4-6 --tools 'Read,Edit,Bash' \
+claudemux spawn --model claude-sonnet-4-6 --tools 'Read,Edit,Bash' \
   migrate 'Run the DB migration and verify'
 ```

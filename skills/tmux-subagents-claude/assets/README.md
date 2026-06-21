@@ -1,6 +1,6 @@
 # Assets
 
-Reference configs for setting up `tmux-subagents-claude` from scratch.
+Reference configs for setting up `claudemux` from scratch.
 
 ## `tmux/tmux.conf`
 
@@ -34,7 +34,7 @@ tmux show -g automatic-rename   # must be 'off'
 tmux show -g allow-rename       # must be 'off'
 ```
 
-Then `tmux-subagents-claude spawn smoke 'say hi'` lands an
+Then `claudemux spawn smoke 'say hi'` lands an
 agent in the `agents` session window named after your current window.
 
 ## Full reference config

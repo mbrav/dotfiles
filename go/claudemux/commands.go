@@ -123,7 +123,7 @@ func cmdPrompt(task, text string, wait, verify bool) {
 		logErrorf("prompt agent=%s NOT submitted — pane likely modal/stuck", ref.Name)
 		exitErrf(2, "prompt-not-submitted: agent '%s' pane %s. "+
 			"Pane may be in INSERT/modal state. Try `capture` to inspect, "+
-			"or `cleanup <task>` + `resurrect <task> <session-id>` to reset.",
+			"or `despawn <task>` + `resurrect <task> <session-id>` to reset.",
 			ref.Name, ref.PaneID)
 	}
 
@@ -331,7 +331,7 @@ func resurrectInto(win, callerKey, task, sessionID, agentName string) {
 	logInfof("resurrect agent=%s session=%s win=%s key=%s", agentName, sessionID, win, callerKey)
 
 	// claude --resume only finds a session when launched from the directory it
-	// was created in. Recover that cwd from the transcript (survives cleanup);
+	// was created in. Recover that cwd from the transcript (survives despawn);
 	// fall back to the caller's cwd. Thread it into the pane (-c) AND a cd guard.
 	cwd, ok := sessionCWD(sessionID)
 	if !ok {
@@ -693,7 +693,7 @@ func cmdCapture(task, mode string) {
 }
 
 // ---------------------------------------------------------------------------
-// cleanup
+// despawn
 // ---------------------------------------------------------------------------
 
 func killPane(pane string) bool {
@@ -702,30 +702,30 @@ func killPane(pane string) bool {
 	return code == 0
 }
 
-func cmdCleanup(task string, all, prune bool) {
+func cmdDespawn(task string, all, prune bool) {
 	if prune {
-		cleanupPrune()
+		despawnPrune()
 
 		return
 	}
 
 	win := getWin()
 	if all {
-		cleanupAll(win)
+		despawnAll(win)
 
 		return
 	}
 
 	// Single task: get_agent semantics (no liveness requirement), exits 1 if untracked.
 	ref := resolveAgent(win, task, false)
-	logInfof("cleanup agent=%s win=%s pane=%s enlisted=%v", ref.Name, win, ref.PaneID, ref.Meta.Enlisted)
+	logInfof("despawn agent=%s win=%s pane=%s enlisted=%v", ref.Name, win, ref.PaneID, ref.Meta.Enlisted)
 
 	// Enlisted agents are referenced, not owned: untrack without killing.
 	switch {
 	case ref.Meta.Enlisted:
-		logInfof("cleanup: enlisted agent — leaving pane %s running", ref.PaneID)
+		logInfof("despawn: enlisted agent — leaving pane %s running", ref.PaneID)
 	case !killPane(ref.PaneID):
-		logWarnf("cleanup: pane %s already dead for agent '%s'", ref.PaneID, ref.Name)
+		logWarnf("despawn: pane %s already dead for agent '%s'", ref.PaneID, ref.Name)
 	}
 
 	key := projectKey()
@@ -736,10 +736,10 @@ func cmdCleanup(task string, all, prune bool) {
 		saveState(key, st)
 	} else {
 		removeStateFile(key)
-		logDebugf("cleanup: state file removed (no agents left) key=%s", key)
+		logDebugf("despawn: state file removed (no agents left) key=%s", key)
 	}
 
-	logInfof("cleanup done agent=%s pane=%s", ref.Name, ref.PaneID)
+	logInfof("despawn done agent=%s pane=%s", ref.Name, ref.PaneID)
 
 	if ref.Meta.Enlisted {
 		fmt.Printf("Untracked enlisted %s (pane %s left running)\n", ref.Name, ref.PaneID)
@@ -748,8 +748,8 @@ func cmdCleanup(task string, all, prune bool) {
 	}
 }
 
-func cleanupAll(win string) {
-	logInfof("cleanup --all win=%s", win)
+func despawnAll(win string) {
+	logInfof("despawn --all win=%s", win)
 
 	key := projectKey()
 	st := loadState(key)
@@ -764,17 +764,17 @@ func cleanupAll(win string) {
 		// part of this window's batch — leave them running and keep tracking them.
 		if meta.Enlisted {
 			kept[task] = meta
-			logInfof("cleanup: kept enlisted agent=%s pane=%s", name, meta.PaneID)
+			logInfof("despawn: kept enlisted agent=%s pane=%s", name, meta.PaneID)
 			fmt.Printf("Left enlisted %s (pane %s) running\n", name, meta.PaneID)
 
 			continue
 		}
 
 		if killPane(meta.PaneID) {
-			logInfof("cleanup: killed pane=%s agent=%s", meta.PaneID, name)
+			logInfof("despawn: killed pane=%s agent=%s", meta.PaneID, name)
 			fmt.Printf("Killed pane %s (%s)\n", meta.PaneID, name)
 		} else {
-			logInfof("cleanup: pane=%s already gone agent=%s", meta.PaneID, name)
+			logInfof("despawn: pane=%s already gone agent=%s", meta.PaneID, name)
 			fmt.Printf("Pane %s already gone (%s)\n", meta.PaneID, name)
 		}
 	}
@@ -785,16 +785,16 @@ func cleanupAll(win string) {
 	if st.Master != nil || len(kept) > 0 {
 		st.Agents = kept
 		saveState(key, st)
-		logDebugf("cleanup --all: kept master=%v enlisted=%d, cleared owned agents key=%s",
+		logDebugf("despawn --all: kept master=%v enlisted=%d, cleared owned agents key=%s",
 			st.Master != nil, len(kept), key)
 	} else {
 		removeStateFile(key)
-		logDebugf("cleanup --all: removed state file for key=%s", key)
+		logDebugf("despawn --all: removed state file for key=%s", key)
 	}
 }
 
-func cleanupPrune() {
-	logInfof("cleanup --prune: cross-window sweep")
+func despawnPrune() {
+	logInfof("despawn --prune: cross-window sweep")
 
 	panes := livePanes()
 	removed := 0

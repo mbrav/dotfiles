@@ -43,7 +43,7 @@ const defaultPermissionMode = "auto"
 
 // keeperWindow anchors the detached `agents` session. Without it, the last agent
 // pane exiting closes the only window and tmux destroys the whole session,
-// breaking status/result/capture/cleanup. The keeper tails the log file: `tail
+// breaking status/result/capture/despawn. The keeper tails the log file: `tail
 // -F` never exits (so the session survives) and doubles as a live activity view
 // when the agents session is attached. `-F` follows by name and retries if the
 // file is missing/rotated; `-n +1` shows existing contents from the top.

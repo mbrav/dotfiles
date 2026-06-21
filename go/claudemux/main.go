@@ -26,15 +26,15 @@ commands:
   prompt     [--wait] [--no-verify] <task> <text>
   result     [--wait] <task>
   status     [--all] [task]
+  recap      <task>
+  compact    <task> [description]
+  despawn    <task | --all | --prune>
   resurrect  <task> <session-id>
   hire       <session-id>
   enlist     <manager-dir> [task]
   dismiss    <session-id>
   init       [--model M] [--tools T] [--effort L] [--permission-mode P] [session-id]
   capture    <task> [full|log|stop]
-  cleanup    <task | --all | --prune>
-  recap      <task>
-  compact    <task> [description]
   redraw
   version
 
@@ -79,15 +79,15 @@ var dispatch = map[string]func([]string){
 	"prompt":    runPrompt,
 	"result":    runResult,
 	"status":    runStatus,
+	"recap":     runRecap,
+	"compact":   runCompact,
+	"despawn":   runDespawn,
 	"resurrect": runResurrect,
 	"hire":      runHire,
 	"enlist":    runEnlist,
 	"dismiss":   runDismiss,
 	"init":      runInit,
 	"capture":   runCapture,
-	"cleanup":   runCleanup,
-	"recap":     runRecap,
-	"compact":   runCompact,
 	"redraw":    runRedraw,
 }
 
@@ -309,8 +309,8 @@ func runCapture(args []string) {
 	cmdCapture(pos[0], mode)
 }
 
-func runCleanup(args []string) {
-	fs := newFlagSet("cleanup", "cleanup <task | --all | --prune>")
+func runDespawn(args []string) {
+	fs := newFlagSet("despawn", "despawn <task | --all | --prune>")
 	all := fs.Bool("all", false, "kill all agents in this window")
 	prune := fs.Bool("prune", false, "drop dead entries across all windows")
 	pos := parseFlags(fs, args, 0, 1)
@@ -329,10 +329,10 @@ func runCleanup(args []string) {
 	}
 
 	if chosen != 1 {
-		exitErrf(2, "cleanup requires exactly one of: <task>, --all, --prune")
+		exitErrf(2, "despawn requires exactly one of: <task>, --all, --prune")
 	}
 
-	cmdCleanup(task, *all, *prune)
+	cmdDespawn(task, *all, *prune)
 }
 
 func runRecap(args []string) {

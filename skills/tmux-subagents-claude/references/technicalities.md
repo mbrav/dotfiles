@@ -61,7 +61,7 @@ resolves to the same key, so one project has exactly one roster.
 - `agents`: task name → `{pane_id, session_id, cwd, agent_name[, enlisted]}`
 - `enlisted` (optional, `omitempty`): set by `enlist` — the agent is **referenced
   in place**, not owned; the manager drives its pane but must never kill it on
-  `cleanup`/`dismiss`. Absent (false) for spawned/resurrected/hired agents, so the
+  `despawn`/`dismiss`. Absent (false) for spawned/resurrected/hired agents, so the
   on-disk schema stays byte-identical to the frozen 4-key form for those.
 
 A hired agent's `cwd` may point at *another* repo (it resumes in its own project
@@ -75,7 +75,7 @@ files each carrying a `master` + `agents` form a forest: a hired worker that run
 - **Subsequent spawns**: `split-window` adds pane to same window
 - **Every spawn**: `select-layout tiled` retiles, then `redrawWindowPanes` repaints (see below)
 - Agent started with `claude --session-id <uuid>`, prompt typed after `❯` (CLI arg = system prompt = idle)
-- **Cleanup**: kill panes; window closes on last death. Session survives via keeper.
+- **Despawn**: kill panes; window closes on last death. Session survives via keeper.
 
 ## Redraw / stuck window size
 
@@ -87,15 +87,15 @@ files each carrying a `master` + `agents` form a forest: a hired worker that run
 
 Without anchor: last pane exit → window closes → session destroyed → `status`/`result`/`capture` fail.
 
-Fix: persistent `__keeper__` window running `exec tail -n +1 -F <logpath>` — `tail -F` never exits (so the session never empties) and doubles as a live log view when attached. Dead agents show `dead` (clear with `cleanup --prune`) or recover via `resurrect`.
+Fix: persistent `__keeper__` window running `exec tail -n +1 -F <logpath>` — `tail -F` never exits (so the session never empties) and doubles as a live log view when attached. Dead agents show `dead` (clear with `despawn --prune`) or recover via `resurrect`.
 
 ## Concurrency model
 
 Parallel agents as long as each in different window (unique + stable names):
 
 - State per window (`~/.local/share/claudemux/<window>.json`)
-- `cleanup --all` = current window only (safe)
-- `cleanup --prune` = cross-window, removes only dead panes (preserves live)
+- `despawn --all` = current window only (safe)
+- `despawn --prune` = cross-window, removes only dead panes (preserves live)
 - Shared window = shared namespace (avoid duplicate task names)
 
 ## Status values (`status`)
@@ -106,7 +106,7 @@ Parallel agents as long as each in different window (unique + stable names):
 - `waiting`: blocked on a prompt (permission/question). NOT done — `result --wait` may return a stale prior reply; inspect via `capture`.
 - `waiting:permission`: `waiting` refined by one `capture-pane` when Claude's permission dialog ("Do you want to proceed?" + "Esc to cancel" footer) is detected. The JSONL can't reveal this — a permission-gated `tool_use` is **not flushed to the transcript while pending**, so the transcript just freezes at the last completed `tool_result`. Only `~/.claude/sessions/*.json` knows it's `waiting`; the pane snapshot classifies the dialog. Needs a human keystroke (detached pane can't answer).
 - `starting`: pane live, session-status file pending
-- `dead`: pane gone (clear with `cleanup --prune`)
+- `dead`: pane gone (clear with `despawn --prune`)
 
 From `~/.claude/sessions/*.json`. `empty` = no `end_turn` in JSONL (separates "nothing yet" from "done"). `result` reads last `end_turn` from `~/.claude/projects/<cwd-slug>/<session>.jsonl`, where `<cwd-slug>` = cwd with every non-alphanumeric char → `-` (matches Claude's own encoding; e.g. `transcribe_audio` → `transcribe-audio`).
 
@@ -131,7 +131,7 @@ From `~/.claude/sessions/*.json`. `empty` = no `end_turn` in JSONL (separates "n
 
 Why repaint matters: Claude measures pane height at startup. When the pane later grows (layout rebalance as siblings spawn/close), Claude does NOT repaint — input box stranded mid-pane with blank lines below the footer. Pastes miss it, and a naive last-6-lines verify sees only blanks → false "submitted" → `prompt --wait` polls a reply that never comes.
 
-Recover a wedged pane: `cleanup <task>` + `resurrect <task> <session-id>`.
+Recover a wedged pane: `despawn <task>` + `resurrect <task> <session-id>`.
 
 ### `status` CONTEXT column
 
@@ -144,14 +144,14 @@ Recover a wedged pane: `cleanup <task>` + `resurrect <task> <session-id>`.
 
 Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 
-## Cleanup semantics
+## Despawn semantics
 
-- `cleanup <task>`: kill pane, drop from state (preserves `master` if set). An
+- `despawn <task>`: kill pane, drop from state (preserves `master` if set). An
   **enlisted** agent is referenced, not owned → untracked **without** killing.
-- `cleanup --all`: kill all owned panes in the window; **preserves** the `master`
+- `despawn --all`: kill all owned panes in the window; **preserves** the `master`
   and every **enlisted** agent (left running + still tracked); removes the file
   only when nothing remains to track.
-- `cleanup --prune`: drop dead panes + empty/unreadable files (all windows). An
+- `despawn --prune`: drop dead panes + empty/unreadable files (all windows). An
   enlisted agent whose pane actually died is dead and is pruned like any other.
 
 ## Master & roster (`init` / `hire` / `enlist` / `dismiss`)
@@ -200,7 +200,7 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 - `dismiss <session-id>`: the teardown of `hire`/`enlist` — removes the entry
   (located by session UUID; current project first, then all project files). For an
   owned (hired/spawned) agent it **kills** the pane; for an **enlisted** agent it
-  leaves the pane **running** (the manager only referenced it). `spawn`/`cleanup`
+  leaves the pane **running** (the manager only referenced it). `spawn`/`despawn`
   are the fresh-session pair; `hire`+`enlist`/`dismiss` the pre-existing-session
   pair.
 

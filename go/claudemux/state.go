@@ -33,7 +33,7 @@ type Agent struct {
 	AgentName string `json:"agent_name"`
 	// Enlisted marks an agent adopted in place by `enlist`: the manager only
 	// REFERENCES this pane (an independent session in its own window) and must
-	// never kill it on cleanup/dismiss. omitempty keeps the frozen 4-key schema
+	// never kill it on despawn/dismiss. omitempty keeps the frozen 4-key schema
 	// byte-identical when false.
 	Enlisted bool `json:"enlisted,omitempty"`
 }
@@ -149,7 +149,7 @@ type stateFileEntry struct {
 }
 
 // iterStateFiles returns every window state file under STATE_DIR, sorted by
-// path. The single source of the per-window scan used by status and cleanup
+// path. The single source of the per-window scan used by status and despawn
 // --prune (previously duplicated).
 func iterStateFiles() []stateFileEntry {
 	dir := stateDir()

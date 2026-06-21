@@ -140,7 +140,7 @@ func joinTextBlocks(raw json.RawMessage) (string, bool) {
 }
 
 // sessionCWD recovers the directory a session was created in, by scanning its
-// transcript for a recorded cwd. This survives cleanup popping the in-memory
+// transcript for a recorded cwd. This survives despawn popping the in-memory
 // metadata, so resurrect can cd back to the original project dir. Resurrect-only
 // fallback. Returns ("", false) if no transcript or no cwd is found.
 func sessionCWD(sessionID string) (string, bool) {

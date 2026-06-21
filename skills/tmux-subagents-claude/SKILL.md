@@ -1,6 +1,6 @@
 ---
 name: tmux-subagents-claude
-description: Orchestrate parallel Claude Code subagents in tmux panes via the `tmux-subagents-claude` CLI (a stdlib-Go binary on PATH). Spawns each agent as a named pane in a detached, crash-surviving `agents` session mirroring the current window. Use when delegating parallel tasks to subagents, spawning/monitoring running agents, reading replies, scoping status to the current project, sending follow-up prompts (prompt/recap/compact), resurrecting a crashed session, or cleaning up finished panes.
+description: Orchestrate parallel Claude Code subagents in tmux panes via the `claudemux` CLI (a stdlib-Go binary on PATH). Spawns each agent as a named pane in a detached, crash-surviving `agents` session mirroring the current window. Use when delegating parallel tasks to subagents, spawning/monitoring running agents, reading replies, scoping status to the current project, sending follow-up prompts (prompt/recap/compact), resurrecting a crashed session, adopting an existing session into the roster (hire a dead session / enlist a live one), or despawning finished agents.
 ---
 # Tmux Agents — Claude
 
@@ -18,7 +18,7 @@ go install github.com/mbrav/dotfiles/go/claudemux@latest   # -> ~/go/bin
 ## Setup
 
 ```bash
-claudemux cleanup --all   # before/after batch
+claudemux despawn --all   # before/after batch
 ```
 
 ## Workflow
@@ -45,11 +45,12 @@ claudemux cleanup --all   # before/after batch
    claudemux recap   <task>                     # send /recap to agent
    claudemux compact <task> [description]       # send /compact to agent
    claudemux capture <task> [full|log|stop]     # raw terminal (expensive)
-   claudemux hire    <session-uuid>             # adopt a DEAD session into this roster (resumes it; task = its session name)
-   claudemux dismiss <session-uuid>             # stop managing a hired/enlisted agent (kills owned pane; leaves enlisted)
-   claudemux cleanup <task>                     # kill one agent
-   claudemux cleanup --all                      # kill all in window
-   claudemux cleanup --prune                    # drop dead entries
+   claudemux hire    <session-uuid>             # adopt a DEAD session into this roster (resumes it; refuses a live one)
+   claudemux enlist  <manager-dir> [task]       # run INSIDE a live session to register itself into manager-dir's roster (no resume/fork)
+   claudemux dismiss <session-uuid>             # stop managing a hired/enlisted agent (kills owned pane; leaves enlisted running)
+   claudemux despawn <task>                     # kill one agent
+   claudemux despawn --all                      # kill all in window
+   claudemux despawn --prune                    # drop dead entries
    ```
 
 ## Rules
@@ -60,12 +61,12 @@ claudemux cleanup --all   # before/after batch
 - **`capture`** = expensive, debug only. Don't use on idle agent (`result` is cheaper); don't use before `prompt`.
 - **Spawn all** independent agents upfront, even if prompting later.
 - **`result` exit 0** = `end_turn` exists. NOT done — verify body.
-- **`cleanup --all`** = current window only. **`--prune`** = cross-window, preserves live agents.
-- **`hire`** = adopt a **dead/detached** session (by UUID, e.g. from `claudeman`) into this project's roster; it resumes in the session's **own** project dir but is tracked here, so it shows in `status` (no `--all`). It **refuses a live session** (resuming would fork a new id) — a live session must register itself in place via `enlist <manager-dir>` (run from inside that session; no resume, no fork; the manager then drives it cross-window). **`dismiss`** = teardown for both: kills an owned pane, leaves an enlisted (referenced) pane running. Use `hire`/`enlist`+`dismiss` for pre-existing sessions; `spawn`/`cleanup` for fresh ones.
+- **`despawn --all`** = current window only. **`--prune`** = cross-window, preserves live agents.
+- **`hire`** = adopt a **dead/detached** session (by UUID, e.g. from `claudeman`) into this project's roster; it resumes in the session's **own** project dir but is tracked here, so it shows in `status` (no `--all`). It **refuses a live session** (resuming would fork a new id) — a live session must register itself in place via `enlist <manager-dir>` (run from inside that session; no resume, no fork; the manager then drives it cross-window). **`dismiss`** = teardown for both: kills an owned pane, leaves an enlisted (referenced) pane running. Use `hire`/`enlist`+`dismiss` for pre-existing sessions; `spawn`/`despawn` for fresh ones.
 
 ## Stuck agent
 
-`prompt` repaints + clears line + verifies before sending. `prompt-not-submitted` exit = pane wedged: `capture` to inspect, then `cleanup` + `resurrect`. See [technicalities.md](references/technicalities.md#prompt-submission).
+`prompt` repaints + clears line + verifies before sending. `prompt-not-submitted` exit = pane wedged: `capture` to inspect, then `despawn` + `resurrect`. See [technicalities.md](references/technicalities.md#prompt-submission).
 
 ## Session manager
 
@@ -101,8 +102,8 @@ Session ID from spawn output or `status`. Creates new pane, resumes exact conver
 | `idle` | live, reply ready |
 | `busy` | working |
 | `waiting` | blocked on a prompt — NOT done; `result --wait` may return stale reply |
-| `waiting:permission` | blocked on a permission dialog ("Do you want to proceed?") — needs a human keystroke; a detached pane can't answer. `capture` to see the command, then decline/allow or `cleanup`+`resurrect` |
+| `waiting:permission` | blocked on a permission dialog ("Do you want to proceed?") — needs a human keystroke; a detached pane can't answer. `capture` to see the command, then decline/allow or `despawn`+`resurrect` |
 | `starting` | status file pending |
-| `dead` | pane gone — run `cleanup --prune` |
+| `dead` | pane gone — run `despawn --prune` |
 
 `CONTEXT` column: context-window usage from pane footer, e.g. `90.0k/1000.0k (9.0%)`. `-` = not rendered.

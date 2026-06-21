@@ -404,7 +404,7 @@ func cmdInit(sessionID, model, tools, effort, permMode string) {
 
 	split = append(split, "-c", cwd, "-P", "-F", "#{pane_id}")
 	paneID := mustTmuxOut(split...)
-	sessionID := newUUID()
+	sessionID = newUUID()
 
 	key := projectKey()
 	st := loadState(key)

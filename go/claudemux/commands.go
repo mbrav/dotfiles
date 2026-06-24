@@ -386,24 +386,88 @@ func cmdStatusAll() {
 }
 
 // cmdStatusProject shows the transcript-first view for the current project.
+// Local transcripts are the primary source; agents whose transcripts live in
+// another project (hire/enlist) are appended from the state file directly.
 func cmdStatusProject(history bool) {
 	key := projectKey()
 	projectDir := filepath.Join(claudeProjects(), key)
 	statuses := sessionStatuses()
 
-	files, err := collectJSONL(projectDir)
-	if err != nil || len(files) == 0 {
+	files, _ := collectJSONL(projectDir)
+	st := loadState(key)
+	roster := buildRosterMap(st)
+	rows := buildTranscriptRows(files, statuses, roster, history)
+
+	// Roster agents from other projects (hire/enlist) have transcripts elsewhere;
+	// append them so hired/enlisted agents are always visible.
+	rows = append(rows, foreignRosterRows(st, localSessionSet(files), statuses, history)...)
+
+	if len(rows) == 0 {
 		fmt.Println("no sessions")
 
 		return
 	}
 
-	st := loadState(key)
-	roster := buildRosterMap(st)
-	rows := buildTranscriptRows(files, statuses, roster, history)
-
 	fmt.Printf("project: %s\n", key)
 	printTranscriptTable(rows)
+}
+
+// localSessionSet builds a set of session IDs found in the local transcript dir.
+func localSessionSet(files []jsonlEntry) map[string]bool {
+	m := make(map[string]bool, len(files))
+
+	for _, f := range files {
+		m[f.uuid] = true
+	}
+
+	return m
+}
+
+// foreignRosterRows returns rows for state-file agents whose transcript lives in
+// a different project (hired workers, enlisted cross-window agents). These are
+// absent from the local transcript scan, so they must be sourced from the state.
+func foreignRosterRows(st WinState, local map[string]bool, statuses map[string]string, history bool) []TranscriptRow {
+	var rows []TranscriptRow
+
+	if st.Master != nil && st.Master.SessionID != "" && !local[st.Master.SessionID] {
+		rows = append(rows, makeForeignRow("master", st.Master, statuses))
+	}
+
+	for task, a := range st.Agents {
+		if local[a.SessionID] || a.SessionID == "" {
+			continue
+		}
+
+		if a.DismissedAt != nil && !history {
+			continue
+		}
+
+		displayTask := task
+		if a.DismissedAt != nil {
+			displayTask = "~" + task
+		}
+
+		rows = append(rows, TranscriptRow{
+			Task:    displayTask,
+			Session: shortSession(a.SessionID),
+			Status:  cmp.Or(statuses[a.SessionID], "dead"),
+			Name:    cmp.Or(sessionName(a.SessionID), "-"),
+			Date:    "-",
+		})
+	}
+
+	return rows
+}
+
+// makeForeignRow builds a TranscriptRow for a master/agent in a foreign project.
+func makeForeignRow(task string, a *Agent, statuses map[string]string) TranscriptRow {
+	return TranscriptRow{
+		Task:    task,
+		Session: shortSession(a.SessionID),
+		Status:  cmp.Or(statuses[a.SessionID], "dead"),
+		Name:    cmp.Or(sessionName(a.SessionID), "-"),
+		Date:    "-",
+	}
 }
 
 func printStatusTable(rows []StatusRow) {

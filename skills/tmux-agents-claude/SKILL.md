@@ -22,17 +22,18 @@ its rules. This skill adds only the tree layer.
 
 ## Two iron rules
 
-**1. `master` is you.** `claudemux status` always shows a `master` row — that's *this session*.
-Roster commands (`prompt`/`result`/`capture`/`despawn`) act on the `agents` list; master isn't in it.
+**1. `master` is you.** Run `! claudemux promote` once to register yourself. `claudemux status` then
+shows a `master` row (TASK=`master`) — that's *this session*. Roster commands
+(`prompt`/`result`/`capture`/`despawn`) act on the `agents` list; master isn't in it.
 Never target master. Skip it when reading `status`.
 
-**2. Drive only direct children.** `claudemux status` (no `--all`) loads *your* roster only.
-Grandchildren live in a different state file. To act on one, **delegate** to the owning child — never
-address a grandchild yourself.
+**2. Drive only direct children.** `claudemux status` shows *your* project's transcripts + roster
+overlay. Grandchildren live in a different project's transcripts. To act on one, **delegate** to the
+owning child — never address a grandchild yourself.
 
 ## Fleet check → build the tree
 
-1. `claudemux status` — your roster. Skip `master` row.
+1. `claudemux status` — your transcripts + roster. Skip `master` row.
 2. For each child, `prompt --wait` it to run its own `claudemux status` and report subagents (use
    freshness token per child).
 3. Assemble tree + tables; flag deltas.
@@ -71,8 +72,9 @@ To act on grandchild, prompt the child that owns it:
 3. `claudemux despawn <child>` for each child from **your** roster.
 4. `claudemux status` — confirm only `master` remains.
 
-**Enlisted caveat:** `despawn`/`dismiss` on an enlisted child only untracks — pane keeps running.
-Surface to user; they must kill it from inside or via tmux directly.
+**Soft-delete:** `despawn`/`dismiss` stamps `dismissed_at` and hides the entry from default `status`.
+Run `despawn --prune` after teardown to hard-delete dismissed entries.
+**Enlisted caveat:** enlisted child's pane keeps running after dismiss — user must kill it directly.
 
 ## More
 

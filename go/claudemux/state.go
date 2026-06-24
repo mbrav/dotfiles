@@ -5,16 +5,16 @@ package main
 // State is keyed by PROJECT, one file per project under STATE_DIR named with
 // Claude's own ~/.claude/projects/ slug convention (every non-alphanumeric char
 // -> "-", via cwdToProjectDir applied to the git-root/cwd). The window name is
-// still recorded inside (for the agents-session mirror window + agent naming):
+// recorded inside for display; pane IDs are in-memory only (not persisted):
 //
 //	~/.local/share/claudemux/<project-slug>.json
-//	{ "window": "obsidian", "agents_window_id": "@65",
-//	  "master": {pane_id, session_id, cwd, agent_name},   // optional, set by `init`
-//	  "agents": { "<task>": {pane_id, session_id, cwd, agent_name} } }
+//	{ "window": "obsidian",
+//	  "master": {session_id, cwd, agent_name},   // optional, set by `promote`/`init`
+//	  "agents": { "<task>": {session_id, cwd, agent_name, dismissed_at?} } }
 //
-// Per-project files each carrying a Master + Agents form a forest: a hired
-// worker that runs `init` in its own project gets its own file with itself as
-// master and its own sub-roster.
+// Per-project files each carrying a Master + Agents form a forest. PaneID is
+// not persisted (tmux panes are ephemeral; they are re-discovered at runtime via
+// findPaneForSession when needed).
 
 import (
 	"encoding/json"
@@ -22,28 +22,33 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 )
 
-// Agent is one tracked subagent (also reused for the master). JSON tags are
-// frozen (existing on-disk files).
+// Agent is one tracked subagent (also reused for the master).
 type Agent struct {
-	PaneID    string `json:"pane_id"`
+	// PaneID is in-process only: set at spawn/resurrect/enlist time, not
+	// persisted. Stale pane IDs (tmux panes die on reboot) caused false "dead"
+	// status; discovery via findPaneForSession is the recovery path.
+	PaneID    string `json:"-"`
 	SessionID string `json:"session_id"`
 	CWD       string `json:"cwd"`
 	AgentName string `json:"agent_name"`
 	// Enlisted marks an agent adopted in place by `enlist`: the manager only
 	// REFERENCES this pane (an independent session in its own window) and must
-	// never kill it on despawn/dismiss. omitempty keeps the frozen 4-key schema
-	// byte-identical when false.
+	// never kill it on despawn/dismiss.
 	Enlisted bool `json:"enlisted,omitempty"`
+	// DismissedAt is set (not nil) when the agent is soft-deleted via despawn or
+	// dismiss. The entry stays in the roster so the session history is preserved;
+	// `status` hides it by default and `despawn --prune` cleans it up.
+	DismissedAt *time.Time `json:"dismissed_at,omitempty"`
 }
 
 // WinState is the full state for one project.
 type WinState struct {
-	Window         string           `json:"window"`
-	AgentsWindowID string           `json:"agents_window_id"`
-	Master         *Agent           `json:"master,omitempty"` // set by `init`; absent otherwise
-	Agents         map[string]Agent `json:"agents"`
+	Window string           `json:"window"`
+	Master *Agent           `json:"master,omitempty"` // set by `promote`/`init`; absent otherwise
+	Agents map[string]Agent `json:"agents"`
 }
 
 // getWin returns the calling tmux window's NAME, anchored to $TMUX_PANE so the
@@ -177,6 +182,7 @@ func iterStateFiles() []stateFileEntry {
 			continue
 		}
 
+		// Derive display name from the project slug when window is not stored.
 		if st.Window == "" {
 			st.Window = strings.TrimSuffix(filepath.Base(p), ".json")
 		}

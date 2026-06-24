@@ -46,28 +46,31 @@ resolves to the same key, so one project has exactly one roster.
 ```json
 {
   "window": "obsidian",
-  "agents_window_id": "@72",
-  "master": {"pane_id": "%21", "session_id": "<uuid>", "cwd": "<path>", "agent_name": "agent-obsidian"},
+  "master": {"session_id": "<uuid>", "cwd": "<path>", "agent_name": "agent-obsidian"},
   "agents": {
-    "test-1":   {"pane_id": "%134", "session_id": "<uuid>", "cwd": "<path>", "agent_name": "subagent-obsidian-test-1"},
-    "helper":   {"pane_id": "%97",  "session_id": "<uuid>", "cwd": "<other-repo>", "agent_name": "agent-foo", "enlisted": true}
+    "test-1": {"session_id": "<uuid>", "cwd": "<path>", "agent_name": "subagent-obsidian-test-1"},
+    "helper": {"session_id": "<uuid>", "cwd": "<other-repo>", "agent_name": "agent-foo", "enlisted": true},
+    "old-job": {"session_id": "<uuid>", "cwd": "<path>", "agent_name": "subagent-obsidian-old-job", "dismissed_at": "2026-06-24T10:00:00Z"}
   }
 }
 ```
 
-- `window`: source window name (the agents-session mirror window + agent naming)
-- `agents_window_id`: tmux window id in `agents` session
-- `master`: optional, set by `init` — the orchestrating agent (`agent-<project>`)
-- `agents`: task name → `{pane_id, session_id, cwd, agent_name[, enlisted]}`
-- `enlisted` (optional, `omitempty`): set by `enlist` — the agent is **referenced
-  in place**, not owned; the manager drives its pane but must never kill it on
-  `despawn`/`dismiss`. Absent (false) for spawned/resurrected/hired agents, so the
-  on-disk schema stays byte-identical to the frozen 4-key form for those.
+- `window`: source window name (for display + agent naming)
+- `master`: optional, set by `promote`/`init` — the orchestrating agent
+- `agents`: task name → `{session_id, cwd, agent_name[, enlisted][, dismissed_at]}`
+- **`pane_id` is NOT persisted** — tmux panes are ephemeral (gone after reboot).
+  Pane IDs are held in memory only and re-discovered at runtime via `findPaneForSession`
+  (walks `~/.claude/sessions/<pid>.json` → ppid chain → tmux pane pid).
+- `enlisted` (optional): set by `enlist` — agent is **referenced in place**, not
+  owned. Manager drives its pane but must never kill it on `despawn`/`dismiss`.
+- `dismissed_at` (optional): timestamp set by `despawn <task>` or `dismiss`. Entry
+  stays in state for history; hidden from `status` by default. `despawn --prune`
+  removes all dismissed entries.
 
-A hired agent's `cwd` may point at *another* repo (it resumes in its own project
-dir) while it lives in this project's roster — that is intentional. Per-project
-files each carrying a `master` + `agents` form a forest: a hired worker that runs
-`init` in its own project becomes a master of its own sub-roster.
+A hired agent's `cwd` may point at *another* repo while living in this project's
+roster — intentional. Per-project files each carrying a `master` + `agents` form a
+forest: a hired worker that runs `init`/`promote` in its own project becomes a
+master of its own sub-roster.
 
 ## How panes are created
 
@@ -146,30 +149,25 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 
 ## Despawn semantics
 
-- `despawn <task>`: kill pane, drop from state (preserves `master` if set). An
-  **enlisted** agent is referenced, not owned → untracked **without** killing.
-- `despawn --all`: kill all owned panes in the window; **preserves** the `master`
-  and every **enlisted** agent (left running + still tracked); removes the file
-  only when nothing remains to track.
-- `despawn --prune`: drop dead panes + empty/unreadable files (all windows). An
-  enlisted agent whose pane actually died is dead and is pruned like any other.
+- `despawn <task>`: kill pane (if found) + **soft-delete** (stamps `dismissed_at`).
+  Entry stays in state but is hidden from `status`. An **enlisted** agent is not
+  killed; only soft-deleted.
+- `despawn --all`: soft-delete all agents in the window (kills owned panes).
+- `despawn --prune`: **hard-delete** all entries with `dismissed_at` set (across all
+  projects). Does not delete non-dismissed entries, even if session is dead.
 
-## Master & roster (`init` / `hire` / `enlist` / `dismiss`)
+## Master & roster (`promote` / `init` / `hire` / `enlist` / `dismiss`)
+
+- `promote [name]`: **preferred** way to register the current session as `master`.
+  Run via `! claudemux promote` inside the Claude session. Reads
+  `$CLAUDE_CODE_SESSION_ID` (set by Claude Code for `!` commands) and `$TMUX_PANE`;
+  writes `master` to state without spawning anything. Optional `name` overrides the
+  stored `agent_name` (default: `"master"`).
 
 - `init [--model M] [--tools T] [--effort L] [--permission-mode P] [session-id]`:
-  register the project's `master`.
-  - **No `session-id`** → **spawn a fresh master**: a split pane in the **current
-    window** (beside the human, not the detached agents session) running a
-    brand-new claude session (generated UUID) named `agent-<project>`. Starts idle
-    (no prompt). The attached client drives the resize, so no manual redraw.
-  - **With `session-id`** → **adopt an existing session** as the master (no new
-    pane): records that session with the current pane (`$TMUX_PANE`) and cwd as
-    `agent-<project>`. Intended for a running session to register itself, e.g.
-    `init "$CLAUDE_CODE_SESSION_ID"`.
-
-  Either way the master lives in the current window and is the orchestrator you
-  work in to spawn/hire. *(Not in SKILL.md — it is the master's own bootstrap
-  step.)*
+  legacy master registration.
+  - **No `session-id`** → **spawn a fresh master**: split pane in the current window.
+  - **With `session-id`** → **adopt** an existing session as master (no new pane).
 - `hire <session-id>`: adopt a **non-live** (dead/detached) session (by UUID) into
   this project's roster. Resumes it in a pane in the session's **original** project
   dir (recovered via `sessionCWD`) but tracks it here, so it appears in `status`
@@ -206,10 +204,13 @@ Both use `_send_prompt` (force-redraw + verify), same hardening as `prompt`.
 
 ## Status scoping
 
-`status` (no `--all`) loads **only the current project's state file** and shows
-every agent in it (plus the `master` row if present) — the chosen file *is* the
-scope, so hired agents from other repos still appear. `status --all` iterates
-every project file under `STATE_DIR`. There is no per-agent cwd filter.
+`status` (no `--all`) is **transcript-first**: scans all `*.jsonl` files in
+`~/.claude/projects/<key>/` (ground truth), then overlays the state file for task
+names and roles. Every session ever created for this project appears — not just the
+ones in the roster. Dismissed entries are hidden by default (`--history` shows them).
+Untracked sessions show as `<untracked>` / role `-`.
+
+`status --all` falls back to the roster-only view across all project state files.
 
 ## Tools
 

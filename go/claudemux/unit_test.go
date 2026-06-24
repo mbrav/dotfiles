@@ -58,6 +58,7 @@ func TestAgentNameFor(t *testing.T) {
 }
 
 func TestAgentJSONRoundTrip(t *testing.T) {
+	// PaneID is json:"-" — never persisted. Base schema: session_id, cwd, agent_name.
 	a := Agent{PaneID: "%1", SessionID: "sid", CWD: "/x", AgentName: "n"}
 
 	b, err := json.Marshal(a)
@@ -70,7 +71,7 @@ func TestAgentJSONRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := []string{"pane_id", "session_id", "cwd", "agent_name"}
+	want := []string{"session_id", "cwd", "agent_name"}
 	if len(m) != len(want) {
 		t.Fatalf("Agent JSON has %d keys (%v), want exactly %v", len(m), m, want)
 	}
@@ -79,6 +80,10 @@ func TestAgentJSONRoundTrip(t *testing.T) {
 		if _, ok := m[k]; !ok {
 			t.Errorf("Agent JSON missing key %q", k)
 		}
+	}
+
+	if _, hasPaneID := m["pane_id"]; hasPaneID {
+		t.Error("pane_id must not appear in JSON (json:\"-\")")
 	}
 }
 
@@ -95,8 +100,9 @@ func TestAgentJSONEnlisted(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(em) != 5 {
-		t.Fatalf("enlisted Agent JSON has %d keys (%v), want 5", len(em), em)
+	// Base 3 keys + enlisted = 4; DismissedAt omitted (nil).
+	if len(em) != 4 {
+		t.Fatalf("enlisted Agent JSON has %d keys (%v), want 4", len(em), em)
 	}
 
 	if v, ok := em["enlisted"]; !ok || v != true {

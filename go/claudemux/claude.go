@@ -10,6 +10,8 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,6 +19,8 @@ import (
 	"strings"
 	"syscall"
 )
+
+var errNoLivePane = errors.New("no live pane found for session")
 
 var projectSlugRe = regexp.MustCompile(`[^a-zA-Z0-9]`)
 
@@ -295,6 +299,65 @@ func sessionIsLive(sessionID string) bool {
 	logDebugf("sessionIsLive %s -> not live", sessionID)
 
 	return false
+}
+
+// resolveSessionID expands a short session-ID prefix to a full UUID using the
+// same git-style prefix approach: glob all transcript files and match by name
+// prefix. Passes full UUIDs (36 chars, 4 dashes) through unchanged.
+// Exits 1 on an ambiguous prefix; returns the input unchanged when not found
+// (the downstream call will fail with a clear message).
+func resolveSessionID(s string) string {
+	if len(s) == 36 && strings.Count(s, "-") == 4 {
+		return s
+	}
+
+	matches, _ := filepath.Glob(filepath.Join(claudeProjects(), "*", s+"*.jsonl"))
+
+	switch len(matches) {
+	case 1:
+		return strings.TrimSuffix(filepath.Base(matches[0]), ".jsonl")
+	case 0:
+		return s
+	default:
+		exitErrf(1, "ambiguous session prefix %q matches %d sessions — use more characters", s, len(matches))
+	}
+
+	return s
+}
+
+// findPaneForSession finds the live tmux pane that is running the Claude session
+// with the given ID. It reads ~/.claude/sessions/ to find the session's process
+// ID, then walks the parent-process chain to locate the pane. Returns an error
+// when no live pane is found (session is dead, or pane is on a different host).
+func findPaneForSession(sessionID string) (string, error) {
+	matches, _ := filepath.Glob(filepath.Join(homeDir(), ".claude", "sessions", "*.json"))
+	for _, p := range matches {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+
+		var s struct {
+			SessionID string `json:"sessionId"`
+		}
+		if json.Unmarshal(data, &s) != nil || s.SessionID != sessionID {
+			continue
+		}
+
+		pid, err := strconv.Atoi(strings.TrimSuffix(filepath.Base(p), ".json"))
+		if err != nil {
+			continue
+		}
+
+		pane, err := paneContainingPid(pid)
+		if err == nil {
+			logDebugf("findPaneForSession %s -> pane %s (pid %d)", sessionID, pane, pid)
+
+			return pane, nil
+		}
+	}
+
+	return "", fmt.Errorf("%s: %w", sessionID, errNoLivePane)
 }
 
 // sessionStatuses returns {sessionId: status} for all running claude sessions,

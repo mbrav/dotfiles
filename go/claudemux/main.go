@@ -21,17 +21,22 @@ const usageText = `claudemux — orchestrate Claude Code subagents in tmux panes
 
 usage: claudemux <command> [flags] [args]
 
-commands:
+commands (agent-facing):
   spawn      [--model M] [--tools T] [--effort L] [--permission-mode P] <task> <prompt>
   prompt     [--wait] [--no-verify] <task> <text>
   result     [--wait] <task>
-  status     [--all] [task]
+  status     [--all] [--history] [task]   transcript-first view; --history shows dismissed
   recap      <task>
   compact    <task> [description]
   despawn    <task | --all | --prune>
+
+commands (run via ! from inside a Claude session):
+  promote    [name]                        set self as master in project roster
+  enlist     <manager-dir> [task]          register self into manager's roster
+
+commands (human/shell):
   resurrect  <task> <session-id>
   hire       <session-id>
-  enlist     <manager-dir> [task]
   dismiss    <session-id>
   init       [--model M] [--tools T] [--effort L] [--permission-mode P] [session-id]
   capture    <task> [full|log|stop]
@@ -82,6 +87,7 @@ var dispatch = map[string]func([]string){
 	"recap":     runRecap,
 	"compact":   runCompact,
 	"despawn":   runDespawn,
+	"promote":   runPromote,
 	"resurrect": runResurrect,
 	"hire":      runHire,
 	"enlist":    runEnlist,
@@ -224,8 +230,9 @@ func runResult(args []string) {
 }
 
 func runStatus(args []string) {
-	fs := newFlagSet("status", "status [--all] [task]")
+	fs := newFlagSet("status", "status [--all] [--history] [task]")
 	all := fs.Bool("all", false, "show agents across all projects, not just this repo")
+	history := fs.Bool("history", false, "include dismissed agents in output")
 	pos := parseFlags(fs, args, 0, 1)
 
 	task := ""
@@ -233,7 +240,19 @@ func runStatus(args []string) {
 		task = pos[0]
 	}
 
-	cmdStatus(task, *all)
+	cmdStatus(task, *all, *history)
+}
+
+func runPromote(args []string) {
+	fs := newFlagSet("promote", "promote [name]")
+	pos := parseFlags(fs, args, 0, 1)
+
+	name := "master"
+	if len(pos) == 1 {
+		name = pos[0]
+	}
+
+	cmdPromote(name)
 }
 
 func runResurrect(args []string) {

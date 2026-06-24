@@ -79,24 +79,26 @@ type rowDeps struct {
 }
 
 // deriveStatus maps a pane's liveness and session status into a display status.
-// A dead pane is "dead"; a live pane with no session-status file yet is
-// "starting" (the file lags briefly); idle-with-no-completed-reply is "empty"
-// (fresh / awaiting first prompt) to disambiguate the idle trap.
+// Session status files are checked first — they work even when pane is gone
+// (e.g. after a reboot where pane IDs are stale). A missing status file with a
+// live pane means "starting"; a missing status file with no pane is "dead".
+// Idle-with-no-completed-reply is "empty" to disambiguate the idle trap.
 func deriveStatus(meta Agent, live bool, deps rowDeps) string {
-	if !live {
-		return "dead"
+	status, hasStatus := deps.statuses[meta.SessionID]
+	if hasStatus {
+		if status == "idle" && !deps.hasResponse(meta) {
+			return "empty"
+		}
+
+		return status
 	}
 
-	status, ok := deps.statuses[meta.SessionID]
-	if !ok {
+	// No session status file: rely on pane liveness.
+	if live {
 		return "starting"
 	}
 
-	if status == "idle" && !deps.hasResponse(meta) {
-		return "empty"
-	}
-
-	return status
+	return "dead"
 }
 
 // buildRows is the pure core of status: given a project's agents and injected

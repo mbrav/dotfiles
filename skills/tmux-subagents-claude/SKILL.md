@@ -18,7 +18,7 @@ go install github.com/mbrav/dotfiles/go/claudemux@latest   # -> ~/go/bin
 ## Setup
 
 ```bash
-claudemux despawn --all   # before/after batch
+claudemux despawn --all && claudemux despawn --prune   # clean slate before/after batch
 ```
 
 ## Workflow
@@ -32,10 +32,11 @@ claudemux despawn --all   # before/after batch
 2. **Collect results:**
 
    ```bash
-   claudemux result --wait <task>    # block until idle, print reply
-   claudemux result <task>           # non-blocking; exit 1 if no reply yet
-   claudemux status                  # snapshot table (current project)
-   claudemux status <task>           # bare status word — grep/script-friendly
+   claudemux result --wait <task>         # block until idle, print reply
+   claudemux result <task>                # non-blocking; exit 1 if no reply yet
+   claudemux status                       # all transcripts for this project + roster roles
+   claudemux status <task>                # bare status word — grep/script-friendly
+   claudemux status --history             # include dismissed agents
    ```
 
 3. **Follow up / inspect / manage:**
@@ -44,13 +45,25 @@ claudemux despawn --all   # before/after batch
    claudemux prompt  [--wait] <task> '<text>'   # send prompt, optionally block
    claudemux recap   <task>                     # send /recap to agent
    claudemux compact <task> [description]       # send /compact to agent
-   claudemux capture <task> [full|log|stop]     # raw terminal (expensive)
-   claudemux hire    <session-uuid>             # adopt a DEAD session into this roster (resumes it; refuses a live one)
-   claudemux enlist  <manager-dir> [task]       # run INSIDE a live session to register itself into manager-dir's roster (no resume/fork)
-   claudemux dismiss <session-uuid>             # stop managing a hired/enlisted agent (kills owned pane; leaves enlisted running)
-   claudemux despawn <task>                     # kill one agent
-   claudemux despawn --all                      # kill all in window
-   claudemux despawn --prune                    # drop dead entries
+   claudemux despawn <task>                     # soft-delete one agent (marks dismissed, kills pane)
+   claudemux despawn --all                      # soft-delete all agents in window
+   claudemux despawn --prune                    # hard-delete all dismissed entries
+   ```
+
+4. **Session-internal commands** (run via `!` from inside a Claude session):
+
+   ```bash
+   ! claudemux promote [name]             # register self as master of this project's roster
+   ! claudemux enlist <manager-dir> [task]  # register self into manager's roster (no resume/fork)
+   ```
+
+5. **Human/shell commands** (not agent-facing):
+
+   ```bash
+   claudemux capture <task> [full|log|stop]   # raw terminal (expensive, debug only)
+   claudemux hire    <session>                # adopt a DEAD session into roster (short prefix OK)
+   claudemux dismiss <session>                # soft-delete by session (short prefix OK)
+   claudemux resurrect <task> <session>       # re-attach a dead session to a new pane
    ```
 
 ## Rules
@@ -61,8 +74,10 @@ claudemux despawn --all   # before/after batch
 - **`capture`** = expensive, debug only. Don't use on idle agent (`result` is cheaper); don't use before `prompt`.
 - **Spawn all** independent agents upfront, even if prompting later.
 - **`result` exit 0** = `end_turn` exists. NOT done — verify body.
-- **`despawn --all`** = current window only. **`--prune`** = cross-window, preserves live agents.
-- **`hire`** = adopt a **dead/detached** session (by UUID, e.g. from `claudeman`) into this project's roster; it resumes in the session's **own** project dir but is tracked here, so it shows in `status` (no `--all`). It **refuses a live session** (resuming would fork a new id) — a live session must register itself in place via `enlist <manager-dir>` (run from inside that session; no resume, no fork; the manager then drives it cross-window). **`dismiss`** = teardown for both: kills an owned pane, leaves an enlisted (referenced) pane running. Use `hire`/`enlist`+`dismiss` for pre-existing sessions; `spawn`/`despawn` for fresh ones.
+- **`despawn <task>`** = soft-delete (marks dismissed; hidden from `status` by default). **`--all`** = soft-delete all in window. **`--prune`** = hard-delete all dismissed entries.
+- **`status`** = transcript-first: shows all sessions in `~/.claude/projects/<slug>/` with roster roles overlaid. **`status --history`** includes dismissed. Source of truth is the Claude transcript, not the state file.
+- **`hire`** = adopt a **dead/detached** session into roster (resumes it; refuses live sessions — use `enlist` for those). **`dismiss`** = soft-delete by session UUID. **`promote`** = run from inside a session via `!` to set yourself as master.
+- **Pane IDs are not persisted** — they are re-discovered at runtime. After a reboot, agents show their real Claude session status (busy/idle/dead), not stale pane state.
 
 ## Stuck agent
 
@@ -89,10 +104,10 @@ See [tools-and-models.md](references/tools-and-models.md) for model/tools per ta
 ## Resurrect
 
 ```bash
-claudemux resurrect <task> <session-uuid>
+claudemux resurrect <task> <session>
 ```
 
-Session ID from spawn output or `status`. Creates new pane, resumes exact conversation (JSONL preserved).
+`<session>` = UUID or short 8-char prefix from `status` SESSION column. Creates new pane, resumes exact conversation (JSONL preserved). Use when a session is `dead` but you want to re-attach it to a pane.
 
 ## Status values
 
@@ -102,8 +117,8 @@ Session ID from spawn output or `status`. Creates new pane, resumes exact conver
 | `idle` | live, reply ready |
 | `busy` | working |
 | `waiting` | blocked on a prompt — NOT done; `result --wait` may return stale reply |
-| `waiting:permission` | blocked on a permission dialog ("Do you want to proceed?") — needs a human keystroke; a detached pane can't answer. `capture` to see the command, then decline/allow or `despawn`+`resurrect` |
+| `waiting:permission` | blocked on a permission dialog — needs a human keystroke; `capture` to inspect, then decline/allow or `despawn`+`resurrect` |
 | `starting` | status file pending |
-| `dead` | pane gone — run `despawn --prune` |
+| `dead` | no live session — `resurrect` to re-attach |
 
-`CONTEXT` column: context-window usage from pane footer, e.g. `90.0k/1000.0k (9.0%)`. `-` = not rendered.
+`TASK` column: task-name for active agents, `~task` for dismissed, `<untracked>` for sessions not in the roster. Dismissed entries hidden by default — use `status --history` to show them.

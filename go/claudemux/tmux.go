@@ -11,9 +11,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
+
+var errPidNotInPane = errors.New("pid not under any tmux pane")
 
 // tmuxOutput runs a tmux command and returns its trimmed stdout (and any error).
 func tmuxOutput(args ...string) (string, error) {
@@ -75,6 +79,77 @@ func mustTmuxOut(args ...string) string {
 	}
 
 	return out
+}
+
+// parentPid returns the parent process ID of pid. Reads /proc on Linux; falls
+// back to `ps -o ppid=` on macOS and other systems.
+func parentPid(pid int) (int, error) {
+	// Linux fast path via /proc
+	if data, err := os.ReadFile(fmt.Sprintf("/proc/%d/status", pid)); err == nil {
+		for line := range strings.SplitSeq(string(data), "\n") {
+			if rest, ok := strings.CutPrefix(line, "PPid:\t"); ok {
+				ppid, err := strconv.Atoi(strings.TrimSpace(rest))
+				if err == nil {
+					return ppid, nil
+				}
+			}
+		}
+	}
+
+	// macOS + fallback
+	out, err := exec.Command("ps", "-o", "ppid=", "-p", strconv.Itoa(pid)).Output()
+	if err != nil {
+		return 0, fmt.Errorf("ps ppid for %d: %w", pid, err)
+	}
+
+	ppid, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil {
+		return 0, fmt.Errorf("parse ppid %q: %w", strings.TrimSpace(string(out)), err)
+	}
+
+	return ppid, nil
+}
+
+// paneContainingPid finds the tmux pane whose shell is an ancestor of targetPid
+// by walking the ppid chain upward and matching against known pane shell pids.
+func paneContainingPid(targetPid int) (string, error) {
+	out, err := tmuxOutput("list-panes", "-a", "-F", "#{pane_id} #{pane_pid}")
+	if err != nil {
+		return "", fmt.Errorf("list-panes: %w", err)
+	}
+
+	panePids := map[int]string{}
+
+	for line := range strings.SplitSeq(out, "\n") {
+		paneID, pidStr, ok := strings.Cut(line, " ")
+		if !ok {
+			continue
+		}
+
+		pid, err := strconv.Atoi(pidStr)
+		if err != nil {
+			continue
+		}
+
+		panePids[pid] = paneID
+	}
+
+	pid := targetPid
+
+	for range 20 {
+		if pane, ok := panePids[pid]; ok {
+			return pane, nil
+		}
+
+		ppid, err := parentPid(pid)
+		if err != nil || ppid <= 1 {
+			break
+		}
+
+		pid = ppid
+	}
+
+	return "", fmt.Errorf("pid %d: %w", targetPid, errPidNotInPane)
 }
 
 // livePanes returns the set of all live pane ids across the tmux server.

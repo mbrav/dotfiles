@@ -51,7 +51,6 @@ func cmdSpawn(task, prompt, model, tools, effort, permMode string) {
 	key := projectKey()
 	st := loadState(key)
 	st.Window = win
-	st.AgentsWindowID = wt.WindowID
 	st.Agents[task] = Agent{PaneID: paneID, SessionID: sessionID, CWD: cwd, AgentName: agentName}
 	saveState(key, st)
 
@@ -230,48 +229,151 @@ func waitWhileBusy(name, sessionID, jsonl string) {
 // status
 // ---------------------------------------------------------------------------
 
-func cmdStatus(taskFilter string, all bool) {
+// TranscriptRow is one row of the unified transcript-first status view.
+// Task encodes roster membership: task-name for active agents, "~task" for
+// dismissed, "<untracked>" for sessions not in the roster.
+type TranscriptRow struct {
+	Task    string // task name, "~task" (dismissed), or "<untracked>"
+	Session string // 8-char prefix of session UUID
+	Status  string // from sessionStatuses() or "dead"
+	Name    string // from sessionName()
+	Date    string // JSONL mod-time
+}
+
+// rosterEntry maps sessionID → task metadata from the state file.
+type rosterEntry struct {
+	Task        string
+	DismissedAt *time.Time
+}
+
+func buildRosterMap(st WinState) map[string]rosterEntry {
+	m := map[string]rosterEntry{}
+
+	if st.Master != nil && st.Master.SessionID != "" {
+		m[st.Master.SessionID] = rosterEntry{Task: "master"}
+	}
+
+	for task, a := range st.Agents {
+		m[a.SessionID] = rosterEntry{Task: task, DismissedAt: a.DismissedAt}
+	}
+
+	return m
+}
+
+// buildTranscriptRows assembles TranscriptRows from JSONL files overlaid with
+// roster info. Dismissed entries are omitted unless history is true.
+func buildTranscriptRows(files []jsonlEntry, statuses map[string]string, roster map[string]rosterEntry, history bool) []TranscriptRow {
+	rows := make([]TranscriptRow, 0, len(files))
+
+	for _, f := range files {
+		entry, tracked := roster[f.uuid]
+
+		if tracked && entry.DismissedAt != nil && !history {
+			continue
+		}
+
+		status := "dead"
+		if s, ok := statuses[f.uuid]; ok {
+			status = s
+		}
+
+		task := "<untracked>"
+
+		if tracked {
+			task = entry.Task
+			if entry.DismissedAt != nil {
+				task = "~" + entry.Task
+			}
+		}
+
+		rows = append(rows, TranscriptRow{
+			Task:    task,
+			Session: shortSession(f.uuid),
+			Status:  status,
+			Name:    cmp.Or(sessionName(f.uuid), "-"),
+			Date:    f.modTime.Format("2006-01-02 15:04"),
+		})
+	}
+
+	return rows
+}
+
+func printTranscriptTable(rows []TranscriptRow) {
+	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	emit := func(cells ...string) { _, _ = fmt.Fprintln(tw, strings.Join(cells, "\t")) }
+
+	headers := []string{"TASK", "SESSION", "STATUS", "NAME", "DATE"}
+	dashes := make([]string, len(headers))
+
+	for i, h := range headers {
+		dashes[i] = strings.Repeat("-", len(h))
+	}
+
+	emit(headers...)
+	emit(dashes...)
+
+	for _, r := range rows {
+		emit(r.Task, r.Session, r.Status, r.Name, r.Date)
+	}
+
+	_ = tw.Flush()
+}
+
+func cmdStatus(taskFilter string, all, history bool) {
+	if taskFilter != "" {
+		cmdStatusTask(taskFilter)
+
+		return
+	}
+
+	if all {
+		cmdStatusAll()
+
+		return
+	}
+
+	cmdStatusProject(history)
+}
+
+// cmdStatusTask prints a bare status word for scripting (e.g. claudemux status backend-dev).
+func cmdStatusTask(task string) {
+	key := projectKey()
+	st := loadState(key)
+	statuses := sessionStatuses()
+
+	var sessionID string
+
+	if task == "master" && st.Master != nil {
+		sessionID = st.Master.SessionID
+	} else if a, ok := st.Agents[task]; ok {
+		sessionID = a.SessionID
+	}
+
+	if sessionID == "" {
+		logErrorf("status: task '%s' not found", task)
+		exitErrf(2, "unknown-task: %s", task)
+	}
+
+	status := "dead"
+	if s, ok := statuses[sessionID]; ok {
+		status = s
+	}
+
+	fmt.Println(status)
+}
+
+// cmdStatusAll shows the roster-based table across all projects (--all).
+func cmdStatusAll() {
 	statuses := sessionStatuses()
 
 	var rows []StatusRow
 
-	key := "" // set for the scoped (non --all) view; printed as the `project:` header
-
-	if all {
-		// Every project's roster.
-		for _, e := range iterStateFiles() {
-			if e.State == nil {
-				continue
-			}
-
-			rows = append(rows, statusRowsFromState(*e.State, statuses)...)
-		}
-	} else {
-		// Just this project's roster (the chosen state file IS the scope), so
-		// hired/enlisted agents from other repos still show.
-		key = projectKey()
-		st := loadState(key)
-		st.Window = cmp.Or(st.Window, getWin())
-		rows = statusRowsFromState(st, statuses)
-	}
-
-	if taskFilter != "" {
-		var filtered []StatusRow
-
-		for _, r := range rows {
-			if r.Task == taskFilter {
-				filtered = append(filtered, r)
-			}
+	for _, e := range iterStateFiles() {
+		if e.State == nil {
+			continue
 		}
 
-		if len(filtered) == 0 {
-			logErrorf("status: task '%s' not found", taskFilter)
-			exitErrf(2, "unknown-task: %s", taskFilter)
-		}
-		// Single-agent query: bare status word for scripting.
-		fmt.Println(filtered[0].Status)
-
-		return
+		rows = append(rows, statusRowsFromState(*e.State, statuses)...)
 	}
 
 	if len(rows) == 0 {
@@ -280,13 +382,28 @@ func cmdStatus(taskFilter string, all bool) {
 		return
 	}
 
-	// Surface the scoped project's key so a manager can read its own key (to hand
-	// to a worker's `enlist <manager-key>`). Omitted for the cross-project --all view.
-	if key != "" {
-		fmt.Printf("project: %s\n", key)
+	printStatusTable(rows)
+}
+
+// cmdStatusProject shows the transcript-first view for the current project.
+func cmdStatusProject(history bool) {
+	key := projectKey()
+	projectDir := filepath.Join(claudeProjects(), key)
+	statuses := sessionStatuses()
+
+	files, err := collectJSONL(projectDir)
+	if err != nil || len(files) == 0 {
+		fmt.Println("no sessions")
+
+		return
 	}
 
-	printStatusTable(rows)
+	st := loadState(key)
+	roster := buildRosterMap(st)
+	rows := buildTranscriptRows(files, statuses, roster, history)
+
+	fmt.Printf("project: %s\n", key)
+	printTranscriptTable(rows)
 }
 
 func printStatusTable(rows []StatusRow) {
@@ -317,6 +434,7 @@ func printStatusTable(rows []StatusRow) {
 // ---------------------------------------------------------------------------
 
 func cmdResurrect(task, sessionID string) {
+	sessionID = resolveSessionID(sessionID)
 	win := getWin()
 	resurrectInto(win, projectKey(), task, sessionID, "subagent-"+win+"-"+task)
 }
@@ -364,7 +482,6 @@ func resurrectInto(win, callerKey, task, sessionID, agentName string) {
 
 	st := loadState(callerKey)
 	st.Window = win
-	st.AgentsWindowID = wt.WindowID
 	st.Agents[task] = Agent{PaneID: paneID, SessionID: sessionID, CWD: cwd, AgentName: agentName}
 	saveState(callerKey, st)
 	logInfof("resurrected agent=%s pane=%s session=%s", agentName, paneID, sessionID)
@@ -395,7 +512,7 @@ func cmdInit(sessionID, model, tools, effort, permMode string) {
 		st.Master = &Agent{PaneID: os.Getenv("TMUX_PANE"), SessionID: sessionID, CWD: cwd, AgentName: agentName}
 		saveState(key, st)
 
-		logInfof("init adopt master=%s session=%s pane=%s key=%s", agentName, sessionID, os.Getenv("TMUX_PANE"), key)
+		logInfof("init adopt master=%s session=%s key=%s", agentName, sessionID, key)
 		fmt.Printf("Initialized master %s from existing session %s\n", agentName, sessionID)
 
 		return
@@ -421,7 +538,7 @@ func cmdInit(sessionID, model, tools, effort, permMode string) {
 	st.Master = &Agent{PaneID: paneID, SessionID: sessionID, CWD: cwd, AgentName: agentName}
 	saveState(key, st)
 
-	// Start claude idle (no prompt); --name sets the real session name.
+	// Start claude idle (no initial prompt); --name sets the real session name.
 	parts := []string{"claude", "--session-id", sessionID, "--name", agentName, "--permission-mode", permMode}
 	if model != "" {
 		parts = append(parts, "--model", model)
@@ -449,6 +566,7 @@ func cmdInit(sessionID, model, tools, effort, permMode string) {
 // come from the session's own name — one argument is all it needs. `dismiss` is
 // the teardown.
 func cmdHire(sessionID string) {
+	sessionID = resolveSessionID(sessionID)
 	win := getWin()
 
 	if _, ok := sessionCWD(sessionID); !ok {
@@ -540,11 +658,12 @@ func cmdEnlist(managerDir, task string) {
 		key, task, sessionID, pane)
 }
 
-// cmdDismiss stops managing the agent with the given session UUID: it kills its
-// pane and removes it from state (the inverse of hire). It searches the current
-// project first, then every project file, so a UUID can be dismissed from
-// anywhere.
+// cmdDismiss soft-deletes the agent with the given session UUID: kills its pane
+// if owned and stamps DismissedAt. It searches the current project first, then
+// every project file, so a UUID can be dismissed from anywhere.
 func cmdDismiss(sessionID string) {
+	sessionID = resolveSessionID(sessionID)
+
 	key, task, st, ok := findAgentBySession(sessionID)
 	if !ok {
 		logWarnf("dismiss: no managed agent with session %s", sessionID)
@@ -552,31 +671,31 @@ func cmdDismiss(sessionID string) {
 	}
 
 	meta := st.Agents[task]
-	logInfof("dismiss session=%s task=%s key=%s pane=%s enlisted=%v", sessionID, task, key, meta.PaneID, meta.Enlisted)
-
-	// An enlisted agent is referenced in place, not owned — leave its pane
-	// running (it's an independent session in its own window) and only untrack
-	// it. Otherwise kill the pane hire/spawn created.
-	switch {
-	case meta.Enlisted:
-		logInfof("dismiss: enlisted agent — leaving pane %s running", meta.PaneID)
-	case !killPane(meta.PaneID):
-		logWarnf("dismiss: pane %s already dead for session %s", meta.PaneID, sessionID)
-	}
-
-	delete(st.Agents, task)
-
-	if len(st.Agents) == 0 && st.Master == nil {
-		removeStateFile(key)
-		logDebugf("dismiss: state file removed (empty) key=%s", key)
-	} else {
-		saveState(key, st)
-	}
+	logInfof("dismiss session=%s task=%s key=%s enlisted=%v", sessionID, task, key, meta.Enlisted)
 
 	if meta.Enlisted {
-		fmt.Printf("Dismissed enlisted '%s' (session %s); left pane %s running\n", task, sessionID, meta.PaneID)
+		logInfof("dismiss: enlisted agent — leaving pane running")
 	} else {
-		fmt.Printf("Dismissed '%s' (session %s); killed pane %s\n", task, sessionID, meta.PaneID)
+		paneID := meta.PaneID
+		if paneID == "" {
+			paneID, _ = findPaneForSession(sessionID)
+		}
+
+		if paneID != "" && !killPane(paneID) {
+			logWarnf("dismiss: pane %s already dead for session %s", paneID, sessionID)
+		}
+	}
+
+	now := time.Now()
+	meta.DismissedAt = &now
+	st.Agents[task] = meta
+	saveState(key, st)
+	logInfof("dismiss: soft-deleted task=%s key=%s", task, key)
+
+	if meta.Enlisted {
+		fmt.Printf("Dismissed enlisted '%s' (session %s); pane left running\n", task, sessionID)
+	} else {
+		fmt.Printf("Dismissed '%s' (session %s)\n", task, sessionID)
 	}
 }
 
@@ -721,30 +840,30 @@ func cmdDespawn(task string, all, prune bool) {
 	logInfof("despawn agent=%s win=%s pane=%s enlisted=%v", ref.Name, win, ref.PaneID, ref.Meta.Enlisted)
 
 	// Enlisted agents are referenced, not owned: untrack without killing.
-	switch {
-	case ref.Meta.Enlisted:
-		logInfof("despawn: enlisted agent — leaving pane %s running", ref.PaneID)
-	case !killPane(ref.PaneID):
-		logWarnf("despawn: pane %s already dead for agent '%s'", ref.PaneID, ref.Name)
+	if ref.Meta.Enlisted {
+		logInfof("despawn: enlisted agent — leaving pane running")
+	} else if ref.PaneID != "" {
+		if !killPane(ref.PaneID) {
+			logWarnf("despawn: pane %s already dead for agent '%s'", ref.PaneID, ref.Name)
+		}
 	}
 
+	// Soft-delete: stamp DismissedAt, keep the entry. `status` hides it by
+	// default; `despawn --prune` removes it.
 	key := projectKey()
 	st := loadState(key)
-	delete(st.Agents, task)
+	meta := st.Agents[task]
+	now := time.Now()
+	meta.DismissedAt = &now
+	st.Agents[task] = meta
+	saveState(key, st)
 
-	if len(st.Agents) > 0 || st.Master != nil {
-		saveState(key, st)
-	} else {
-		removeStateFile(key)
-		logDebugf("despawn: state file removed (no agents left) key=%s", key)
-	}
-
-	logInfof("despawn done agent=%s pane=%s", ref.Name, ref.PaneID)
+	logInfof("despawn done agent=%s", ref.Name)
 
 	if ref.Meta.Enlisted {
-		fmt.Printf("Untracked enlisted %s (pane %s left running)\n", ref.Name, ref.PaneID)
+		fmt.Printf("Dismissed enlisted %s (pane left running)\n", ref.Name)
 	} else {
-		fmt.Printf("Killed pane %s (%s)\n", ref.PaneID, ref.Name)
+		fmt.Printf("Dismissed %s\n", ref.Name)
 	}
 }
 
@@ -753,54 +872,50 @@ func despawnAll(win string) {
 
 	key := projectKey()
 	st := loadState(key)
-
-	kept := map[string]Agent{}
+	now := time.Now()
 
 	for _, task := range slices.Sorted(maps.Keys(st.Agents)) {
 		meta := st.Agents[task]
 		name := agentNameFor(win, task, &meta)
 
-		// Enlisted agents are referenced in place (their own window/session), not
-		// part of this window's batch — leave them running and keep tracking them.
+		// Enlisted agents are referenced in place — leave them running, just
+		// soft-delete so they disappear from default `status`.
 		if meta.Enlisted {
-			kept[task] = meta
-			logInfof("despawn: kept enlisted agent=%s pane=%s", name, meta.PaneID)
-			fmt.Printf("Left enlisted %s (pane %s) running\n", name, meta.PaneID)
-
-			continue
-		}
-
-		if killPane(meta.PaneID) {
-			logInfof("despawn: killed pane=%s agent=%s", meta.PaneID, name)
-			fmt.Printf("Killed pane %s (%s)\n", meta.PaneID, name)
+			logInfof("despawn: enlisted agent=%s — leaving pane running", name)
+			fmt.Printf("Dismissed enlisted %s (pane left running)\n", name)
 		} else {
-			logInfof("despawn: pane=%s already gone agent=%s", meta.PaneID, name)
-			fmt.Printf("Pane %s already gone (%s)\n", meta.PaneID, name)
+			// Discover pane and kill it.
+			paneID := meta.PaneID
+			if paneID == "" && meta.SessionID != "" {
+				paneID, _ = findPaneForSession(meta.SessionID)
+			}
+
+			if paneID != "" && killPane(paneID) {
+				logInfof("despawn: killed pane=%s agent=%s", paneID, name)
+				fmt.Printf("Killed %s\n", name)
+			} else {
+				logInfof("despawn: no live pane for agent=%s", name)
+				fmt.Printf("Dismissed %s (no live pane)\n", name)
+			}
 		}
+
+		// Soft-delete all agents (enlisted or owned).
+		t := now
+		meta.DismissedAt = &t
+		st.Agents[task] = meta
 	}
 
-	// The master lives in the current window (never in st.Agents) and enlisted
-	// agents were just preserved above — both outlive a batch teardown. Keep the
-	// file when either remains; drop it only when nothing is left to track.
-	if st.Master != nil || len(kept) > 0 {
-		st.Agents = kept
-		saveState(key, st)
-		logDebugf("despawn --all: kept master=%v enlisted=%d, cleared owned agents key=%s",
-			st.Master != nil, len(kept), key)
-	} else {
-		removeStateFile(key)
-		logDebugf("despawn --all: removed state file for key=%s", key)
-	}
+	saveState(key, st)
+	logDebugf("despawn --all: soft-deleted all agents key=%s", key)
 }
 
 func despawnPrune() {
-	logInfof("despawn --prune: cross-window sweep")
+	logInfof("despawn --prune: sweep dismissed entries across all projects")
 
-	panes := livePanes()
 	removed := 0
 
 	for _, e := range iterStateFiles() {
-		removed += pruneEntry(e, panes)
+		removed += pruneEntry(e)
 	}
 
 	plural := "ies"
@@ -808,16 +923,16 @@ func despawnPrune() {
 		plural = "y"
 	}
 
-	logInfof("prune: %d dead entr%s removed", removed, plural)
-	fmt.Printf("%d dead entr%s pruned\n", removed, plural)
+	logInfof("prune: %d dismissed entr%s removed", removed, plural)
+	fmt.Printf("%d dismissed entr%s pruned\n", removed, plural)
 }
 
-// pruneEntry drops dead agents from one state file, rewriting it — or removing
-// it when neither agents nor a master remain. An unreadable file is removed
-// outright. The master record (and its pane) is never touched. Returns the count
-// of removed entries (1 for an unreadable file, else the number of dead agents).
-func pruneEntry(e stateFileEntry, panes map[string]bool) int {
+// pruneEntry removes dismissed agents from one state file. An unreadable file
+// is removed outright. The master record is never touched. Returns the count of
+// removed entries (1 for an unreadable file, else the number of dismissed agents).
+func pruneEntry(e stateFileEntry) int {
 	base := filepath.Base(e.Path)
+
 	if e.State == nil {
 		_ = os.Remove(e.Path)
 
@@ -828,22 +943,22 @@ func pruneEntry(e stateFileEntry, panes map[string]bool) int {
 	}
 
 	st := e.State
-	dead := make([]string, 0)
+
+	var dismissed []string
 
 	for t, m := range st.Agents {
-		if !panes[m.PaneID] {
-			dead = append(dead, t)
+		if m.DismissedAt != nil {
+			dismissed = append(dismissed, t)
 		}
 	}
 
-	slices.Sort(dead)
+	slices.Sort(dismissed)
 
-	for _, t := range dead {
-		// Prune's name fallback is the TASK name (not subagent-win-task).
+	for _, t := range dismissed {
 		name := cmp.Or(st.Agents[t].AgentName, t)
-		logInfof("prune: dead agent '%s' in %s (pane %s)", name, base, st.Agents[t].PaneID)
+		logInfof("prune: dismissed agent '%s' in %s", name, base)
 		delete(st.Agents, t)
-		fmt.Printf("Pruned dead agent '%s' from %s\n", name, base)
+		fmt.Printf("Pruned dismissed '%s' from %s\n", name, base)
 	}
 
 	if len(st.Agents) > 0 || st.Master != nil {
@@ -851,13 +966,14 @@ func pruneEntry(e stateFileEntry, panes map[string]bool) int {
 			_ = os.WriteFile(e.Path, b, 0o644)
 		}
 	} else {
-		_ = os.Remove(e.Path)
+		key := strings.TrimSuffix(base, ".json")
+		removeStateFile(key)
 
 		logInfof("prune: removed empty %s", base)
 		fmt.Printf("Removed empty: %s\n", base)
 	}
 
-	return len(dead)
+	return len(dismissed)
 }
 
 // ---------------------------------------------------------------------------
@@ -895,3 +1011,84 @@ func cmdCompact(task, description string) {
 
 	fmt.Printf("Sent '%s' to %s (%s)\n", text, ref.Name, ref.PaneID)
 }
+
+// ---------------------------------------------------------------------------
+// promote
+// ---------------------------------------------------------------------------
+
+// cmdPromote registers the current Claude Code session as the master agent of
+// this project's roster. It reads CLAUDE_CODE_SESSION_ID from the environment
+// (set automatically when running via `! claudemux promote` inside Claude Code).
+// An optional name overrides the stored agent_name (default: "master").
+func cmdPromote(name string) {
+	sessionID := os.Getenv("CLAUDE_CODE_SESSION_ID")
+	if sessionID == "" {
+		exitErrf(1, "promote requires CLAUDE_CODE_SESSION_ID — run via `! claudemux promote` inside a Claude Code session")
+	}
+
+	pane := os.Getenv("TMUX_PANE")
+	cwd, _ := os.Getwd()
+	key := projectKey()
+	st := loadState(key)
+	st.Master = &Agent{
+		PaneID:    pane, // in-memory; not persisted
+		SessionID: sessionID,
+		CWD:       cwd,
+		AgentName: name,
+	}
+	saveState(key, st)
+
+	logInfof("promote session=%s pane=%s name=%s key=%s", sessionID, pane, name, key)
+	fmt.Printf("Promoted to master: %s (session %s)\n", name, sessionID)
+}
+
+// ---------------------------------------------------------------------------
+// sessions (transcript helpers — used by cmdStatus transcript-first view)
+// ---------------------------------------------------------------------------
+
+type jsonlEntry struct {
+	uuid    string
+	modTime time.Time
+	size    int64
+}
+
+// collectJSONL returns JSONL entries in projectDir sorted newest-first.
+func collectJSONL(projectDir string) ([]jsonlEntry, error) {
+	entries, err := os.ReadDir(projectDir)
+	if err != nil {
+		return nil, fmt.Errorf("ReadDir: %w", err)
+	}
+
+	var files []jsonlEntry
+
+	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ".jsonl" {
+			continue
+		}
+
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+
+		files = append(files, jsonlEntry{
+			uuid:    strings.TrimSuffix(e.Name(), ".jsonl"),
+			modTime: info.ModTime(),
+			size:    info.Size(),
+		})
+	}
+
+	slices.SortFunc(files, func(a, b jsonlEntry) int {
+		switch {
+		case a.modTime.After(b.modTime):
+			return -1
+		case a.modTime.Before(b.modTime):
+			return 1
+		default:
+			return 0
+		}
+	})
+
+	return files, nil
+}
+

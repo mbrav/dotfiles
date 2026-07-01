@@ -1,16 +1,20 @@
 # See https://k9scli.io/topics/config/
 k9s:
-  liveViewAutoRefresh: false
+  liveViewAutoRefresh: true
   screenDumpDir: /tmp/k9s-screens
   refreshRate: 2
+  apiServerTimeout: 15s
   maxConnRetry: 5
   readOnly: false
-  noExitOnCtrlC: false
+  defaultView: ""
+  noExitOnCtrlC: true
+  portForwardAddress: localhost
   ui:
     enableMouse: true
     headless: false
     logoless: false
     crumbsless: false
+    reactive: false
     noIcons: false
     skin: nord
   skipLatestRevCheck: false
@@ -21,8 +25,9 @@ k9s:
     limits:
       cpu: 100m
       memory: 100Mi
+    tty: true
   imageScans:
-    enable: false
+    enable: true
     exclusions:
       namespaces: []
       labels: {}
@@ -30,8 +35,7 @@ k9s:
     tail: 500
     buffer: 5000
     sinceSeconds: -1
-    fullScreen: false
-    textWrap: false
+    textWrap: true
     showTime: false
   thresholds:
     cpu:

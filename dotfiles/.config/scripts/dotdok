@@ -147,11 +147,21 @@ run_opts=(
   --mount "type=bind,source=${mount_from},target=${mount_to}"
 )
 
+container_home="/home/${user}"
+
 # Append a read-only bind mount only if the source exists
 add_mount_if() {
   [[ -e "$1" ]] && run_opts+=(--mount "type=bind,source=${1},target=${2},readonly")
 }
+
+# Append a read-write bind mount only if the source exists
+add_mount_rw_if() {
+  [[ -e "$1" ]] && run_opts+=(--mount "type=bind,source=${1},target=${2}")
+}
+
 add_mount_if "/var/log" "/var/log"
+# Share the host's ~/.local (fish history, user-installed tools, tokens)
+add_mount_rw_if "${HOME}/.local" "${container_home}/.local"
 
 info_msg "Running ${docker_tag} with user ${uid}:${gid}"
 

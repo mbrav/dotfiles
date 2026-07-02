@@ -31,6 +31,9 @@ RUN sh -c 'if command -v apk >/dev/null; then \
   && touch /home/$DOCKER_USER/.local/share/fish/fish_history \
   && chown -R "$DOCKER_USER" /home/$DOCKER_USER
 
+# Pin HOME so dotinstall (build), the runtime shell, WORKDIR and the mount all
+# agree — otherwise root defaults to /root while everything else uses /home/root
+ENV HOME=/home/$DOCKER_USER
 WORKDIR /home/$DOCKER_USER
 USER $DOCKER_USER
 

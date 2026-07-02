@@ -29,7 +29,7 @@ function __register_wakatime_fish_before_exec -e fish_postexec
     else if type -p ~/.wakatime/wakatime-cli 2>&1 >/dev/null
         set wakatime_path (type -p ~/.wakatime/wakatime-cli)
     else
-        echo "wakatime command not found. Please read \"https://wakatime.com/terminal\" and install wakatime."
+        # wakatime is optional — skip silently when not installed
         return 0
     end
 

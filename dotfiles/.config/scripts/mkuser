@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Create (or reuse) a user + group for the container image, distro-aware.
+#
+# Handles the awkward cases:
+#   - root (uid 0): the account always exists — nothing to do.
+#   - the target UID is already held by another user (e.g. Ubuntu 24.04+ ships
+#     an 'ubuntu' user at uid 1000): free it, then create the target user.
+#   - the user/group already exist: reuse them.
+#
+# Usage: mkuser <user> <gid> <uid>   (run as root during the Docker build)
+
+set -euo pipefail
+
+script_dir="$(dirname "$(realpath "$0")")"
+source "${script_dir}/_util"
+
+user="${1:?user name required}"
+gid="${2:?gid required}"
+uid="${3:?uid required}"
+
+# root already exists — reuse it as-is
+if [[ "${uid}" == "0" || "${user}" == "root" ]]; then
+  info_msg "Target user is root; using existing account"
+  exit 0
+fi
+
+# Ensure the group exists (reuse whatever owns the gid, e.g. ubuntu's group)
+if getent group "${gid}" >/dev/null 2>&1; then
+  info_msg "Group gid ${gid} already exists; reusing"
+elif command -v groupadd >/dev/null; then
+  groupadd -g "${gid}" "${user}"
+else
+  addgroup "${user}" --gid "${gid}"
+fi
+
+# If another user already holds the target UID, remove it to free the UID
+existing="$(getent passwd "${uid}" | cut -d: -f1 || true)"
+if [[ -n "${existing}" && "${existing}" != "${user}" ]]; then
+  warning_msg "UID ${uid} held by '${existing}'; removing it to free the UID"
+  if command -v userdel >/dev/null; then
+    userdel -r "${existing}" 2>/dev/null || userdel "${existing}"
+  else
+    deluser --remove-home "${existing}" 2>/dev/null || deluser "${existing}" 2>/dev/null || true
+  fi
+fi
+
+# Create the user if it does not already exist
+if id -u "${user}" >/dev/null 2>&1; then
+  info_msg "User '${user}' already exists; skipping creation"
+elif command -v useradd >/dev/null; then
+  useradd -m -u "${uid}" -g "${gid}" -s /bin/bash "${user}"
+else
+  adduser "${user}" -G "${user}" --uid "${uid}" --disabled-password
+fi
+
+success_msg "User ready: ${user} (uid ${uid}, gid ${gid})"

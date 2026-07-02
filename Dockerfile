@@ -17,14 +17,8 @@ RUN sh -c 'command -v bash >/dev/null \
 # Install system packages (distro-aware: apk native, apt base + binstall rest)
 RUN $DOTFILES_ROOT/dotfiles/.config/scripts/pkgsetup
 
-# Setup docker user (distro-aware: busybox adduser vs useradd)
-RUN sh -c 'if command -v apk >/dev/null; then \
-      getent group "$1" >/dev/null 2>&1 || addgroup "$0" --gid "$1"; \
-      id -u "$0" >/dev/null 2>&1 || adduser "$0" -G "$0" --uid "$2" --disabled-password; \
-    else \
-      getent group "$1" >/dev/null 2>&1 || groupadd -g "$1" "$0"; \
-      id -u "$0" >/dev/null 2>&1 || useradd -m -u "$2" -g "$1" -s /bin/bash "$0"; \
-    fi' "$DOCKER_USER" "$DOCKER_GID" "$DOCKER_UID" \
+# Setup docker user (distro-aware; handles root, UID collisions, existing users)
+RUN $DOTFILES_ROOT/dotfiles/.config/scripts/mkuser "$DOCKER_USER" "$DOCKER_GID" "$DOCKER_UID" \
   && $DOTFILES_ROOT/dotfiles/.config/scripts/sedchad "palette = 'default'" "palette = 'nord-tan'" $DOTFILES_ROOT/dotfiles/.config/starship.toml \
   && mkdir -p /home/$DOCKER_USER/.config \
   && mkdir -p /home/$DOCKER_USER/.local/share/fish \

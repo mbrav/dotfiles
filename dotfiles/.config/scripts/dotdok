@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-# Set script_dir
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Set script_dir (realpath resolves the PATH symlink so ../../../ finds the repo)
+script_dir="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" && pwd)"
 uid="$(id -u)"
 gid="$(id -g)"
 user="${USER:-mbrav}"
@@ -136,17 +136,21 @@ else
   info_msg "Container image already exists, skipping build."
 fi
 
-# Print mount if source exists
-mount_if() {
-  [[ -e "$1" ]] && echo "--mount type=bind,source=${1},target=${2},readonly"
+# Build run options, appending each mount as separate argv tokens
+run_opts=(
+  -it --rm
+  --name "tmp-${mount_from##*/}"
+  --user "${uid}:${gid}"
+  --mount "type=bind,source=${mount_from},target=${mount_to}"
+)
+
+# Append a read-only bind mount only if the source exists
+add_mount_if() {
+  [[ -e "$1" ]] && run_opts+=(--mount "type=bind,source=${1},target=${2},readonly")
 }
+add_mount_if "/var/log" "/var/log"
 
 info_msg "Running ${docker_tag} with user ${uid}:${gid}"
 
-"${container_runtime}" run -it --rm \
-  --name "tmp-${mount_from##*/}" \
-  --user "${uid}:${gid}" \
-  --mount type=bind,source="${mount_from}",target="${mount_to}" \
-  "$(mount_if "/var/log" "/var/log")" \
-  "${docker_tag}" &&
+"${container_runtime}" run "${run_opts[@]}" "${docker_tag}" &&
   success_msg "Exited container ${docker_tag}"

@@ -1,45 +1,30 @@
-FROM alpine:latest
+ARG BASE_IMAGE=alpine:latest
+FROM ${BASE_IMAGE}
 
 ARG DOCKER_USER=${DOCKER_USER:-mbrav}
 ARG DOCKER_UID=${DOCKER_UID:-1000}
 ARG DOCKER_GID=${DOCKER_GID:-1000}
 ARG DOTFILES_ROOT="/home/${DOCKER_USER:-mbrav}/.dotfiles/"
 
-# Install system packages
-RUN apk add --upgrade --latest \
-  bash \
-  fish \
-  curl \
-  musl \
-  build-base \
-  unzip \
-  git \
-  # CLI tools
-  grep \
-  ripgrep \
-  fzf \
-  eza \
-  mcfly \
-  upx \
-  starship \
-  fd \
-  bat \
-  yq \
-  jq \
-  # Dev
-  vim \
-  neovim \
-  lazygit \
-  npm \
-  python3 \
-  && apk cache clean
-
-# Copy dotfiles config
+# Copy dotfiles config (scripts needed for package setup)
 COPY ../dotfiles "$DOTFILES_ROOT/dotfiles/"
 
-# Setup docker user
-RUN addgroup "$DOCKER_USER" --gid "$DOCKER_GID" \
-  && adduser "$DOCKER_USER" -G "$DOCKER_USER" --uid "$DOCKER_UID" --disabled-password \
+# Bootstrap bash — Alpine base ships only busybox, but pkgsetup needs bash
+RUN sh -c 'command -v bash >/dev/null \
+  || (command -v apk >/dev/null && apk add --no-cache bash) \
+  || (command -v apt-get >/dev/null && apt-get update && apt-get install -y bash)'
+
+# Install system packages (distro-aware: apk native, apt base + binstall rest)
+RUN $DOTFILES_ROOT/dotfiles/.config/scripts/pkgsetup
+
+# Setup docker user (distro-aware: busybox adduser vs useradd)
+RUN sh -c 'if command -v apk >/dev/null; then \
+      addgroup "$0" --gid "$1" \
+      && adduser "$0" -G "$0" --uid "$2" --disabled-password; \
+    else \
+      getent group "$1" >/dev/null || groupadd -g "$1" "$0"; \
+      useradd -m -u "$2" -g "$1" -s /bin/bash "$0"; \
+    fi' "$DOCKER_USER" "$DOCKER_GID" "$DOCKER_UID" \
   && $DOTFILES_ROOT/dotfiles/.config/scripts/sedchad "palette = 'default'" "palette = 'nord-tan'" $DOTFILES_ROOT/dotfiles/.config/starship.toml \
   && mkdir -p /home/$DOCKER_USER/.config \
   && mkdir -p /home/$DOCKER_USER/.local/share/fish \

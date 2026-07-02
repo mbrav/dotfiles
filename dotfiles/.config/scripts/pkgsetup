@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# Distro-aware package installer for the dotfiles container image.
+#
+# Detects the system package manager and installs the base toolset:
+#   - Alpine (apk): apk has all the modern CLI tools natively.
+#   - Debian/Ubuntu (apt): install the cleanly-available base, then pull the
+#     modern rust/go tools apt lacks via `binstall`.
+#
+# Intended to run as root during the Docker build. Non-interactive.
+
+set -euo pipefail
+
+script_dir="$(dirname "$(realpath "$0")")"
+source "${script_dir}/_util"
+
+ran_col_str "Distro-aware package setup"
+
+# Tools fetched from GitHub releases on Debian/Ubuntu (apt lacks / ships old).
+binstall_pkgs=(
+  eza bat fd mcfly starship yq k9s docker-compose gum bottom
+  btop oha sops lazygit
+)
+
+if command -v apk >/dev/null; then
+  info_msg "Detected apk (Alpine). Installing native packages."
+  apk add --upgrade --latest \
+    bash \
+    fish \
+    curl \
+    musl \
+    build-base \
+    unzip \
+    git \
+    grep \
+    ripgrep \
+    fzf \
+    eza \
+    mcfly \
+    upx \
+    starship \
+    fd \
+    bat \
+    yq \
+    jq \
+    vim \
+    neovim \
+    lazygit \
+    npm \
+    python3
+  apk cache clean || true
+  success_msg "Alpine packages installed"
+
+elif command -v apt-get >/dev/null; then
+  info_msg "Detected apt (Debian/Ubuntu). Installing base packages."
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update
+  apt-get install -y --no-install-recommends \
+    bash \
+    fish \
+    curl \
+    ca-certificates \
+    build-essential \
+    unzip \
+    tar \
+    xz-utils \
+    git \
+    grep \
+    ripgrep \
+    fzf \
+    jq \
+    vim \
+    neovim \
+    npm \
+    python3
+  rm -rf /var/lib/apt/lists/*
+  success_msg "Debian/Ubuntu base packages installed"
+
+  info_msg "Installing modern CLI tools via binstall: ${binstall_pkgs[*]}"
+  for pkg in "${binstall_pkgs[@]}"; do
+    force=1 "${script_dir}/binstall" "${pkg}" /usr/local/bin
+  done
+  success_msg "binstall tools installed"
+
+else
+  error_msg "No supported package manager found (need apk or apt-get)" 1
+fi

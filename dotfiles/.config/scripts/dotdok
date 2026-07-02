@@ -4,7 +4,6 @@ set -euo pipefail
 
 # Set script_dir
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-docker_tag="mbrav/dotfiles:latest"
 uid="$(id -u)"
 gid="$(id -g)"
 user="${USER:-mbrav}"
@@ -13,6 +12,20 @@ mount_to="/home/${user}/mount"
 container_runtime="docker"
 build_opts=()
 pass_home=false
+base_image=""
+
+# Selectable base images for the ephemeral container
+base_images=(
+  "alpine:latest"
+  "debian:13"
+  "ubuntu:24.04"
+  "ubuntu:26.04"
+)
+
+# Convert a base image (e.g. ubuntu:24.04) into a docker tag slug (ubuntu2404)
+image_slug() {
+  echo "${1}" | tr -d ':.' | tr '[:upper:]' '[:lower:]'
+}
 
 # Source util functions if present
 if [[ -f "${script_dir}/_util" ]]; then
@@ -34,12 +47,15 @@ Options:
   -u         Mount user's home directory instead of current working dir
   -p         Use Podman instead of Docker
   -n         No cache during image build (force rebuild)
+  -d IMAGE   Base image (non-interactive). One of:
+             ${base_images[*]}
+             When omitted, an fzf/select menu is shown.
 EOF
   exit 0
 }
 
 # Parse CLI options
-while getopts "hupn" opt; do
+while getopts "hupnd:" opt; do
   case "${opt}" in
   h) display_help ;;
   u)
@@ -49,12 +65,32 @@ while getopts "hupn" opt; do
     ;;
   p) container_runtime="podman" ;;
   n) build_opts+=(--no-cache) ;;
+  d) base_image="${OPTARG}" ;;
   *)
     error_msg "Unknown option: -${OPTARG}"
     exit 1
     ;;
   esac
 done
+
+# Select base image if not provided via -d
+if [[ -z "${base_image}" ]]; then
+  if command -v fzf >/dev/null; then
+    base_image="$(printf '%s\n' "${base_images[@]}" |
+      fzf --prompt="Select base image: " --height=~50% --reverse)"
+  else
+    info_msg "fzf not found, falling back to select menu"
+    PS3="Select base image: "
+    select base_image in "${base_images[@]}"; do
+      [[ -n "${base_image}" ]] && break
+    done
+  fi
+fi
+
+[[ -n "${base_image}" ]] || error_msg "No base image selected" 1
+
+# Derive per-distro docker tag so images do not clobber each other
+docker_tag="mbrav/dotfiles:$(image_slug "${base_image}")"
 
 # Detect if running on macOS
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -75,6 +111,8 @@ if ! command -v "${container_runtime}" >/dev/null; then
 fi
 
 info_msg "Container runtime: ${container_runtime}"
+info_msg "Base image: ${base_image}"
+info_msg "Image tag:  ${docker_tag}"
 info_msg "Using user: ${user}"
 info_msg "UID/GID:    ${uid}/${gid}"
 info_msg "Mount from: ${mount_from}"
@@ -87,6 +125,7 @@ if ! "${container_runtime}" image inspect "${docker_tag}" >/dev/null 2>&1; then
   "${container_runtime}" build "${build_opts[@]}" \
     --progress=plain \
     -f "${script_dir}/../../../Dockerfile" \
+    --build-arg BASE_IMAGE="${base_image}" \
     --build-arg DOCKER_USER="${user}" \
     --build-arg DOCKER_UID="${uid}" \
     --build-arg DOCKER_GID="${gid}" \

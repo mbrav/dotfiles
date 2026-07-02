@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
-# Install various binaries directly from GitHub
+# Install various CLI binaries directly from GitHub releases.
+#
+# Data-driven: every tool is one row in the BIN_* associative arrays below.
+# Adding a new tool = add a row. Requires bash 4+ (associative arrays) — both the
+# container bash and the homebrew bash on macOS satisfy this.
+#
+# Usage: binstall <name|all> [bin_dir] [delay]
+#   bin_dir  target install path        (default: /usr/local/bin)
+#   delay    curl request delay seconds (default: 0.5)
+
 # Set script_dir to the directory of this script
 script_dir="$(dirname "$(realpath "$0")")"
 
@@ -12,22 +21,112 @@ source "${script_dir}/_util"
 
 ran_col_str "Binary install utility" c
 
+# METADATA TABLE
+# Asset/path placeholders: {v}=tag as-is, {V}=tag w/o leading v,
+#                          {arch}=$(uname -m), {os}=$(uname -s)
+# Defaults when unset: KIND=raw, PATH=<name>, VERPAT=^v#.#.#, FLAGS=''
+# FLAGS: space-separated constraints — "linux" and/or "x86".
+declare -A BIN_REPO BIN_ASSET BIN_KIND BIN_PATH BIN_VERPAT BIN_FLAGS
+
+BIN_REPO["docker-compose"]=docker/compose
+BIN_ASSET["docker-compose"]='docker-compose-{os}-{arch}'
+
+BIN_REPO[k9s]=derailed/k9s
+BIN_ASSET[k9s]='k9s_{os}_amd64.tar.gz'
+BIN_KIND[k9s]=tgz
+BIN_FLAGS[k9s]='x86'
+
+BIN_REPO[eza]=eza-community/eza
+BIN_ASSET[eza]='eza_{arch}-unknown-linux-musl.tar.gz'
+BIN_KIND[eza]=tgz
+BIN_FLAGS[eza]='linux'
+
+BIN_REPO[bat]=sharkdp/bat
+BIN_ASSET[bat]='bat-{v}-{arch}-unknown-linux-musl.tar.gz'
+BIN_KIND[bat]=tgz
+BIN_PATH[bat]='bat-{v}-{arch}-unknown-linux-musl/bat'
+BIN_FLAGS[bat]='linux'
+
+BIN_REPO[starship]=starship/starship
+BIN_ASSET[starship]='starship-{arch}-unknown-linux-musl.tar.gz'
+BIN_KIND[starship]=tgz
+BIN_FLAGS[starship]='linux'
+
+BIN_REPO[mcfly]=cantino/mcfly
+BIN_ASSET[mcfly]='mcfly-{v}-{arch}-unknown-linux-musl.tar.gz'
+BIN_KIND[mcfly]=tgz
+BIN_FLAGS[mcfly]='linux'
+
+BIN_REPO[fzf]=junegunn/fzf
+BIN_ASSET[fzf]='fzf-{V}-linux_amd64.tar.gz'
+BIN_KIND[fzf]=tgz
+BIN_FLAGS[fzf]='linux x86'
+
+BIN_REPO[jq]=jqlang/jq
+BIN_ASSET[jq]='jq-linux-amd64'
+BIN_VERPAT[jq]='^jq-[0-9]+\.[0-9]+$'
+BIN_FLAGS[jq]='linux x86'
+
+BIN_REPO[jqp]=noahgorstein/jqp
+BIN_ASSET[jqp]='jqp_Linux_x86_64.tar.gz'
+BIN_KIND[jqp]=tgz
+BIN_FLAGS[jqp]='linux x86'
+
+BIN_REPO[htmlq]=mgdm/htmlq
+BIN_ASSET[htmlq]='htmlq-{arch}-linux.tar.gz'
+BIN_KIND[htmlq]=tgz
+BIN_FLAGS[htmlq]='linux'
+
+BIN_REPO[yq]=mikefarah/yq
+BIN_ASSET[yq]='yq_linux_amd64'
+BIN_FLAGS[yq]='linux x86'
+
+BIN_REPO[fd]=sharkdp/fd
+BIN_ASSET[fd]='fd-{v}-{arch}-unknown-linux-musl.tar.gz'
+BIN_KIND[fd]=tgz
+BIN_PATH[fd]='fd-{v}-{arch}-unknown-linux-musl/fd'
+BIN_FLAGS[fd]='linux'
+
+BIN_REPO[upx]=upx/upx
+BIN_ASSET[upx]='upx-{V}-amd64_linux.tar.xz'
+BIN_KIND[upx]=txz
+BIN_PATH[upx]='upx-{V}-amd64_linux/upx'
+BIN_FLAGS[upx]='linux x86'
+
+BIN_REPO[gum]=charmbracelet/gum
+BIN_ASSET[gum]='gum_{V}_{os}_{arch}.tar.gz'
+BIN_KIND[gum]=tgz
+
+BIN_REPO[bottom]=ClementTsang/bottom
+BIN_ASSET[bottom]='bottom_{arch}-unknown-linux-musl.tar.gz'
+BIN_KIND[bottom]=tgz
+BIN_PATH[bottom]=btm
+BIN_VERPAT[bottom]='^[0-9]+\.[0-9]+\.[0-9]+$'
+BIN_FLAGS[bottom]='linux x86'
+
+BIN_REPO[btop]=aristocratos/btop
+BIN_ASSET[btop]='btop-{arch}-unknown-linux-musl.tar.gz'
+BIN_KIND[btop]=tgz
+BIN_PATH[btop]='btop/bin/btop'
+BIN_FLAGS[btop]='linux'
+
+BIN_REPO[oha]=hatoo/oha
+BIN_ASSET[oha]='oha-linux-amd64'
+BIN_FLAGS[oha]='linux x86'
+
+BIN_REPO[sops]=getsops/sops
+BIN_ASSET[sops]='sops-{v}.linux.amd64'
+BIN_FLAGS[sops]='linux x86'
+
+BIN_REPO[lazygit]=jesseduffield/lazygit
+BIN_ASSET[lazygit]='lazygit_{V}_linux_x86_64.tar.gz'
+BIN_KIND[lazygit]=tgz
+BIN_FLAGS[lazygit]='linux x86'
+
+# Ordered install list for `all` and help output
 binaries=(
-  "docker-compose"
-  "k9s"
-  "eza"
-  "bat"
-  "starship"
-  "mcfly"
-  "fzf"
-  "jq"
-  "jqp"
-  "htmlq"
-  "yq"
-  "fd"
-  "upx"
-  "gum"
-  "bottom"
+  docker-compose k9s eza bat starship mcfly fzf jq jqp htmlq yq fd upx gum
+  bottom btop oha sops lazygit
 )
 
 bin_list="${binaries[*]}"
@@ -39,654 +138,116 @@ cmd_arg_help \
 # Check requirements
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
 
-# PROGRAM FUNCTIONS
+# HELPERS
+
 function bin_install() {
-  # mv command that checks if folder is writable by user
-  # $0 - Source
-  # $1 - Target
+  # Install a file into a directory, using sudo if not writable.
+  # $1 - Source file
+  # $2 - Target directory (basename of source is preserved)
   if [[ -w "${2}" ]]; then
-    info_msg "Directory ${w} is writable"
-    mv -v "${1}" "${2}"
+    info_msg "Directory ${2} is writable"
     install -p -m 755 "${1}" "${2}"
   else
-    warning_msg "Sudo must be used for ${w}"
+    warning_msg "Sudo must be used for ${2}"
     sudo install -p --owner=root --group=root -m 755 "${1}" "${2}"
   fi
 }
 
-# FETCH FUNCTIONS
-function fetch_version_docker_compose {
-  # Get latest Docker compose version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/docker/compose/tags" |
-    # Get all tag names
+function latest_version() {
+  # Fetch the latest matching release tag for a repo.
+  # $1 - owner/repo
+  # $2 - grep -P version pattern (optional; default vX.Y.Z)
+  local repo="${1}"
+  local pat="${2:-^v[0-9]+\.[0-9]+\.[0-9]+$}"
+  sleep "${delay}"
+  curl -s "https://api.github.com/repos/${repo}/tags" |
     jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
+    grep -P -m 1 "${pat}"
 }
 
-function fetch_version_k9s {
-  # Get latest k9s version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/derailed/k9s/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
+function expand_str() {
+  # Expand {v}/{V}/{arch}/{os} placeholders.
+  # $1 - template string
+  # $2 - version tag
+  local s="${1}" v="${2}"
+  local V="${v##*v}" # strip leading v (or up-to-last v)
+  s="${s//\{v\}/${v}}"
+  s="${s//\{V\}/${V}}"
+  s="${s//\{arch\}/$(uname -m)}"
+  s="${s//\{os\}/$(uname -s)}"
+  echo "${s}"
 }
 
-function fetch_version_eza {
-  # Get latest eza version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/eza-community/eza/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
+function install_one() {
+  # Download + install a single tool from its metadata row.
+  # $1 - tool name (key in BIN_* arrays)
+  local name="${1}"
+  local repo="${BIN_REPO[${name}]:-}"
+  [[ -n "${repo}" ]] || {
+    error_msg "Unknown program: ${CLEAR}${UNDERLINE}${name}"
+    error_msg "List of available binaries: ${CLEAR}${UNDERLINE}${bin_list}" 1
+  }
+
+  local kind="${BIN_KIND[${name}]:-raw}"
+  local flags="${BIN_FLAGS[${name}]:-}"
+
+  # Platform constraint guards
+  if [[ " ${flags} " == *" linux "* ]]; then
+    [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+  fi
+  if [[ " ${flags} " == *" x86 "* ]]; then
+    [[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
+  fi
+
+  info_msg "Fetching latest ${name} tag from GitHub"
+  local version
+  version=$(latest_version "${repo}" "${BIN_VERPAT[${name}]:-}")
+  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
+  info_msg "Setting version to: ${UNDERLINE}${version}"
+
+  local asset url
+  asset=$(expand_str "${BIN_ASSET[${name}]}" "${version}")
+  url="https://github.com/${repo}/releases/download/${version}/${asset}"
+  sleep "${delay}"
+  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url: ${url}" 6
+  success_msg "Valid url: ${UNDERLINE}${url}"
+
+  if [[ "${kind}" == "raw" ]]; then
+    # Raw binary: download straight to name and install
+    local dst="/tmp/${name}"
+    curl -L "${url}" -o "${dst}"
+    chmod +x "${dst}"
+    bin_install "${dst}" "${bin_dir}/"
+    rm -f "${dst}"
+  else
+    # Archive: download, unpack, install from inner path
+    local topt="z"
+    [[ "${kind}" == "txz" ]] && topt="J"
+    local down="/tmp/${asset}"
+    local dir="/tmp/${name}-${version}"
+    local inner
+    inner=$(expand_str "${BIN_PATH[${name}]:-${name}}" "${version}")
+    mkdir -pv "${dir}"
+    curl -L "${url}" -o "${down}"
+    tar -x"${topt}"f "${down}" -C "${dir}"
+    bin_install "${dir}/${inner}" "${bin_dir}/"
+    rm -rf "${down}" "${dir}"
+  fi
+
+  success_msg "${name} installed"
 }
 
-function fetch_version_bat {
-  # Get latest bat version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/sharkdp/bat/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_starship {
-  # Get latest starship version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/starship/starship/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_mcfly {
-  # Get latest mcfly version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/cantino/mcfly/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_fzf {
-  # Get latest fzf version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/junegunn/fzf/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "x.x.x" pattern without additional characters
-    grep -P -m 1 '^[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_jq {
-  # Get latest jq version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/jqlang/jq/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "jq-x.x" pattern without additional characters
-    grep -P -m 1 '^jq-[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_jqp {
-  # Get latest jq version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/noahgorstein/jqp/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_htmlq {
-  # Get latest htmlq version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/mgdm/htmlq/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_yq {
-  # Get latest yq version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/mikefarah/yq/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_ripgrep {
-  # Get latest ripgrep version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/BurntSushi/ripgrep/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_fd {
-  # Get latest fd version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/sharkdp/fd/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_upx {
-  # Get latest upx version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/upx/upx/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_gum {
-  # Get latest gum version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/charmbracelet/gum/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "vx.x.x" pattern without additional characters
-    grep -P -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-function fetch_version_bottom {
-  # Get latest bottom version and print result
-  sleep "$delay"
-  curl -s "https://api.github.com/repos/ClementTsang/bottom/tags" |
-    # Get all tag names
-    jq -r '.[]|.name' |
-    # Get latest "x.x.x" pattern without additional characters
-    grep -P -m 1 '^[0-9]+\.[0-9]+\.[0-9]+$'
-}
-
-case $1 in
+case "${1:-}" in
+"" | -h | --help)
+  error_msg "Please provide a program name or 'all'. Available: ${CLEAR}${UNDERLINE}${bin_list}" 1
+  ;;
 all)
   warning_msg "Installing all binaries: ${bin_list}"
-  # Create an array from string
   for b in "${binaries[@]}"; do
-    # Execute self with all binaries and bin path
-    eval "${0} ${b} ${bin_dir}"
+    install_one "${b}"
   done
-
-  # Create Y/N prompt
-  if yes_no_prompt "Compress downloads binaries with upx?"; then
-    for b in "${binaries[@]}"; do
-      # Compress binaries in array
-      #sudo upx --best --lzma "${bin_dir}/*"
-      if [[ -w "${bin_dir}" ]]; then
-        upx --best --lzma "${bin_dir}/${b}"
-      else
-        sudo upx --best --lzma "${bin_dir}/${b}"
-      fi
-    done
-    success_msg "Binaries compressed with upx!"
-  else
-    info_msg "Skipping compression"
-  fi
-  ;;
-docker-compose)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_docker_compose)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/docker/compose/releases/download/${version}/${1}-$(uname -s)-$(uname -m)"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  if [[ -w "${bin_dir}" ]]; then
-    curl -L "${url}" -o "${bin_dir}/${1}"
-    chmod +x "${bin_dir}/${1}"
-  else
-    sudo curl -L "${url}" -o "${bin_dir}/${1}"
-    sudo chmod +x "${bin_dir}/${1}"
-  fi
-
-  success_msg "${1} installed"
-  docker-compose --version
-  ;;
-k9s)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_k9s)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/derailed/k9s/releases/download/${version}/${1}_$(uname -s)_amd64.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # k9s version
-  ;;
-eza)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_eza)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/eza-community/eza/releases/download/${version}/${1}_$(uname -m)-unknown-linux-musl.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # eza --version
-  ;;
-bat)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_bat)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/sharkdp/bat/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-musl.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # bat --version
-  ;;
-starship)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_starship)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/starship/starship/releases/download/${version}/${1}-$(uname -m)-unknown-linux-musl.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # starship --version
-  ;;
-mcfly)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_mcfly)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/cantino/mcfly/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-musl.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # mcfly --version
-  ;;
-fzf)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_fzf)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/junegunn/fzf/releases/download/${version}/${1}-${version}-linux_amd64.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-  [[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # fzf --version
-  ;;
-jq)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_jq)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/jqlang/jq/releases/download/${version}/${1}-linux-amd64"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-  [[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
-
-  if [[ -w "${bin_dir}" ]]; then
-    curl -L "${url}" -o "${bin_dir}/${1}"
-    chmod +x "${bin_dir}/${1}"
-  else
-    sudo curl -L "${url}" -o "${bin_dir}/${1}"
-    sudo chmod +x "${bin_dir}/${1}"
-  fi
-
-  success_msg "${1} installed"
-  # jq --version
-  ;;
-jqp)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_jqp)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/noahgorstein/jqp/releases/download/${version}/${1}_Linux_x86_64.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-  [[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # jq --version
-  ;;
-htmlq)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_htmlq)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/mgdm/htmlq/releases/download/${version}/${1}-$(uname -m)-linux.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # htmlq --version
-  ;;
-yq)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_yq)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/mikefarah/yq/releases/download/${version}/${1}_linux_amd64"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-  [[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
-
-  if [[ -w "${bin_dir}" ]]; then
-    curl -L "${url}" -o "${bin_dir}/${1}"
-    chmod +x "${bin_dir}/${1}"
-  else
-    sudo curl -L "${url}" -o "${bin_dir}/${1}"
-    sudo chmod +x "${bin_dir}/${1}"
-  fi
-
-  success_msg "${1} installed"
-  # yq --version
-  ;;
-fd)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_fd)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/sharkdp/fd/releases/download/${version}/${1}-${version}-$(uname -m)-unknown-linux-musl.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}-${version}-$(uname -m)-unknown-linux-musl/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # fd --version
-  ;;
-upx)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_upx)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/upx/upx/releases/download/${version}/${1}-${version##*v}-amd64_linux.tar.xz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-  [[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}-${version##*v}-amd64_linux/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # upx --version
-  ;;
-gum)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_gum)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  url="https://github.com/charmbracelet/gum/releases/download/${version}/${1}_${version##*v}_$(uname -s)_$(uname -m).tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/${1}" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
-  # gum --version
-  ;;
-bottom)
-  info_msg "Fetching latest ${1} tag from GitHub"
-  version=$(fetch_version_bottom)
-  [[ -n "${version}" ]] || error_msg "Error fetching version" 1
-  info_msg "Setting version to: ${UNDERLINE}${version}"
-
-  [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
-  [[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
-
-  url="https://github.com/ClementTsang/bottom/releases/download/${version}/${1}_$(uname -m)-unknown-linux-musl.tar.gz"
-  sleep "$delay"
-  [[ $(check_url "${url}") -ne 0 ]] && error_msg "Bad url" 6
-  success_msg "Valid url: ${UNDERLINE}${url}"
-
-  # Set vars for file download and untar dir
-  down_file="${url##*/}"
-  untar_dir="${1}-${version}"
-  mkdir -pv "/tmp/${untar_dir}"
-
-  # Download archive and unpack
-  curl -L "${url}" -o "/tmp/${down_file}"
-  tar -xvf "/tmp/${down_file}" -C "/tmp/${untar_dir}"
-
-  # Make binary excutable and move to bin directory
-  bin_install "/tmp/${untar_dir}/btm" "${bin_dir}/"
-
-  # Remove tmp files
-  rm -rf "/tmp/${down_file}" "/tmp/${untar_dir}"
-
-  success_msg "${1} installed"
   ;;
 *)
-  error_msg "Unknown program: ${CLEAR}${UNDERLINE}${1}"
-  error_msg "List of available binaries: ${CLEAR}${UNDERLINE}${binaries[*]}" 1
+  install_one "${1}"
   ;;
 esac

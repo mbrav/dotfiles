@@ -2,9 +2,22 @@
 # Various colors definitions for Bash scripts
 
 # COLORS
-ncolors=$(command -v tput >/dev/null && tput colors) # supports color
-if [[ -n $ncolors && -z "${NO_COLOR:-}" ]]; then
-  TERMCOLS=$(tput cols)
+# Detect color support safely. In Docker builds / CI there is no $TERM, which
+# makes `tput` error out; guard so sourcing never fails under `set -euo pipefail`.
+ncolors=0
+if command -v tput >/dev/null 2>&1 && [[ -n "${TERM:-}" ]]; then
+  ncolors=$(tput colors 2>/dev/null || echo 0)
+fi
+
+# Initialize every color/style var to empty so `set -u` consumers never hit an
+# unbound variable when colors are unavailable.
+CLEAR="" TERMCOLS=""
+BLACK="" RED="" GREEN="" YELLOW="" BLUE="" MAGENTA="" CYAN="" GREY=""
+BLACK_I="" RED_I="" GREEN_I="" YELLOW_I="" BLUE_I="" MAGENTA_I="" CYAN_I="" WHITE=""
+UNDERLINE="" STANDOUT="" BOLD=""
+
+if [[ "${ncolors}" -ge 8 && -z "${NO_COLOR:-}" ]]; then
+  TERMCOLS=$(tput cols 2>/dev/null || echo 80)
   CLEAR="$(tput sgr0)"
 
   # 4 bit colors

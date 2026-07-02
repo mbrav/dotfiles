@@ -122,7 +122,7 @@ info_msg "Mount to:   ${mount_to}"
 if ! "${container_runtime}" image inspect "${docker_tag}" >/dev/null 2>&1; then
   info_msg "Image not found. Building container image..."
 
-  "${container_runtime}" build "${build_opts[@]}" \
+  if "${container_runtime}" build "${build_opts[@]}" \
     --progress=plain \
     -f "${script_dir}/../../../Dockerfile" \
     --build-arg BASE_IMAGE="${base_image}" \
@@ -130,8 +130,11 @@ if ! "${container_runtime}" image inspect "${docker_tag}" >/dev/null 2>&1; then
     --build-arg DOCKER_UID="${uid}" \
     --build-arg DOCKER_GID="${gid}" \
     --tag "${docker_tag}" \
-    "${script_dir}/../../../." &&
+    "${script_dir}/../../../."; then
     success_msg "Image ${docker_tag} built successfully"
+  else
+    error_msg "Image build failed for ${docker_tag}" 1
+  fi
 else
   info_msg "Container image already exists, skipping build."
 fi

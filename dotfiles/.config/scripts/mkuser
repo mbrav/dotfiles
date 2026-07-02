@@ -24,16 +24,9 @@ if [[ "${uid}" == "0" || "${user}" == "root" ]]; then
   exit 0
 fi
 
-# Ensure the group exists (reuse whatever owns the gid, e.g. ubuntu's group)
-if getent group "${gid}" >/dev/null 2>&1; then
-  info_msg "Group gid ${gid} already exists; reusing"
-elif command -v groupadd >/dev/null; then
-  groupadd -g "${gid}" "${user}"
-else
-  addgroup "${user}" --gid "${gid}"
-fi
-
-# If another user already holds the target UID, remove it to free the UID
+# If another user already holds the target UID, remove it to free the UID.
+# Do this BEFORE ensuring the group — deleting a user drops its private group,
+# so any group setup must happen afterwards (e.g. Ubuntu's ubuntu:ubuntu 1000).
 existing="$(getent passwd "${uid}" | cut -d: -f1 || true)"
 if [[ -n "${existing}" && "${existing}" != "${user}" ]]; then
   warning_msg "UID ${uid} held by '${existing}'; removing it to free the UID"
@@ -42,6 +35,15 @@ if [[ -n "${existing}" && "${existing}" != "${user}" ]]; then
   else
     deluser --remove-home "${existing}" 2>/dev/null || deluser "${existing}" 2>/dev/null || true
   fi
+fi
+
+# Ensure the group exists (after any userdel, which may have removed it)
+if getent group "${gid}" >/dev/null 2>&1; then
+  info_msg "Group gid ${gid} already exists; reusing"
+elif command -v groupadd >/dev/null; then
+  groupadd -g "${gid}" "${user}"
+else
+  addgroup "${user}" --gid "${gid}"
 fi
 
 # Create the user if it does not already exist

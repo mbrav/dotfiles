@@ -22,13 +22,12 @@ const prefix = "claudemux"
 // Claude --model choices offered by `spawn --model`. Newest first; keep in sync
 // with SKILL.md / tools-and-models.md.
 var models = []string{
+	"claude-fable-5",
 	"claude-opus-4-8",
 	"claude-opus-4-7",
-	"claude-opus-4-5",
+	"claude-sonnet-5",
 	"claude-sonnet-4-6",
-	"claude-sonnet-4-5",
 	"claude-haiku-4-5",
-	"claude-haiku-4-5-20251001",
 }
 
 // effortLevels are the `--effort` choices passed through to claude.

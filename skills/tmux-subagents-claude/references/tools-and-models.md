@@ -7,8 +7,9 @@ Default: account model + full tools. Narrow per task.
 ## Model selection
 
 - **Deep reasoning / architecture / hard debugging**: `claude-opus-4-8` (strongest; worth cost)
-- **General coding / edits / reviews / most subtasks**: `claude-sonnet-4-6` (best balance, default)
+- **General coding / edits / reviews / most subtasks**: `claude-sonnet-5` or `claude-sonnet-4-6` (best balance, default)
 - **Bulk/parallel scans / simple edits / log triage**: `claude-haiku-4-5` (fast + cheap)
+- **Frontier / experimental**: `claude-fable-5`
 
 Rules: Default Sonnet. Opus for complex/expensive-wrong-answer. Haiku for many concurrent agents. Match hardest step.
 
@@ -20,7 +21,7 @@ Rules: Default Sonnet. Opus for complex/expensive-wrong-answer. Haiku for many c
 
 `status` on-demand snapshot. Block with `result --wait` / `prompt --wait` to wait, don't re-run `status`.
 
-Fallbacks: `claude-opus-4-7`, `claude-opus-4-5`, `claude-sonnet-4-5`. Prefer newest.
+Fallbacks: `claude-opus-4-7`, `claude-sonnet-4-6`. Prefer newest.
 
 ## Tool selection
 

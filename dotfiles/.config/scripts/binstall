@@ -37,7 +37,7 @@ BIN_KIND[k9s]=tgz
 BIN_FLAGS[k9s]='x86'
 
 BIN_REPO[eza]=eza-community/eza
-BIN_ASSET[eza]='eza_{arch}-unknown-linux-musl.tar.gz'
+BIN_ASSET[eza]='eza_{arch}-unknown-linux-{libc}.tar.gz'
 BIN_KIND[eza]=tgz
 BIN_FLAGS[eza]='linux'
 
@@ -105,7 +105,7 @@ BIN_VERPAT[bottom]='^[0-9]+\.[0-9]+\.[0-9]+$'
 BIN_FLAGS[bottom]='linux x86'
 
 BIN_REPO[btop]=aristocratos/btop
-BIN_ASSET[btop]='btop-{arch}-unknown-linux-musl.tar.gz'
+BIN_ASSET[btop]='btop-{arch}-unknown-linux-{libc}.tar.gz'
 BIN_KIND[btop]=tgz
 BIN_PATH[btop]='btop/bin/btop'
 BIN_FLAGS[btop]='linux'
@@ -166,15 +166,19 @@ function latest_version() {
 }
 
 function expand_str() {
-  # Expand {v}/{V}/{arch}/{os} placeholders.
+  # Expand {v}/{V}/{arch}/{os}/{libc} placeholders.
+  # {libc} = musl on x86_64, gnu on aarch64 (eza/btop have no musl aarch64 builds).
   # $1 - template string
   # $2 - version tag
   local s="${1}" v="${2}"
   local V="${v##*v}" # strip leading v (or up-to-last v)
+  local libc="musl"
+  [[ "$(uname -m)" == "aarch64" ]] && libc="gnu"
   s="${s//\{v\}/${v}}"
   s="${s//\{V\}/${V}}"
   s="${s//\{arch\}/$(uname -m)}"
   s="${s//\{os\}/$(uname -s)}"
+  s="${s//\{libc\}/${libc}}"
   echo "${s}"
 }
 

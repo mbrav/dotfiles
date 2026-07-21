@@ -130,6 +130,13 @@
 	#############
 	pr = prune -v
 	#############
+	# reflog expire drops entries pointing at pre-rewrite commits (they keep old blobs reachable)
+	rfx = reflog expire --expire=now --all
+	# gc prune now + aggressive repacks and deletes every unreachable object immediately (no 2-week grace)
+	gcp = gc --prune=now --aggressive
+	# full purge: expire reflog then hard-gc — run after history rewrites to drop orphaned blobs
+	purge = !git reflog expire --expire=now --all && git gc --prune=now --aggressive
+	#############
 	ps = push
 	psf = push -f
 	psu = push -u

@@ -201,3 +201,4 @@ dotfiles/.config/nvim/lazy-lock.json
 dotfiles/.config/zed/prompts
 dotfiles/.config/zed/conversations
 __pycache__/
+htop_history

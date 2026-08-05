@@ -281,6 +281,7 @@ plugins:
         default: nicolaka/netshoot:v0.15
         options:
           - nicolaka/netshoot:v0.15
+          - keinos/sqlite3:3.53.4
           - busybox:1.37
           - alpine:3.23
           - ubuntu:26.04

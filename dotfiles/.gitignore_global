@@ -1,2 +1,4 @@
 # AI stuff
-graphify-out
+graphify-out/
+.claude/
+.agents/

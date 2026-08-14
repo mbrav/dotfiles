@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# start_herdr.bash
+#
+# Function: start_herdr
+# Description: Starts or attaches to a herdr session for the current project.
+#              Herdr is a terminal multiplexer for managing coding agents.
+#              Handles edge cases such as running inside an IDE, SSH, or already in herdr.
+#
+# Usage: start_herdr
+#
+
+start_herdr() {
+    # Check if herdr is installed and shell is interactive
+    if ! command -v herdr >/dev/null 2>&1; then
+        return
+    fi
+
+    if [[ -z "$PS1" ]]; then
+        return
+    fi
+
+    # Check if inside an IDE or floating terminal
+    local in_ide=0
+    if [[ "$TERM_PROGRAM" == "vscode" ]] || [[ -n "$NVIM" ]] || [[ -n "$FLOATERM" ]]; then
+        in_ide=1
+    fi
+
+    # Check if inside an SSH session
+    if [[ -n "$SSH_CONNECTION" ]] || [[ -n "$SSH_CLIENT" ]] || [[ -n "$SSH_TTY" ]]; then
+        if [[ $in_ide -eq 0 ]]; then
+            return
+        fi
+    fi
+
+    # Check if already inside herdr
+    if [[ -n "$HERDR_SESSION" ]]; then
+        return
+    fi
+
+    # Launch or attach to herdr session
+    local project_name
+    project_name=$(basename "$(pwd)")
+    echo "🚀 Starting herdr for project: $project_name"
+    herdr
+}

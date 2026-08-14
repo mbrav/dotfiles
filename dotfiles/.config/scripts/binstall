@@ -57,6 +57,11 @@ BIN_ASSET[atuin]='atuin-{arch}-unknown-linux-musl.tar.gz'
 BIN_KIND[atuin]=tgz
 BIN_FLAGS[atuin]='linux'
 
+BIN_REPO[herdr]=herdr-dev/herdr
+BIN_ASSET[herdr]='herdr-{arch}-unknown-linux-gnu.tar.gz'
+BIN_KIND[herdr]=tgz
+BIN_FLAGS[herdr]='linux'
+
 BIN_REPO[fzf]=junegunn/fzf
 BIN_ASSET[fzf]='fzf-{V}-linux_amd64.tar.gz'
 BIN_KIND[fzf]=tgz
@@ -125,7 +130,7 @@ BIN_FLAGS[lazygit]='linux x86'
 
 # Ordered install list for `all` and help output
 binaries=(
-  docker-compose k9s eza bat starship atuin fzf jq jqp htmlq yq fd upx gum
+  docker-compose k9s eza bat starship atuin herdr fzf jq jqp htmlq yq fd upx gum
   bottom btop oha sops lazygit
 )
 

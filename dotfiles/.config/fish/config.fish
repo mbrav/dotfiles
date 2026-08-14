@@ -40,4 +40,5 @@ if test -f /usr/share/doc/find-the-command/ftc.fish
     source /usr/share/doc/find-the-command/ftc.fish
 end
 
-start_tmux
+# start_tmux
+start_herdr

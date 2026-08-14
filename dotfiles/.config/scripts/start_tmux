@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# start_tmux.bash
+#
+# Function: start_tmux
+# Description: Starts a tmux session with a custom name as the session.
+#              Handles various edge cases such as running inside an IDE, SSH, or Konsole.
+#              Attaches to an existing session if available, otherwise creates a new one.
+#
+# Usage: start_tmux
+#
+# Steps:
+#   1. Checks if tmux is installed and shell is interactive.
+#   2. Detects if running inside an IDE or floating terminal.
+#   3. Skips starting tmux if inside SSH/Konsole unless also in IDE.
+#   4. Skips if already inside tmux.
+#   5. Sets session name based on user or folder name if in IDE.
+#   6. Attaches to existing session or creates a new one.
+
+start_tmux() {
+  if ! command -v tmux &>/dev/null; then
+    # Check if tmux is installed
+    # if not, exit function
+    return
+  fi
+
+  if [[ "$TERM_PROGRAM" = @(vscode) || -n "$NVIM" || -n "$FLOATERM" ]]; then
+    # Check if terminal inside an IDE
+    IN_IDE=1
+  fi
+
+  if [[ -n "$SSH_CONNECTION" || -n "$SSH_CLIENT" || -n "$SSH_TTY" || -n "$KONSOLE_DBUS_SESSION" ]]; then
+    # $SSH_* - Check if inside a SSH session
+    # If so, do not enter a tmux session and exit function
+
+    # $KONSOLE_DBUS_SESSION - Check if inside a Konsole session
+    # Since Konsole is assumed to not be the default terminal app
+    # Whenever a integrated terminal opens within a KDE framework app
+    # exit function
+    if [[ -z "$IN_IDE" ]]; then
+      # If inside IDE, ignore
+      return
+    fi
+    # echo "🛑 Inside SSH session, not starting tmux session"
+  fi
+
+  if [[ -n "$TMUX" || "$TERM" = "screen" ]]; then
+    # Check if already inside tmux or custom variable
+    # if so, exit function
+    return
+  fi
+
+  # Attach to tmux session on shell login if tmux is installed
+  # Set default session name to "main"
+  #tmux_session_name="🐺$(whoami)"
+  tmux_session_name="$(whoami)"
+
+  if [[ -n "$IN_IDE" ]]; then
+    # Check if term is inside an IDE or other environments
+    folder="$(pwd)"
+    folder_name="$(basename $folder)"
+    # tmux_session_name="🖥️$folder_name"
+    tmux_session_name="$folder_name"
+  fi
+
+  # Attach to existing or create a new tmux session
+  tmux -2 attach -t "$tmux_session_name" || tmux -2 new-session -s "$tmux_session_name"
+}

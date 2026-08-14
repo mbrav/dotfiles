@@ -1,0 +1,84 @@
+# Atuin configuration
+# https://docs.atuin.sh/latest/configuration/config/
+
+# Database path
+db_path = "~/.local/share/atuin/history.db"
+
+# Key storage path
+key_path = "~/.local/share/atuin/key"
+
+# Session file path
+session_path = "~/.local/share/atuin/session"
+
+# Date parsing format: "us" or "uk"
+dialect = "us"
+
+# Automatic synchronization (disabled; will use local server later)
+auto_sync = false
+
+# Sync server address
+sync_address = "https://api.atuin.sh"
+
+# Sync frequency (e.g., "1h", "30m")
+sync_frequency = "1h"
+
+# Network request timeout (seconds)
+network_timeout = 30
+
+# Network connection timeout (seconds)
+network_connect_timeout = 5
+
+# Search mode: "prefix", "fulltext", "fuzzy", "daemon-fuzzy"
+search_mode = "fuzzy"
+
+# Initial filter mode: "global", "host", "session", "directory", "workspace"
+filter_mode = "global"
+
+# UI style: "auto", "full", "compact"
+style = "compact"
+
+# Max inline height (lines)
+inline_height = 40
+
+# Show command preview
+show_preview = true
+
+# Max preview height (lines)
+max_preview_height = 4
+
+# Execute immediately without requiring second Enter
+enter_accept = false
+
+# Keymap mode: "emacs", "vim-normal", "vim-insert", "auto"
+keymap_mode = "emacs"
+
+# Build command chains with && or ||
+command_chaining = false
+#
+# # Minimal - more space for commands
+# columns = ["duration", "command"]
+#
+# # With custom directory width
+# columns = ["duration", { type = "directory", width = 30 }, "command"]
+#
+# # Show host for multi-machine sync users
+# columns = ["duration", "time", "host", "command"]
+#
+# # Show exit codes prominently
+# columns = ["exit", "duration", "command"]
+
+# Make directory expand instead of command
+columns = [
+  "duration",
+  "time",
+  { type = "directory", expand = true },
+  { type = "command", expand = false },
+]
+
+syntax_highlight = true
+
+# Tmux popup
+[tmux]
+enabled = true
+width = "80%"
+height = "60%"

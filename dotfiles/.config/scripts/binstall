@@ -52,10 +52,10 @@ BIN_ASSET[starship]='starship-{arch}-unknown-linux-musl.tar.gz'
 BIN_KIND[starship]=tgz
 BIN_FLAGS[starship]='linux'
 
-BIN_REPO[mcfly]=cantino/mcfly
-BIN_ASSET[mcfly]='mcfly-{v}-{arch}-unknown-linux-musl.tar.gz'
-BIN_KIND[mcfly]=tgz
-BIN_FLAGS[mcfly]='linux'
+BIN_REPO[atuin]=atuinsh/atuin
+BIN_ASSET[atuin]='atuin-{arch}-unknown-linux-musl.tar.gz'
+BIN_KIND[atuin]=tgz
+BIN_FLAGS[atuin]='linux'
 
 BIN_REPO[fzf]=junegunn/fzf
 BIN_ASSET[fzf]='fzf-{V}-linux_amd64.tar.gz'
@@ -125,7 +125,7 @@ BIN_FLAGS[lazygit]='linux x86'
 
 # Ordered install list for `all` and help output
 binaries=(
-  docker-compose k9s eza bat starship mcfly fzf jq jqp htmlq yq fd upx gum
+  docker-compose k9s eza bat starship atuin fzf jq jqp htmlq yq fd upx gum
   bottom btop oha sops lazygit
 )
 

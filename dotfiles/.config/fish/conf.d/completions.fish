@@ -11,9 +11,9 @@ if status --is-interactive
         zoxide init fish | source
     end
 
-    # init mcfly
-    if type -q mcfly
-        mcfly init fish | source
+    # init atuin
+    if type -q atuin
+        atuin init fish | source
     end
 
     # init talosctl

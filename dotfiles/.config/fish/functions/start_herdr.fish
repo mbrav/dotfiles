@@ -32,8 +32,8 @@ function start_herdr -d "Start herdr session for project"
         end
     end
 
-    # Check if already inside herdr
-    if test -n "$HERDR_SESSION"
+    # Check if already inside herdr (herdr sets HERDR_ENV=1 in managed panes)
+    if test -n "$HERDR_ENV"; or test -n "$HERDR_PANE_ID"
         return
     end
 

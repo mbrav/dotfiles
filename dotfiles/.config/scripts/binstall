@@ -55,6 +55,7 @@ BIN_FLAGS[starship]='linux'
 BIN_REPO[atuin]=atuinsh/atuin
 BIN_ASSET[atuin]='atuin-{arch}-unknown-linux-musl.tar.gz'
 BIN_KIND[atuin]=tgz
+BIN_PATH[atuin]='atuin-{arch}-unknown-linux-musl/atuin'
 BIN_FLAGS[atuin]='linux'
 
 BIN_REPO[herdr]=herdrdev/herdr
@@ -225,7 +226,8 @@ function install_one() {
     local dst="/tmp/${name}"
     curl -L "${url}" -o "${dst}"
     chmod +x "${dst}"
-    bin_install "${dst}" "${bin_dir}/"
+    bin_install "${dst}" "${bin_dir}/" ||
+      error_msg "Failed to install ${name} into ${bin_dir}/" 8
     rm -f "${dst}"
   else
     # Archive: download, unpack, install from inner path
@@ -238,7 +240,11 @@ function install_one() {
     mkdir -pv "${dir}"
     curl -L "${url}" -o "${down}"
     tar -x"${topt}"f "${down}" -C "${dir}"
-    bin_install "${dir}/${inner}" "${bin_dir}/"
+    [[ -f "${dir}/${inner}" ]] ||
+      error_msg "Extracted archive has no ${UNDERLINE}${inner}${CLEAR} \
+(archive layout changed? check BIN_PATH[${name}])" 7
+    bin_install "${dir}/${inner}" "${bin_dir}/" ||
+      error_msg "Failed to install ${name} into ${bin_dir}/" 8
     rm -rf "${down}" "${dir}"
   fi
 

@@ -17,7 +17,7 @@ ran_col_str "Distro-aware package setup"
 
 # Tools fetched from GitHub releases on Debian/Ubuntu (apt lacks / ships old).
 binstall_pkgs=(
-  eza bat fd mcfly starship yq k9s docker-compose gum bottom
+  eza bat fd atuin starship yq k9s docker-compose gum bottom
   btop oha sops lazygit
 )
 
@@ -35,7 +35,7 @@ if command -v apk >/dev/null; then
     ripgrep \
     fzf \
     eza \
-    mcfly \
+    atuin \
     upx \
     starship \
     fd \

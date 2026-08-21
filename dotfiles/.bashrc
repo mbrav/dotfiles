@@ -128,6 +128,9 @@ command -v zoxide >/dev/null && eval "$(zoxide init bash)"
 # Load Atuin history lookup plugin if installed:
 command -v atuin >/dev/null && eval "$(atuin init bash)"
 
+# init atuin completions
+command -v atuin >/dev/null && eval "$(atuin gen-completions --shell bash)"
+
 # init talosctl
 command -v talosctl >/dev/null && eval "$(talosctl completion bash)"
 

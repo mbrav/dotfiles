@@ -14,6 +14,7 @@ if status --is-interactive
     # init atuin
     if type -q atuin
         atuin init fish | source
+        atuin gen-completions --shell fish | source
     end
 
     # init talosctl

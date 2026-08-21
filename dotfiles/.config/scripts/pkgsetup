@@ -76,9 +76,7 @@ elif command -v apt-get >/dev/null; then
   success_msg "Debian/Ubuntu base packages installed"
 
   info_msg "Installing modern CLI tools via binstall: ${binstall_pkgs[*]}"
-  for pkg in "${binstall_pkgs[@]}"; do
-    force=1 "${script_dir}/binstall" "${pkg}" /usr/local/bin
-  done
+  force=1 "${script_dir}/binstall" -b /usr/local/bin "${binstall_pkgs[@]}"
   success_msg "binstall tools installed"
 
 else

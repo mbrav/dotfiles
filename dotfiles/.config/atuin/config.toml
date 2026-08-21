@@ -40,6 +40,9 @@ style = "compact"
 # Max inline height (lines)
 inline_height = 40
 
+# Keeps <up> a small strip while ctrl-r still gets the full inline_height view.
+inline_height_shell_up_key_binding = 10
+
 # Show command preview
 show_preview = true
 

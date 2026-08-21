@@ -5,21 +5,49 @@
 # Adding a new tool = add a row. Requires bash 4+ (associative arrays) — both the
 # container bash and the homebrew bash on macOS satisfy this.
 #
-# Usage: binstall <name|all> [bin_dir] [delay]
-#   bin_dir  target install path        (default: /usr/local/bin)
-#   delay    curl request delay seconds (default: 0.5)
+# Usage: binstall [-b DIR] [-d SEC] <name|all>...
+#   -b DIR  target install path        (default: /usr/local/bin)
+#   -d SEC  curl request delay seconds (default: 0.5)
+#   -h      show this help
+# Any number of names may be given; 'all' expands to the full list. Both options
+# also read the bin_dir / delay env vars, which the flags override.
 
 # Set script_dir to the directory of this script
 script_dir="$(dirname "$(realpath "$0")")"
 
-# Set default bin_dir and delay, allow override via script args
-bin_dir="${2:-${bin_dir:-/usr/local/bin}}"
-delay="${3:-${delay:-0.5}}"
+# Set default bin_dir and delay, allow override via env (flags win, parsed below)
+bin_dir="${bin_dir:-/usr/local/bin}"
+delay="${delay:-0.5}"
 
 # Source util lib
 source "${script_dir}/_util"
 
 ran_col_str "Binary install utility" c
+
+# ARGUMENT PARSING
+# getopts stops at the first non-option argument, so the outer loop resumes it
+# after each program name — that way options may be given anywhere in the argv.
+names=()
+show_help=0
+while [[ ${#} -gt 0 ]]; do
+  OPTIND=1
+  while getopts ":b:d:h" opt; do
+    case "${opt}" in
+    b) bin_dir="${OPTARG}" ;;
+    d) delay="${OPTARG}" ;;
+    h) show_help=1 ;;
+    :) error_msg "Option ${CLEAR}${UNDERLINE}-${OPTARG}${CLEAR} requires an argument" 1 ;;
+    \?) error_msg "Unknown option: ${CLEAR}${UNDERLINE}-${OPTARG}" 1 ;;
+    *) error_msg "Error parsing option: ${CLEAR}${UNDERLINE}-${opt}" 1 ;;
+    esac
+  done
+  shift "$((OPTIND - 1))"
+  # Whatever getopts stopped on is a program name
+  if [[ ${#} -gt 0 ]]; then
+    names+=("${1}")
+    shift
+  fi
+done
 
 # METADATA TABLE
 # Asset/path placeholders: {v}=tag as-is, {V}=tag w/o leading v,
@@ -135,10 +163,11 @@ binaries=(
 )
 
 bin_list="${binaries[*]}"
+echo "${YELLOW}${BOLD}Usage${CLEAR} - binstall [-b DIR] [-d SEC] <name|all>..."
 cmd_arg_help \
-  "Program name. Available: ${GREEN}${bin_list}${CLEAR}" \
-  "Bin path. Set: ${GREEN}${bin_dir}${CLEAR}" \
-  "Curl requests delay in seconds: Set: ${GREEN}${delay}${CLEAR}s"
+  "Program names, space separated, or 'all'. Available: ${GREEN}${bin_list}${CLEAR}" \
+  "${BOLD}-b${CLEAR} DIR - Bin path. Set: ${GREEN}${bin_dir}${CLEAR}" \
+  "${BOLD}-d${CLEAR} SEC - Curl request delay in seconds. Set: ${GREEN}${delay}${CLEAR}s"
 
 # Check requirements
 command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
@@ -251,17 +280,28 @@ function install_one() {
   success_msg "${name} installed"
 }
 
-case "${1:-}" in
-"" | -h | --help)
-  error_msg "Please provide a program name or 'all'. Available: ${CLEAR}${UNDERLINE}${bin_list}" 1
-  ;;
-all)
-  warning_msg "Installing all binaries: ${bin_list}"
-  for b in "${binaries[@]}"; do
-    install_one "${b}"
-  done
-  ;;
-*)
-  install_one "${1}"
-  ;;
-esac
+if [[ ${show_help} -eq 1 || ${#names[@]} -eq 0 ]]; then
+  error_msg "Please provide one or more program names, or 'all'. Available: ${CLEAR}${UNDERLINE}${bin_list}" 1
+fi
+
+# Expand 'all' anywhere in the list to the full ordered set
+for n in "${names[@]}"; do
+  if [[ "${n}" == "all" ]]; then
+    warning_msg "Installing all binaries: ${bin_list}"
+    names=("${binaries[@]}")
+    break
+  fi
+done
+
+# Validate every name up front so a typo fails before anything is installed
+for n in "${names[@]}"; do
+  [[ -n "${BIN_REPO[${n}]:-}" ]] || {
+    error_msg "Unknown program: ${CLEAR}${UNDERLINE}${n}"
+    error_msg "List of available binaries: ${CLEAR}${UNDERLINE}${bin_list}" 1
+  }
+done
+
+[[ ${#names[@]} -gt 1 ]] && info_msg "Installing ${#names[@]} binaries: ${UNDERLINE}${names[*]}"
+for n in "${names[@]}"; do
+  install_one "${n}"
+done

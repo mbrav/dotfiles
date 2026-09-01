@@ -7,6 +7,10 @@ set VIRTUAL_ENV_DISABLE_PROMPT 1
 set -x COLORTERM truecolor
 if type -q bat
     set -x MANPAGER "sh -c 'col -bx | bat -l man -p'"
+    # groff emits SGR escapes by default; `col -b` strips only the ESC byte and
+    # leaves "[1m"/"[4m" as literal text. -c disables SGR so groff uses legacy
+    # backspace-overstrike, which col -b collapses and bat re-highlights.
+    set -x MANROFFOPT -c
 end
 
 # Set settings for https://github.com/franciscolourenco/done

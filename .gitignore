@@ -193,10 +193,19 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+
+# AI
+.claude/
+
 scripts/secrets.ini
 dotfiles/.config/fish/fish_variables
 dotfiles/.config/k9s/clusters
 dotfiles/.config/k9s/*.log
+dotfiles/.config/herdr/*.log
+dotfiles/.config/herdr/*.sock
+dotfiles/.config/herdr/session.json
+dotfiles/.config/herdr/release-notes.json
+dotfiles/.config/herdr/.plugins.lock
 dotfiles/.config/nvim/lazy-lock.json
 dotfiles/.config/zed/prompts
 dotfiles/.config/zed/conversations

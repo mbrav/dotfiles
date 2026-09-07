@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Pick a ~/dev folder with fzf and open it as a new herdr workspace.
+# Mirrors the tmux-new-window.sh workflow (prefix+c) but for herdr workspaces.
+# Bind via config.toml [[keys.command]] with key = "prefix+shift+n".
+
+set -euo pipefail
+script_dir="$(dirname "$(realpath "$0")")"
+source "${script_dir}/_util"
+
+if command -v eza >/dev/null; then
+  preview_cmd="eza -al --git --color=always --color-scale --group-directories-first --icons=always {1}"
+else
+  preview_cmd="ls -lahg --color=auto {1}"
+fi
+
+selected_dir="$(find ~/dev/* -maxdepth 1 -type d 2>/dev/null | fzf \
+  --header "Select dev folder to open as new herdr workspace" \
+  --preview-window "up:50%" \
+  --preview-label "Folder contents" \
+  --preview "$preview_cmd")" || true
+
+if [[ -z "$selected_dir" ]]; then
+  warning_msg "No folder selected, aborting."
+  exit 0
+fi
+
+base_name="$(basename "$selected_dir")"
+"${HERDR_BIN_PATH:-herdr}" workspace create --cwd "$selected_dir" --label "$base_name" --focus
+success_msg "Workspace: ${BOLD}${base_name}${CLEAR}"

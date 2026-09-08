@@ -56,6 +56,8 @@ A pane exists whether or not it contains an agent. `agent start` requires an exi
 
 Agent commands accept either a unique live agent name or the pane ID currently hosting that agent. They do not accept terminal IDs or bare agent-kind labels. Names must match `[a-z][a-z0-9_-]{0,31}` and be unique among live agents. A name follows the current pane occupant and is cleared when that agent exits, is released, or is replaced.
 
+Keep Herdr agent names consistent with the names the agents report themselves (their own status line, session label, or pane title). When you see a mismatch — an agent whose status line reads `ob3` while Herdr has it unnamed or named something else — fix it with `herdr agent rename <target> <name>` so one name identifies the agent everywhere. Related agents working the same project should use a single family with a numeric suffix (`ob1`, `ob2`, `ob3`), assigned in pane order, and no gaps or duplicates. When starting a new agent, pick the next free number in that family rather than inventing a new naming scheme.
+
 `idle` and `done` both mean the agent is ready for input. The CLI/API uses the server's seen state to distinguish them; explicit focus commands mark the target seen, while reads do not. Each TUI client tracks viewed completions independently, so its Done badge can differ from the CLI or another client's badge. `blocked` means Herdr recognized an approval or question UI. `unknown` means an agent is present but Herdr cannot classify it confidently; it does not prove completion.
 
 ## Use IDs and caller context
@@ -113,13 +115,13 @@ Replace `right` with `down` when appropriate. Read the new pane ID from `.result
 An available shell pane must be at its interactive prompt, with the shell itself in the foreground and no foreground command, editor, or agent running. Start a supported agent in that pane with a useful unique name:
 
 ```bash
-herdr agent start reviewer --kind codex --pane <returned-pane-id>
+herdr agent start reviewer --kind claude --pane <returned-pane-id>
 ```
 
 Use the kind requested by the user. Run `herdr agent` to inspect the installed kind list and options. Pass native agent arguments only after `--`:
 
 ```bash
-herdr agent start reviewer --kind codex --pane <returned-pane-id> -- <agent-args...>
+herdr agent start reviewer --kind claude --pane <returned-pane-id> -- <agent-args...>
 ```
 
 A successful `agent start` returns only after Herdr detects the expected agent in the same pane and considers it ready for interactive input. If the agent is blocked during startup, the command returns `agent_not_ready` immediately but keeps the name available for `agent read` and `agent send-keys`. Wait until the agent becomes idle before prompting it. Startup defaults to a 30-second timeout.
@@ -200,3 +202,15 @@ After that failed read, ask the agent to write its complete response as Markdown
 - Never run `herdr server stop` from an active session unless the user explicitly intends to stop the server and its pane processes.
 - Never kill the main Herdr process. Use named test sessions for experiments that need an isolated server.
 - CLI server errors are JSON on stderr with exit status 1. CLI syntax errors exit with status 2.
+
+## Subagent management
+
+- Claude Code agents have a status line in this format `↑196 ↓2 R151.2k W504 $0.050 (sub) 150.0k/1000.0k (15.0%)`. Manage subagents accordingly:
+  - After agent finished work and is idle and has passed the 280k context window, automatically send `/compact` command
+- Resume by name: Herdr has no `agent resume`. Resume = start the agent's own resume flow in a pane, reusing the session id Herdr tracks.
+  - While the agent is live, `herdr agent get ob2` gives the session id (`.result.agent.agent_session.value`) and pane (`.result.agent.pane_id`). Record the id before it exits — once the process is gone the name clears and the id is no longer discoverable through Herdr.
+  - Exit an agent with `herdr agent send-keys ob2 ctrl+c ctrl+c`; the pane returns to its shell prompt, which is what makes it available for `agent start`.
+  - Resume into that pane with the same name: `herdr agent start ob2 --kind claude --pane wF:p42 -- --resume <session-id>`.
+  - Claude prints its own hint on exit (`claude --resume "ob2"`), so a session name works in place of the UUID. Other kinds use their own flag (`codex resume <id>`); check the agent's CLI when unsure.
+  - Session id lost: start with the interactive picker (`-- --resume` with no id for Claude) and let the user choose.
+  - A live agent needs no resume — `herdr agent attach <name> [--takeover]` takes it back from another client; `herdr session attach <name>` reaches a whole detached Herdr session.

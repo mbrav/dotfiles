@@ -1,19 +1,35 @@
 # Custom column layouts. See https://k9scli.io/topics/columns/
 views:
   v1/nodes:
+    sortColumn: AGE:asc
     columns:
       - NAME
       - STATUS
-      - ROLE
-      # Not built-in columns -- instance type and node group live only in labels.
-      # Dots inside a label key must be escaped so jsonpath does not read them as
-      # field separators.
       - TYPE:.metadata.labels.node\.kubernetes\.io/instance-type
-      - ARCH
+      - NODEPOOL:.metadata.labels.karpenter\.sh/nodepool
       - NODEGROUP:.metadata.labels.eks\.amazonaws\.com/nodegroup
-      - TAINTS
-      - VERSION
+      - AZ:.metadata.labels.topology\.kubernetes\.io/zone
       - PODS
+      - VERSION
+      - ARCH
       - "%CPU"
       - "%MEM"
+      - AGE
+  v1/pods:
+    sortColumn: AGE:asc
+    columns:
+      - NAMESPACE
+      - NAME
+      - PF
+      - READY
+      - STATUS
+      - RESTARTS
+      - CPU
+      - "%CPU/R"
+      - "%CPU/L"
+      - MEM
+      - "%MEM/R"
+      - "%MEM/L"
+      - IP
+      - NODE
       - AGE

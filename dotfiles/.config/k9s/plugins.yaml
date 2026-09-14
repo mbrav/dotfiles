@@ -27,7 +27,7 @@ plugins:
     args:
       - -c
       - |
-        host="$1"
+        host="$NAME"
         json='
         {
           "apiVersion": "v1",
@@ -208,7 +208,7 @@ plugins:
     shortCut: Shift-R
     confirm: false
     scopes:
-      - apps
+      - application
     description: Refresh a argocd app hard
     command: bash
     background: false
@@ -278,13 +278,13 @@ plugins:
         label: Debug image
         type: dropdown
         required: true
-        default: nicolaka/netshoot:v0.15
+        default: nicolaka/netshoot:v0.16
         options:
-          - nicolaka/netshoot:v0.15
+          - nicolaka/netshoot:v0.16
           - keinos/sqlite3:3.53.4
-          - busybox:1.37
-          - alpine:3.23
-          - ubuntu:26.04
+          - busybox:1.38
+          - alpine:3.24
+          - ubuntu:24.04
       - name: profile
         label: Debug profile
         type: dropdown
@@ -308,3 +308,70 @@ plugins:
         kubectl debug -it --context $CONTEXT -n=$NAMESPACE $POD --target=$NAME
         --image=$INPUT_IMAGE --profile=$INPUT_PROFILE $([
         "$INPUT_SHARE_PROCESSES" = "true" ] && echo "--share-processes") -- sh
+
+  # Karpenter plugins: https://karpenter.sh
+  # Shift-N (nodepools)  → nodes owned by NodePool
+  # Shift-C (nodepools)  → nodeclaims owned by NodePool
+  # Shift-P (nodes)      → nodepool that owns the node
+  # n       (nodeclaims) → node backing the nodeclaim
+  karpenter-nodepool-nodes:
+    shortCut: Shift-N
+    confirm: false
+    description: View nodes
+    scopes:
+      - nodepools
+    command: bash
+    background: false
+    args:
+      - -c
+      - "kubectl get nodes --context $CONTEXT -l karpenter.sh/nodepool=$NAME -o wide | less -K"
+
+  karpenter-nodepool-nodeclaims:
+    shortCut: Shift-C
+    confirm: false
+    description: View nodeclaims
+    scopes:
+      - nodepools
+    command: bash
+    background: false
+    args:
+      - -c
+      - "kubectl get nodeclaims --context $CONTEXT -l karpenter.sh/nodepool=$NAME -o wide | less -K"
+
+  karpenter-node-nodepool:
+    shortCut: Shift-P
+    confirm: false
+    description: View nodepool
+    scopes:
+      - nodes
+    command: bash
+    background: false
+    args:
+      - -c
+      - |
+        np=$(kubectl get node --context $CONTEXT $NAME -o jsonpath='{.metadata.labels.karpenter\.sh/nodepool}')
+        if [ -z "$np" ]; then
+          echo "Node $NAME has no karpenter.sh/nodepool label (not Karpenter-managed?)"
+          read -p "Press Enter to return to k9s..."
+        else
+          kubectl get nodepool --context $CONTEXT "$np" -o yaml | less -K
+        fi
+
+  karpenter-nodeclaim-node:
+    shortCut: n
+    confirm: false
+    description: View node
+    scopes:
+      - nodeclaims
+    command: bash
+    background: false
+    args:
+      - -c
+      - |
+        node=$(kubectl get nodeclaim --context $CONTEXT $NAME -o jsonpath='{.status.nodeName}')
+        if [ -z "$node" ]; then
+          echo "NodeClaim $NAME has no node yet (still provisioning?)"
+          read -p "Press Enter to return to k9s..."
+        else
+          kubectl get node --context $CONTEXT "$node" -o wide | less -K
+        fi

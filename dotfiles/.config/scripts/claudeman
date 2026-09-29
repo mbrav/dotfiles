@@ -41,16 +41,17 @@ fi
 
 # ── Live-session index (live = a running `claude` PID) ────────────────────────
 # Populated by index_live_sessions from ~/.claude/sessions/<pid>.json.
-declare -A LIVE      # sessionId  -> name US status US session_file US cwd
-declare -A LIVE_REC  # cwd-slug   -> sessionId US name US status US session_file US cwd
-declare -A LIVE_AT   # cwd-slug   -> startedAt (keeps the newest session per project)
+declare -A LIVE     # sessionId  -> name US status US session_file US cwd
+declare -A LIVE_REC # cwd-slug   -> sessionId US name US status US session_file US cwd
+declare -A LIVE_AT  # cwd-slug   -> startedAt (keeps the newest session per project)
+declare -A LIVE_BG  # sessionId  -> 1 if kind=bg (background/subagent session)
 
 # The slug index is a startup-race fallback: a fresh `claude` has a live PID and a
 # cwd before its sessionId is written, so the JSONL can't be matched by id yet.
 index_live_sessions() {
-  local f pid sid name status cwd started slug
+  local f pid sid name status cwd started slug kind
   local -a fields
-  LIVE=() LIVE_REC=() LIVE_AT=()
+  LIVE=() LIVE_REC=() LIVE_AT=() LIVE_BG=()
 
   for f in "${SESSIONS_DIR}"/*.json; do
     [[ -f "$f" ]] || continue
@@ -59,10 +60,12 @@ index_live_sessions() {
 
     # One value per line + mapfile keeps empty fields aligned (tab + `read` folds).
     mapfile -t fields < <(jq -r \
-      '.sessionId // "", .name // "", .status // "?", .cwd // "", (.startedAt // 0)' \
+      '.sessionId // "", .name // "", .status // "?", .cwd // "", (.startedAt // 0), .kind // ""' \
       "$f" 2>/dev/null)
-    [[ ${#fields[@]} -ge 5 ]] || continue
-    sid=${fields[0]} name=${fields[1]:-—} status=${fields[2]} cwd=${fields[3]} started=${fields[4]}
+    [[ ${#fields[@]} -ge 6 ]] || continue
+    sid=${fields[0]} name=${fields[1]:-—} status=${fields[2]} cwd=${fields[3]} started=${fields[4]} kind=${fields[5]}
+
+    [[ -n $sid && $kind == "bg" ]] && LIVE_BG[$sid]=1
 
     [[ -n $sid ]] && LIVE[$sid]="${name}${US}${status}${US}${f}${US}${cwd}"
 
@@ -126,6 +129,10 @@ build_session_list() {
     sid=$(basename "$jsonl" .jsonl)
     slug=$(basename "$(dirname "$jsonl")")
     name="" status="" sf="" cwd="" alive=dead
+
+    # Skip background (subagent) sessions: live signal via LIVE_BG, dead via JSONL.
+    if [[ -n ${LIVE_BG[$sid]:-} ]]; then continue; fi
+    grep -qm1 '"sessionKind":"bg"' "$jsonl" 2>/dev/null && continue
 
     if [[ -n ${LIVE[$sid]:-} ]]; then
       IFS="$US" read -r name status sf cwd <<<"${LIVE[$sid]}"

@@ -71,7 +71,10 @@ elif command -v apt-get >/dev/null; then
     vim \
     neovim \
     npm \
-    python3
+    python3 \
+    python3-venv \
+    python3-pip \
+    golang-go
   rm -rf /var/lib/apt/lists/*
   success_msg "Debian/Ubuntu base packages installed"
 

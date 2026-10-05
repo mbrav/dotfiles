@@ -129,6 +129,7 @@ BIN_FLAGS[upx]='linux x86'
 BIN_REPO[gum]=charmbracelet/gum
 BIN_ASSET[gum]='gum_{V}_{os}_{arch}.tar.gz'
 BIN_KIND[gum]=tgz
+BIN_PATH[gum]='gum_{V}_{os}_{arch}/gum'
 
 BIN_REPO[bottom]=ClementTsang/bottom
 BIN_ASSET[bottom]='bottom_{arch}-unknown-linux-musl.tar.gz'

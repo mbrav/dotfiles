@@ -80,6 +80,9 @@ columns = [
 
 syntax_highlight = true
 
+# Show results top-to-bottom (newest at bottom, cursor starts at top)
+invert = true
+
 # Tmux popup
 [tmux]
 enabled = true

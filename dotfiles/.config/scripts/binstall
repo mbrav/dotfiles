@@ -159,10 +159,18 @@ BIN_ASSET[lazygit]='lazygit_{V}_linux_x86_64.tar.gz'
 BIN_KIND[lazygit]=tgz
 BIN_FLAGS[lazygit]='linux x86'
 
+# Only a gnu build is published, so this is glibc-only — not for the Alpine image.
+# Tags are CalVer (v2026.8.1), which the default ^v#.#.# pattern still matches.
+BIN_REPO[tuxedo]=webstonehq/tuxedo
+BIN_ASSET[tuxedo]='tuxedo-{v}-{arch}-unknown-linux-gnu.tar.gz'
+BIN_KIND[tuxedo]=tgz
+BIN_PATH[tuxedo]='tuxedo-{v}-{arch}-unknown-linux-gnu/tuxedo'
+BIN_FLAGS[tuxedo]='linux'
+
 # Ordered install list for `all` and help output
 binaries=(
   docker-compose k9s eza bat starship atuin herdr fzf jq jqp htmlq yq fd upx gum
-  bottom btop oha sops lazygit
+  bottom btop oha sops lazygit tuxedo
 )
 
 bin_list="${binaries[*]}"

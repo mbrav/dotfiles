@@ -14,8 +14,6 @@ return {
       width_ratio = 0.95,
       height_ratio = 0.80,
     },
-    config = function(_, opts)
-      require("tuxedo").setup(opts)
-    end,
+    config = function(_, opts) require("tuxedo").setup(opts) end,
   },
 }

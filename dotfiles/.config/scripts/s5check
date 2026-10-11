@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Install various binaries directly from GitHub
+# Download a public SOCKS5 proxy list and check which entries are alive.
+
+set -euo pipefail
 
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
@@ -40,12 +42,14 @@ check_urls() {
 
 info_msg "Downloading proxy list"
 
+# --fail makes curl exit non-zero on 4xx/5xx; without it a 404 body is written
+# to tmpf and read as an empty-but-successful proxy list.
 curl \
   --silent \
+  --fail \
   --output "${tmpf}" \
-  "${socks5_list_url}"
-
-[[ $? -ne 0 ]] && error_msg "Failed to get SOCKS5 list from ${socks5_list_url}" 1
+  "${socks5_list_url}" ||
+  error_msg "Failed to get SOCKS5 list from ${socks5_list_url}" 1
 
 success_msg "Got $(wc -l <"${tmpf}") SOCKS5 proxies"
 

@@ -24,10 +24,10 @@ function __register_wakatime_fish_before_exec -e fish_postexec
     set -l project
     set -l wakatime_path
 
-    if type -p wakatime 2>&1 >/dev/null
-        set wakatime_path (type -p wakatime)
-    else if type -p ~/.wakatime/wakatime-cli 2>&1 >/dev/null
-        set wakatime_path (type -p ~/.wakatime/wakatime-cli)
+    if command -q wakatime
+        set wakatime_path (command -v wakatime)
+    else if test -x ~/.wakatime/wakatime-cli
+        set wakatime_path ~/.wakatime/wakatime-cli
     else
         # wakatime is optional — skip silently when not installed
         return 0

@@ -93,7 +93,7 @@ fi
 docker_tag="mbrav/dotfiles:$(image_slug "${base_image}")"
 
 # Detect if running on macOS
-if [[ "$(uname)" == "Darwin" ]]; then
+if is_macos; then
   info_msg "Running on macOS. Adjusting GID to avoid permission issues."
   gid="1000"
 fi

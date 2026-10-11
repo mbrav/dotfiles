@@ -1,44 +1,44 @@
 # Init completions
 
-if status --is-interactive
+if status is-interactive
     # init starship
-    if type -q starship
+    if command -q starship
         starship init fish --print-full-init | source
     end
 
     # init zoxide
-    if type -q zoxide
+    if command -q zoxide
         zoxide init fish | source
     end
 
     # init atuin
-    if type -q atuin
+    if command -q atuin
         atuin init fish | source
         atuin gen-completions --shell fish | source
     end
 
     # init talosctl
-    if type -q talosctl
+    if command -q talosctl
         talosctl completion fish | source
     end
 
     # init headscale
-    if type -q headscale
+    if command -q headscale
         headscale completion fish | source
     end
 
     # init netbird
-    if type -q netbird
+    if command -q netbird
         netbird completion fish | source
     end
 
     # init cilium
-    if type -q cilium
+    if command -q cilium
         cilium completion fish | source
     end
 
     # init hubble
-    if type -q hubble
+    if command -q hubble
         hubble completion fish | source
     end
 

@@ -1,10 +1,10 @@
 # Run fastfetch/neofetch/screenfetch on interactive session start
-if status --is-interactive
-    if type -q fastfetch
+if status is-interactive
+    if command -q fastfetch
         fastfetch --config neofetch.jsonc
-    else if type -q neofetch
+    else if command -q neofetch
         neofetch
-    else if type -q screenfetch
+    else if command -q screenfetch
         screenfetch
     end
 end

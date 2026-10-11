@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
 

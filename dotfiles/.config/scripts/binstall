@@ -12,6 +12,8 @@
 # Any number of names may be given; 'all' expands to the full list. Both options
 # also read the bin_dir / delay env vars, which the flags override.
 
+set -euo pipefail
+
 # Set script_dir to the directory of this script
 script_dir="$(dirname "$(realpath "$0")")"
 
@@ -232,10 +234,10 @@ function install_one() {
 
   # Platform constraint guards
   if [[ " ${flags} " == *" linux "* ]]; then
-    [[ -n $(is_linux) ]] || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
+    is_linux || error_msg "Can only download Linux binary. Your OS: $(uname -s)" 1
   fi
   if [[ " ${flags} " == *" x86 "* ]]; then
-    [[ -n $(is_x86) ]] || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
+    is_x86 || error_msg "Can only download x86 binary. Your arch: $(uname -m)" 1
   fi
 
   info_msg "Fetching latest ${name} tag from GitHub"

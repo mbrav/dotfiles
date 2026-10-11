@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 script_dir="$(dirname "$(realpath "$0")")"
 
 # Source util functions

@@ -98,7 +98,7 @@ collect_jsonl_files() {
   # GNU (Linux) and BSD (macOS) stat take different format flags; the wrong one
   # yields no files and a misleading "No sessions found."
   local -a statcmd=(stat -c '%Y %n')
-  [[ "$(uname -s)" == "Linux" ]] || statcmd=(stat -f '%m %N')
+  is_linux || statcmd=(stat -f '%m %N')
   rg --files --null --glob '*.jsonl' --max-depth 2 "$PROJECTS_DIR" 2>/dev/null |
     xargs -0 "${statcmd[@]}" 2>/dev/null |
     sort -rn | awk '{print $2}' || true

@@ -1,4 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Batch-convert images in the current directory to webp.
+
+set -euo pipefail
+
+# Set script_dir
+script_dir="$(dirname "$(realpath "$0")")"
+
+# Source util function
+source "${script_dir}/_util"
 
 # Input and output directories
 input_dir="$(pwd)"

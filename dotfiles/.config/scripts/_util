@@ -207,20 +207,6 @@ function cmd_arg_help() {
   done
 }
 
-function sudo_or_mv() {
-  # mv command that checks if folder is writable by user
-  # $0 - Source
-  # $1 - Target
-  echo "Sudo mv"
-  if [[ -w "${2}" ]]; then
-    info_msg "Directory ${2} is writable"
-    mv -v "${1}" "${2}"
-  else
-    warning_msg "Sudo must be used for ${2}"
-    sudo mv -v "${1}" "${2}"
-  fi
-}
-
 # Get terminal width, default to 80 if unknown
 function get_terminal_width() {
   local cols
@@ -291,12 +277,22 @@ function dedup_window_name() {
 
 # CHECK FUNCTIONS
 
+# Platform predicates. These return via exit status, so call them directly:
+#   if is_linux; then ...
+#   is_macos || error_msg "macOS only" 1
+
 function is_x86() {
-  # Check if current architecture is x86
-  [[ "x86_64" = "$(uname -m)" ]] && echo 0
+  [[ "$(uname -m)" == "x86_64" ]]
+}
+
+function is_arm() {
+  [[ "$(uname -m)" == arm64 || "$(uname -m)" == aarch64 ]]
 }
 
 function is_linux() {
-  # Check if current architecture is Linux
-  [[ "Linux" = "$(uname -s)" ]] && echo 0
+  [[ "$(uname -s)" == "Linux" ]]
+}
+
+function is_macos() {
+  [[ "$(uname -s)" == "Darwin" ]]
 }

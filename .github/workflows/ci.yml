@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  push:
+    branches: [main, mac]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck and fish
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck fish
+
+      # Select by shebang, which skips the kubectl-aliases submodule, the
+      # python totp-* helpers and the sourced-only _secrets stub.
+      #
+      # -S error is the bar that passes today. There are ~27 warnings and ~114
+      # info findings still outstanding; raise this to `warning` once those are
+      # cleared, rather than starting red and training everyone to ignore it.
+      - name: shellcheck
+        run: |
+          files=()
+          for f in dotfiles/.config/scripts/*; do
+            [ -f "$f" ] || continue
+            head -1 "$f" | grep -qE '^#!.*\b(bash|sh)$' && files+=("$f")
+          done
+          echo "checking ${#files[@]} scripts"
+          shellcheck -S error "${files[@]}"
+
+      # Syntax only — nothing is sourced, so no tool needs to be installed.
+      - name: fish syntax
+        run: |
+          find dotfiles/.config/fish -name '*.fish' -print0 |
+            xargs -0 -n1 fish --no-execute
+
+      - name: bash syntax
+        run: |
+          for f in dotfiles/.config/scripts/*; do
+            [ -f "$f" ] || continue
+            head -1 "$f" | grep -qE '^#!.*\b(bash|sh)$' && bash -n "$f"
+          done
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # The Docker build is the de-facto install smoke test: it runs pkgsetup,
+      # mkuser and `force=1 dotinstall` against a clean image.
+      - name: docker build
+        run: docker build -t mbrav/dotfiles:ci .

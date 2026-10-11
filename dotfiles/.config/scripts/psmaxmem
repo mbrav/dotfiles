@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Interval command
-# $1 - interval in seconds
-# $2-n - command and any number of arguments to execute
+# Track the peak resident memory of a running process.
+# $1 - PID to watch
+
+set -euo pipefail
 
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
@@ -9,7 +10,7 @@ script_dir="$(dirname "$(realpath "$0")")"
 # Source util function
 source "${script_dir}/_util"
 
-PID="$1"
+PID="${1:-}"
 poll="${poll:-0.1}"
 
 if [[ -z "$PID" ]]; then

@@ -1155,4 +1155,3 @@ func collectJSONL(projectDir string) ([]jsonlEntry, error) {
 
 	return files, nil
 }
-

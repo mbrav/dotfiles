@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Clean non ascii chars from a file
 
+set -euo pipefail
+
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
 

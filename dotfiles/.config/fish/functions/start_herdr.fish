@@ -15,13 +15,13 @@
 #   5. Launches or attaches to herdr session for current project.
 function start_herdr -d "Start herdr session for project"
     # Check if herdr is installed and shell is interactive
-    if not type -q herdr; or not status --is-interactive
+    if not command -q herdr; or not status is-interactive
         return
     end
 
     # Check if inside an IDE or floating terminal
     set -l in_ide
-    if contains "$TERM_PROGRAM" vscode; or test -n "$NVIM"; or test -n "$FLOATERM"
+    if contains -- vscode $TERM_PROGRAM; or test -n "$NVIM"; or test -n "$FLOATERM"
         set in_ide 1
     end
 

@@ -109,9 +109,15 @@ alias confa='cd $(find ~/.config/* -type d | fzf --header "Select what ~/.config
 # Log tailer
 alias logt='tail -f $(find /var/log -type f | fzf --header "Select what log file to tail" --preview-window "up:50%" --preview-label "File contents" --preview "tail -n 20 {1}")'
 # Journalctl process log tailer
-alias logj='ps aux | fzf | awk "{print $2}" | xargs -I % sudo sh -c journalctl _PID=%'
+# $2 must reach awk literally — unescaped inside double quotes the shell expands
+# it to its own (empty) $2, leaving `{print }`, which prints the whole ps line.
+# SC2142 is a false positive here: the $2 is awk's field, not a shell parameter.
+# These stay aliases rather than functions so the file works in fish and bash.
+# shellcheck disable=SC2142
+alias logj="ps aux | fzf | awk '{print \$2}' | xargs -I % sudo sh -c 'journalctl _PID=%'"
 # Process killer
-alias pkl='ps aux | fzf --header "Please select what process to kill" | awk "{print $2}" | xargs kill'
+# shellcheck disable=SC2142
+alias pkl="ps aux | fzf --header 'Please select what process to kill' | awk '{print \$2}' | xargs kill"
 
 # Net aliases
 alias curlpf="curl -o /dev/null -s -w 'HTTP %{http_code} - IP %{remote_ip} \n▲%{size_upload}B ▼%{size_download}B \n▲%{speed_upload}Bps ▼%{speed_download}Bps \nConnects %{num_connects} \nConnect %{time_connect}s \nLookup %{time_namelookup}s \nTransfer %{time_starttransfer}s (pre %{time_pretransfer}s) \nTotal %{time_total}s' "

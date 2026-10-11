@@ -1,19 +1,8 @@
-# Global default python — prepend ~/.venv/bin so project venvs can override.
-if test -d ~/.venv/bin
-    fish_add_path --path ~/.venv/bin
-end
+# pyenv. PATH entries live in path.fish; PYENV_ROOT is set there too.
+# Only the shim/completion init happens here, and only when interactive.
 
-# Initializes pyenv and its virtualenv if available.
-# Only runs in interactive shells for performance.
-# Adds pyenv binaries to PATH and enables completions.
-
-if test -d ~/.pyenv
-    set -Ux PYENV_ROOT $HOME/.pyenv
-    fish_add_path $PYENV_ROOT/bin
-
-    if status --is-interactive
-        pyenv init - | source
-        pyenv virtualenv-init - | source
-        source (pyenv root)/completions/pyenv.fish
-    end
+if test -d ~/.pyenv; and status is-interactive
+    pyenv init - | source
+    pyenv virtualenv-init - | source
+    source (pyenv root)/completions/pyenv.fish
 end

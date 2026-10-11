@@ -6,7 +6,7 @@ function gclone -d "Clone a git repo into ~/dev/<host>/<user>/<repo> and cd into
         return 1
     end
 
-    if not type -q git
+    if not command -q git
         echo "gclone: git is not installed" >&2
         return 1
     end
@@ -37,7 +37,7 @@ function gclone -d "Clone a git repo into ~/dev/<host>/<user>/<repo> and cd into
     # Strip trailing .git from repo name
     set repo (string replace -r '\.git$' '' -- $repo)
 
-    if test -z "$host" -o -z "$user" -o -z "$repo"
+    if test -z "$host"; or test -z "$user" -o -z "$repo"
         echo "gclone: could not parse host/user/repo from URL: $url" >&2
         return 1
     end

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Export docker images to a tar archive
 
+set -euo pipefail
+
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
 

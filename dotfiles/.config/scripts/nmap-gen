@@ -3,6 +3,8 @@
 # $1 - IP range
 # $2 - report name
 
+set -euo pipefail
+
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
 
@@ -12,8 +14,8 @@ source "${script_dir}/_util"
 [ -x "$(command -v nmap)" ] || error_msg "nmap not installed!" 1
 [ -x "$(command -v xsltproc)" ] || error_msg "xsltproc not installed!" 1
 
-[[ -n $1 ]] && ip_range=$1 || ip_range="192.168.1.0/24"
-[[ -n $2 ]] && scan_name=$2 || scan_name=nmap_scan
+ip_range="${1:-192.168.1.0/24}"
+scan_name="${2:-nmap_scan}"
 
 info_msg "IP range: $ip_range"
 info_msg "Scan name: $scan_name"

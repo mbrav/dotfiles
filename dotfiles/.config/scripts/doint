@@ -3,6 +3,8 @@
 # $1 - interval in seconds
 # $2-n - command and any number of arguments to execute
 
+set -euo pipefail
+
 # Set script_dir
 script_dir="$(dirname "$(realpath "$0")")"
 
@@ -11,4 +13,8 @@ source "${script_dir}/_util"
 
 [[ $# -lt 2 ]] && error_msg "do-interval accepts no less than 2 arguments, passed $#" 22
 [[ $1 == ?(-)+([[:digit:]]) ]] || error_msg "$1 is not a number" 22
-watch -n $1 -d=cumulative ${@:2}
+
+command -v watch >/dev/null ||
+  error_msg "watch is not installed (on macOS: brew install watch)" 1
+
+watch -n "$1" --differences=cumulative "${@:2}"

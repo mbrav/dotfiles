@@ -19,7 +19,7 @@ RUN $DOTFILES_ROOT/dotfiles/.config/scripts/pkgsetup
 
 # Setup docker user (distro-aware; handles root, UID collisions, existing users)
 RUN $DOTFILES_ROOT/dotfiles/.config/scripts/mkuser "$DOCKER_USER" "$DOCKER_GID" "$DOCKER_UID" \
-  && $DOTFILES_ROOT/dotfiles/.config/scripts/sedchad "palette = 'default'" "palette = 'nord-tan'" $DOTFILES_ROOT/dotfiles/.config/starship.toml \
+  && $DOTFILES_ROOT/dotfiles/.config/scripts/sedchad "palette = 'steel-gray'" "palette = 'nord-tan'" $DOTFILES_ROOT/dotfiles/.config/starship.toml \
   && mkdir -p /home/$DOCKER_USER/.config \
   && mkdir -p /home/$DOCKER_USER/.local/share/fish \
   && touch /home/$DOCKER_USER/.local/share/fish/fish_history \

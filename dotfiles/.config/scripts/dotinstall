@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 script_id="mbrav/dotfiles installer"
 script_dir="$(dirname "$(realpath "$0")")"
 dot_dir="$(realpath "${script_dir}/../../../")"
@@ -15,7 +17,7 @@ function dotfiles_symlink() {
   for item in "${dir_ls[@]}"; do
     # Check item full path
     local item_path="$dot_dir/dotfiles/.config/$item"
-    if [ -f $item_path ] || [ -d $item_path ] && [ -z "$force" ]; then
+    if [[ -e "$item_path" && -z "$force" ]]; then
       info_msg "Item $item_path exists"
       yes_no_prompt "${GREEN}Replace $item_path with new symlink?${YELLOW}" &&
         rm -rfv "$HOME/.config/$item" &&
@@ -32,7 +34,7 @@ function dotfiles_symlink() {
 
   for item in "${dir_ls[@]}"; do
     local item_path="$dot_dir/dotfiles/$item"
-    if [ -f $item_path ] || [ -d $item_path ] && [ -z "$force" ]; then
+    if [[ -e "$item_path" && -z "$force" ]]; then
       info_msg "Item $item_path exists"
       yes_no_prompt "${GREEN}Replace $item_path with new symlink?${YELLOW}" &&
         rm -fv "$HOME/$item" &&
@@ -46,16 +48,19 @@ function dotfiles_symlink() {
 }
 
 ran_col_str "${script_id} installer"
+# $? after an if-block is the block's status, which is always 0 — capture the
+# function's own exit status instead, or the failure branch can never fire.
+rc=0
 if [[ -z "$force" ]]; then
   warning_msg "Script in interative mode. Use force=1 ./install.sh for non-interactive install"
   yes_no_prompt "${GREEN}Install Dotfiles as symlinks? ${YELLOW}" &&
-    dotfiles_symlink
+    { dotfiles_symlink || rc=$?; }
 else
   info_msg "Installing dotfiles non-interactively"
-  dotfiles_symlink
+  dotfiles_symlink || rc=$?
 fi
 
-[[ $? -ne 0 ]] && error_msg "Failed to install dotfiles" 1 ||
-  success_msg "Dotfiles install successfuly! Reload shell."
+[[ $rc -ne 0 ]] && error_msg "Failed to install dotfiles" 1
+success_msg "Dotfiles install successfuly! Reload shell."
 
 exit 0

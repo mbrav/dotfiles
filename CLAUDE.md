@@ -51,4 +51,4 @@ When adding a shell-wide alias or env var, put it in `_aliases` (not in `config.
 
 ## Security
 
-The repo is public. `_secrets` is git-tracked but must only hold placeholder/example values and machine-local config — **never live API keys or tokens**. Before committing changes that touch `_secrets`, verify no real credentials are present. The intended pattern for actual secrets is a gitignored file (`.gitignore` already ignores `scripts/secrets.ini`).
+The repo is public. `_secrets` holds machine-local secrets and **is gitignored** — it is never committed, and both shells source it through an existence guard so a fresh clone works without it. It was removed from tracking in `f6dd06a`; only a 2-line placeholder stub was ever committed, so no credential is in history. Keep it that way: never `git add -f` it, and never stage with `git add -A` without checking `git status` first.

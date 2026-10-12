@@ -5,11 +5,22 @@ on:
     branches: [main, mac]
   pull_request:
 
+# Nothing here writes to the repo or the API.
+permissions:
+  contents: read
+
+# A new push to the same branch makes the in-flight run irrelevant.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Install shellcheck and fish
         run: |
@@ -48,9 +59,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
+          # Both submodules are public https, so nothing after checkout needs a token.
+          persist-credentials: false
 
       # The Docker build is the de-facto install smoke test: it runs pkgsetup,
       # mkuser and `force=1 dotinstall` against a clean image.

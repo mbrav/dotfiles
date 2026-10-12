@@ -7,8 +7,6 @@ return {
     keys = {
       { "<leader>td", "<cmd>Tuxedo<cr>", desc = "Tuxedo (todo.txt)" },
     },
-    -- plugin/tuxedo.lua already calls setup() with the defaults; opts only
-    -- overrides them, so config = true is enough to keep lazy happy.
     opts = {
       create_todo_file = true,
       width_ratio = 0.95,

@@ -198,6 +198,7 @@ Temporary Items
 .claude/
 
 scripts/secrets.ini
+dotfiles/.config/scripts/_secrets
 dotfiles/.config/fish/fish_variables
 dotfiles/.config/k9s/clusters
 dotfiles/.config/k9s/*.log

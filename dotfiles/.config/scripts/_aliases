@@ -6,6 +6,11 @@
 export ANSIBLE_CONFIG="$HOME/.ansible/ansible.cfg"
 # Use QEMU system URI
 export LIBVIRT_DEFAULT_URI="qemu:///system"
+# tuxedo/todo.txt location. Without these, tuxedo uses ./todo.txt in whatever
+# directory it was launched from, so the list silently differs per project.
+export TODO_DIR="$HOME/Documents/todo"
+export TODO_FILE="$TODO_DIR/todo.txt"
+export DONE_FILE="$TODO_DIR/done.txt"
 
 # MY ALIASES BEGIN
 

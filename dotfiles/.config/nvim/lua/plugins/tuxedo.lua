@@ -8,7 +8,10 @@ return {
       { "<leader>td", "<cmd>Tuxedo<cr>", desc = "Tuxedo (todo.txt)" },
     },
     opts = {
-      create_todo_file = true,
+      -- The plugin would write an empty todo.txt at the git root of whatever
+      -- repo you open it from, but TODO_FILE (set in scripts/_aliases) wins, so
+      -- the TUI never reads that file — it is pure litter in every repo.
+      create_todo_file = false,
       width_ratio = 0.95,
       height_ratio = 0.80,
     },

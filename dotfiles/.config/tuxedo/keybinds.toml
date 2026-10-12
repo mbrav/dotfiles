@@ -1,0 +1,94 @@
+# tuxedo keybinds — ${XDG_CONFIG_HOME:-$HOME/.config}/tuxedo/keybinds.toml
+#
+# Purely additive: anything not bound here keeps its built-in default, and a
+# missing/unparseable file silently falls back to the defaults in full. That
+# cuts both ways — a typo'd action name is ignored rather than reported, so
+# check a binding actually took effect before assuming it did.
+#
+# Values are one key or an array: open_help = "F1", begin_add = ["n", "Ctrl-n"].
+# Key syntax: a bare char ("n"), a named key (esc/enter/tab/space/bs/del/ins,
+# home/end, pgup/pgdn, up/down/left/right, backtab, F1-F24), a Ctrl-/Alt-/Shift-
+# prefix, or a two-char chord ("gg", "dd"). Chords are [normal] only.
+# Uppercase implies shift, so "J" and "Shift-j" are the same binding.
+#
+# Nothing is overridden below. tuxedo's defaults are already vim-shaped —
+# j/k, gg/G, Ctrl-d/Ctrl-u, dd, yy, u, /, v, q — so there was nothing to fix.
+# This file exists so changes are tracked; uncomment what you want to move.
+
+[normal]
+# Movement
+# cursor_down = "j"
+# cursor_up = "k"
+# cursor_top = "gg"
+# cursor_bottom = "G"
+# half_page_down = "Ctrl-d"
+# half_page_up = "Ctrl-u"
+
+# Editing tasks
+# begin_add = "n"                  # alias: add
+# begin_edit = "e"                 # alias: edit
+# begin_edit_insert = "i"          # alias: edit_insert
+# toggle_complete = "x"
+# delete = "dd"
+# reschedule = "r"
+# cycle_priority = "p"
+# move_task_down = "J"
+# move_task_up = "K"
+# undo = "u"
+
+# Tags and notes
+# begin_prompt_project = "+"       # alias: prompt_project
+# begin_prompt_context = "c"       # alias: prompt_context
+# open_note = "note"               # alias: note
+# create_or_open_note = "create_note"
+
+# Selection
+# toggle_visual = "v"
+# toggle_selected = "space"
+
+# Search, filters, sort
+# begin_search = "/"               # alias: search
+# arm_f = "f"                      # prefix for the f-chords below
+# pick_project = "fp"
+# pick_context = "fc"
+# pick_saved_filter = "ff"
+# save_current_filter = "fs"
+# cycle_sort = "S"
+
+# Views
+# go_list = "l"                    # alias: list
+# toggle_archive_view = "a"        # alias: archive_view
+# archive_completed = "A"
+# toggle_show_done = "H"
+# toggle_show_future = "F"
+# toggle_left_pane = "["
+# toggle_right_pane = "]"
+
+# Appearance
+# cycle_theme = "T"
+# open_theme_picker = "theme_picker"
+# cycle_density = "D"
+# toggle_line_num = "L"            # alias: toggle_line_numbers
+# change_week_start = "change_week_start"
+
+# Clipboard
+# copy_line = "yy"
+# copy_body = "yb"
+
+# Overlays and exit
+# open_command_palette = [":", "Ctrl-p"]   # alias: command_palette
+# open_help = "?"                  # alias: help
+# open_settings = ","              # alias: settings
+# open_share = "s"                 # alias: share
+# escape_stack = "esc"             # alias: escape
+# quit = ["q", "Ctrl-c"]
+
+# Motions inside the ↻ REPEAT overlay. Separate namespace: the overlay owns the
+# keyboard while open, so these letters may collide with [normal] safely.
+[recurrence]
+# focus_next = ["j", "tab"]        # alias: next_field
+# focus_prev = ["k", "backtab"]    # alias: prev_field
+# value_next = ["l", "+"]          # alias: increase
+# value_prev = ["h", "-"]          # alias: decrease
+# accept = "enter"                 # alias: save
+# cancel = "esc"

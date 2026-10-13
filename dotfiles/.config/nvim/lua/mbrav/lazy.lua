@@ -98,7 +98,7 @@ require("lazy").setup {
     -- { import = "lazyvim.plugins.extras.lang.zig" },
 
     -- lazyvim extras: ai
-    { import = "lazyvim.plugins.extras.ai.sidekick" },
+    -- { import = "lazyvim.plugins.extras.ai.sidekick" },
     -- { import = "lazyvim.plugins.extras.ai.copilot" },
     -- { import = "lazyvim.plugins.extras.ai.copilot-chat" },
 
@@ -107,7 +107,7 @@ require("lazy").setup {
     { import = "lazyvim.plugins.extras.util.rest" },
     { import = "lazyvim.plugins.extras.util.project" },
     { import = "lazyvim.plugins.extras.util.startuptime" },
-    -- { import = "lazyvim.plugins.extras.ui.mini-animate" },
+    { import = "lazyvim.plugins.extras.ui.mini-animate" },
     -- { import = "lazyvim.plugins.extras.linting.eslint" },
 
     -- your custom plugins

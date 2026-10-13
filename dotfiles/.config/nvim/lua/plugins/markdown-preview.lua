@@ -10,8 +10,13 @@ return {
       { "<leader>cp", "<cmd>MdKite toggle<cr>", ft = "markdown", desc = "Markdown Preview" },
     },
     opts = {
-      -- One browser tab reused across files, rather than a tab per buffer.
-      instance_mode = "takeover",
+      -- "multi", not "takeover": in takeover the first Neovim owns the server
+      -- and a second one only publishes into its workspace — the join path
+      -- never opens a browser, so starting a preview in another project looks
+      -- like nothing happened, and quitting the first Neovim kills everyone's
+      -- preview. multi gives each instance its own server, port and tab.
+      instance_mode = "multi",
+      port = 0, -- OS-assigned; fixed ports collide across instances
       default_theme = "dark",
     },
   },

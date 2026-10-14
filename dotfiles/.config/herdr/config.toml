@@ -1,1 +1,76 @@
 onboarding = false
+[theme]
+name = "terminal"
+auto_switch = false
+
+[ui.toast]
+delivery = "system"
+
+[ui]
+show_agent_labels_on_pane_borders = true
+
+agent_panel_sort = "priority"
+
+[experimental]
+pane_history = true
+switch_ascii_input_source_in_prefix = false
+
+# Tmux-compatible keybindings (prefix = ctrl+b, same default)
+# Mapping reference vs tmux defaults:
+#   tmux bind c (new-window fzf)   → prefix+shift+n (new workspace via fzf, see below)
+#   tmux bind , (rename-window)    → prefix+shift+t (rename_tab)
+#   tmux bind " (split-v)          → prefix+minus   (split_horizontal)
+#   tmux bind % (split-h)          → prefix+v       (split_vertical)
+#   tmux bind r (reload config)    → prefix+shift+r (reload_config)
+#   tmux bind 1..9 (select window) → prefix+1..9    (switch_tab) — identical
+#   tmux bind g (scratch popup)    → prefix+alt+t   (see [[keys.command]] below)
+[keys]
+# Disable built-in new_workspace name-prompt; replaced by fzf picker below
+new_workspace = ""
+
+# prefix+t: tuxedo todo.txt TUI. prefix+t is unbound by default, so nothing is
+# shadowed.
+[[keys.command]]
+key = "prefix+t"
+type = "popup"
+command = "bash -i -c tuxedo"
+description = "tuxedo (todo.txt)"
+width = "80%"
+height = "80%"
+
+# prefix+g: lazygit. This shadows the built-in goto picker (keys.goto defaults
+# to prefix+g) — the picker is still reachable by rebinding it, nothing else.
+[[keys.command]]
+key = "prefix+g"
+type = "popup"
+command = "lazygit"
+description = "lazygit"
+width = "90%"
+height = "90%"
+
+# prefix+alt+h, NOT prefix+h: plain prefix+h is focus_pane_left, and taking it
+# would break vim-style pane navigation.
+[[keys.command]]
+key = "prefix+alt+h"
+type = "popup"
+command = "htop"
+description = "htop"
+width = "90%"
+height = "90%"
+
+# prefix+alt+t: scratch popup terminal (was prefix+g before lazygit took it)
+[[keys.command]]
+key = "prefix+alt+t"
+type = "popup"
+command = "fish"
+description = "scratch terminal"
+width = "75%"
+height = "75%"
+
+# prefix+shift+n: fzf ~/dev picker → new workspace (mirrors tmux bind c flow)
+[[keys.command]]
+key = "prefix+shift+n"
+type = "popup"
+command = "herdr-new-workspace"
+width = "80%"
+height = "60%"

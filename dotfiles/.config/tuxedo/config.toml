@@ -1,17 +1,10 @@
-# tuxedo preferences — ${XDG_CONFIG_HOME:-$HOME/.config}/tuxedo/config.toml
-#
-# tuxedo OWNS this file: it rewrites the whole thing whenever a preference
-# changes in the TUI (T theme, D density, S sort, [ / ] panes, H/F filters).
-# The rewrite drops every comment below, so treat this as a seed, not a
-# reference — and `git diff` it before committing, because pressing `s` once
-# writes a 64-char share_token here that must not land in a public repo.
-#
-# Keys: theme, density, sort, show_left, show_right, show_line_num,
-# show_status_bar, show_done, show_future, week_start, recurrence_builder,
-# notes_dir, hide_keys, share_port, share_token, filter.<name> = <query>
-# density: compact | cozy | comfortable      sort: due | file | priority
-# theme:   Dawn | Matrix | Muted Slate | Nord | Terminal, plus any
-#          themes/*.toml in this directory.
-
-theme = Nord
+theme = Terminal
+density = comfortable
 sort = due
+# tuxedo config
+show_left = true
+show_right = true
+show_line_num = true
+show_status_bar = true
+show_done = false
+show_future = false

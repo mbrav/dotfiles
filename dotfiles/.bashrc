@@ -83,8 +83,8 @@ esac
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-if [ -f ~/.bash_aliases ]; then
-  source ~/.bash_aliases
+if [ -f "$HOME/.bash_aliases" ]; then
+  source "$HOME/.bash_aliases"
 fi
 
 # enable programmable completion features (you don't need to enable
@@ -111,7 +111,8 @@ fi
 
 # Init custom scripts
 [[ -f "$HOME/.config/scripts/_aliases" ]] && source "$HOME/.config/scripts/_aliases"
-[[ -f "$HOME/.config/scripts/_secrets" ]] && source "$HOME/.config/scripts/_secrets"
+
+[[ -f "$HOME/.profile" ]] && source "$HOME/.profile"
 
 # Load exceutable scripts and add to PATH
 [[ -d "$HOME/.config/scripts" ]] && PATH="$PATH:$HOME/.config/scripts"

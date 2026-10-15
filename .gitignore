@@ -207,6 +207,14 @@ dotfiles/.config/herdr/*.sock
 dotfiles/.config/herdr/session.json
 dotfiles/.config/herdr/release-notes.json
 dotfiles/.config/herdr/.plugins.lock
+# herdr writes its runtime state into its config dir, and the repo is public.
+# session-history.json / session-snapshots are raw terminal scrollback — every
+# command, output and anything printed into a pane. Never commit them.
+dotfiles/.config/herdr/*.sock.agent
+dotfiles/.config/herdr/session-history.json
+dotfiles/.config/herdr/session-snapshots/
+dotfiles/.config/herdr/plugins/
+dotfiles/.config/herdr/plugins.json
 dotfiles/.config/nvim/lazy-lock.json
 dotfiles/.config/zed/prompts
 dotfiles/.config/zed/conversations

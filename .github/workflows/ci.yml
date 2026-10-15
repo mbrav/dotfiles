@@ -28,7 +28,7 @@ jobs:
           sudo apt-get install -y shellcheck fish
 
       # Select by shebang, which skips the kubectl-aliases submodule, the
-      # python totp-* helpers and the sourced-only _secrets stub.
+      # python totp-* helpers and the sourced-only ~/.profile secrets file stub.
       #
       # -S error is the bar that passes today. There are ~27 warnings and ~114
       # info findings still outstanding; raise this to `warning` once those are

@@ -32,7 +32,7 @@ Clone with `--recurse-submodules`. Two submodules (see `.gitmodules`):
 **Dual-shell, single source of aliases.** Fish (`dotfiles/.config/fish/config.fish`) is primary; Bash (`dotfiles/.bashrc`) is the POSIX fallback for restricted servers. Both source the *same* files so behavior stays in sync:
 
 - `dotfiles/.config/scripts/_aliases` — POSIX-`sh`-compatible aliases + tool env (must work in fish AND bash; guard every modern tool with `command -v <tool> >/dev/null && ...`).
-- `dotfiles/.config/scripts/_secrets` — machine-local secrets/aliases. **Must never contain real credentials** (see Security below).
+- `~/.profile` — machine-local secrets/overrides. **Not in this repo**, by design: `~/.config/scripts` is a symlink into the working tree, so a secrets file there is one `git add -f` from being published. Restricted to `export`/`alias` lines so fish can parse it; sourced by `.bashrc` and `conf.d/dotfiles.fish`.
 - `~/.config/scripts` is added to `PATH`, so every executable script there is a global command.
 
 When adding a shell-wide alias or env var, put it in `_aliases` (not in `config.fish`/`.bashrc`) unless it is genuinely fish- or bash-specific. Anything modern-tool-dependent must degrade gracefully when the tool is absent — restricted servers may lack `eza`/`bat`/`fd`/etc.
@@ -51,4 +51,4 @@ When adding a shell-wide alias or env var, put it in `_aliases` (not in `config.
 
 ## Security
 
-The repo is public. `_secrets` holds machine-local secrets and **is gitignored** — it is never committed, and both shells source it through an existence guard so a fresh clone works without it. It was removed from tracking in `f6dd06a`; only a 2-line placeholder stub was ever committed, so no credential is in history. Keep it that way: never `git add -f` it, and never stage with `git add -A` without checking `git status` first.
+The repo is public, so no secrets file lives inside it. Machine-local secrets are in `~/.profile` (mode 0600), outside the working tree entirely — this replaced the old `dotfiles/.config/scripts/_secrets`, which sat *inside* the repo and relied on `.gitignore` alone. `_secrets` was removed from tracking in `f6dd06a` and only a 2-line placeholder stub was ever committed, so no credential is in history; it is now decommissioned outright. Both shells source `~/.profile` through an existence guard, so a fresh clone works without it. The `.gitignore` entry is kept as a tripwire for old machines. Never `git add -f` a secrets file, and never stage with `git add -A` without checking `git status` first.

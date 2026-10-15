@@ -1,8 +1,7 @@
 # dotfiles.fish - Initialize custom scripts and kubectl aliases
 
-# Source secrets and aliases if scripts exist
-if test -f ~/.config/scripts/_secrets
-    source ~/.config/scripts/_secrets
+if test -f ~/.profile
+    source ~/.profile
 end
 
 if test -f ~/.config/scripts/_aliases

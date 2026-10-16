@@ -28,6 +28,11 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/.claude/statusline-command.sh\"",
+    "padding": 0
+  },
   "enabledPlugins": {
     "cc-plugin-sec-default@builtin": false
   },

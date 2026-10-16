@@ -1,0 +1,5 @@
+(A) 2026-10-01 Renew ingress TLS cert on staging cluster due:2026-10-10 +k8s @work
+2026-10-05 Upgrade cert-manager chart to v1.16 +k8s @work
+(B) 2026-10-08 Rebalance crypto portfolio due:2026-10-14 @trading
+2026-10-12 Write README section for install.sh +dotfiles @mbrav
+2026-10-14 Try duckdb parquet reader due:2026-10-30 +duckdb @experiment

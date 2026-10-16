@@ -1,0 +1,4 @@
+# Global markdownlint-cli2 config, passed to none-ls via --config
+config:
+  # Line length: prose is written one paragraph per line and soft-wrapped
+  MD013: false

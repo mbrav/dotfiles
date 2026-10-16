@@ -1,0 +1,32 @@
+{
+  "skill_name": "todo",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "add a todo to backtest the mean-reversion strategy on BTC/USDT before next friday, its important",
+      "expected_output": "One new task: priority (A) or (B), ISO due:2026-10-23, +iac @trading, cwd/repo/session breadcrumbs; existing tasks untouched.",
+      "files": [
+        "evals/seed-todo.txt"
+      ],
+      "cwd": "~/dev/github.com/mbrav/iac/trading"
+    },
+    {
+      "id": 2,
+      "prompt": "whats on my plate for this project? also the ingress cert one is done",
+      "expected_output": "Lists the two +k8s tasks (ingress cert flagged overdue), marks only the ingress TLS cert task done, cert-manager task stays open.",
+      "files": [
+        "evals/seed-todo.txt"
+      ],
+      "cwd": "~/dev/git.sib.team/devops/k8s"
+    },
+    {
+      "id": 3,
+      "prompt": "note for later: webhook url is hardcoded in config.py, should come from env. and also whats overdue across all my stuff?",
+      "expected_output": "Adds a findable task tagged +payreq-bot @experiment with breadcrumbs; reports the two overdue tasks (ingress cert 10-10, crypto rebalance 10-14) across all contexts.",
+      "files": [
+        "evals/seed-todo.txt"
+      ],
+      "cwd": "~/dev/tmp/payreq-bot"
+    }
+  ]
+}

@@ -246,15 +246,15 @@ htop_history
 # Binary archive, not a skill source tree — git cannot diff it.
 dotfiles/.claude/skills/*.tar.gz
 
-# headroom lives in the repo and is symlinked back into $HOME. Only
-# hand-written config (models.json, plugin config) is tracked. install_id is a
-# machine identity token, and the workspace is a live SQLite DB, logs and
-# savings state - none of that belongs in a public repo. .gitkeep keeps both
-# directories present in a fresh clone so dotinstall has a symlink target.
+# headroom lives in the repo and is symlinked to ~/.config/headroom.
+# Layout mirrors upstream: the directory itself is the workspace (read-write
+# state) and config/ sits inside it. Ignore everything, then un-ignore the
+# hand-written config by name. install_id is a machine identity token; the DB,
+# logs, cache and savings telemetry are state and must never be committed.
+dotfiles/.config/headroom/**
+!dotfiles/.config/headroom/.gitkeep
+!dotfiles/.config/headroom/settings.json
+!dotfiles/.config/headroom/restart-proxy.sh
+!dotfiles/.config/headroom/config/
+!dotfiles/.config/headroom/config/**
 dotfiles/.config/headroom/config/install_id
-dotfiles/.config/headroom/workspace/**
-!dotfiles/.config/headroom/workspace/.gitkeep
-# headroom keeps hand-written config inside the workspace dir, so these two
-# are un-ignored by name: tuning knobs and a helper script, both portable.
-!dotfiles/.config/headroom/workspace/settings.json
-!dotfiles/.config/headroom/workspace/restart-proxy.sh

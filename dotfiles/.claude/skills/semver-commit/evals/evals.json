@@ -1,0 +1,29 @@
+{
+  "skill_name": "semver-commit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/semver-commit minor ocr — staged: new OCR_EFFORT variable in ocr-review.yml plus README row",
+      "expected_output": "Header feat(ocr): <imperative subject ≤50 chars>; predict_bump reports minor; no Claude attribution anywhere.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/semver-commit path — staged: fix wrong SLACK_TOKEN fallback in pulumi.yml",
+      "expected_output": "Treats 'path' as 'patch' and says so; header fix(pulumi): ...; no body line starts with feat:/BREAKING CHANGE:; no Claude attribution.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "/semver-commit major notify — staged: rename SLACK_TOKEN/SLACK_CHANNEL to NOTIFY_TOKEN/NOTIFY_CHANNEL across templates",
+      "expected_output": "Header with ! (e.g. refactor(notify)!:), BREAKING CHANGE: footer with migration steps; predict_bump reports major; no Claude attribution.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "/semver-commit dev — staged: half-done hotfix numbering in semver.yml",
+      "expected_output": "Header wip(semver): ...; explains dev falls back to GIT_SEMVER_DEFAULT_BUMP (patch by default); no recognised type line in body; no Claude attribution.",
+      "files": []
+    }
+  ]
+}

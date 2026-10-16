@@ -195,7 +195,29 @@ Temporary Items
 
 
 # AI
-.claude/
+# Project-local Claude state at the repo root — never tracked.
+/.claude/
+
+# ~/.claude is symlinked to dotfiles/.claude, so the WHOLE of Claude Code's
+# runtime state physically lives in this repo: ~1.2G of conversation
+# transcripts, session .key files, telemetry, caches. The repo is public.
+#
+# This is a WHITELIST on purpose. Enumerating data directories would silently
+# leak whatever Claude Code adds in the next release; here anything new is
+# ignored by default and must be opted in explicitly below.
+!dotfiles/.claude/
+dotfiles/.claude/**
+
+# --- the only tracked config ---
+!dotfiles/.claude/settings.json
+!dotfiles/.claude/hooks/
+!dotfiles/.claude/hooks/**
+!dotfiles/.claude/skills/
+!dotfiles/.claude/skills/**
+
+# --- carve back out of skills/ ---
+dotfiles/.claude/skills/synced/**
+dotfiles/.claude/skills/*.tar.gz
 
 scripts/secrets.ini
 dotfiles/.config/scripts/_secrets
@@ -220,3 +242,19 @@ dotfiles/.config/zed/prompts
 dotfiles/.config/zed/conversations
 __pycache__/
 htop_history
+
+# Binary archive, not a skill source tree — git cannot diff it.
+dotfiles/.claude/skills/*.tar.gz
+
+# headroom lives in the repo and is symlinked back into $HOME. Only
+# hand-written config (models.json, plugin config) is tracked. install_id is a
+# machine identity token, and the workspace is a live SQLite DB, logs and
+# savings state - none of that belongs in a public repo. .gitkeep keeps both
+# directories present in a fresh clone so dotinstall has a symlink target.
+dotfiles/.config/headroom/config/install_id
+dotfiles/.config/headroom/workspace/**
+!dotfiles/.config/headroom/workspace/.gitkeep
+# headroom keeps hand-written config inside the workspace dir, so these two
+# are un-ignored by name: tuning knobs and a helper script, both portable.
+!dotfiles/.config/headroom/workspace/settings.json
+!dotfiles/.config/headroom/workspace/restart-proxy.sh

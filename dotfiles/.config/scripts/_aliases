@@ -197,9 +197,11 @@ command -v bat >/dev/null && alias cat='bat --style header --style snip --style 
 command -v k9s >/dev/null &&
   export K9S_CONFIG_DIR="$HOME/.config/k9s"
 
-# Alias for chatgpt-cli
-command -v chatgpt >/dev/null &&
-  alias ai='chatgpt '
+# Bindings for headroom
+command -v headroom >/dev/null &&
+  export HEADROOM_WORKERS=2 &&
+  export HEADROOM_CONFIG_DIR="$HOME/.config/headroom/config" &&
+  export HEADROOM_WORKSPACE_DIR="$HOME/.headroom"
 
 # Bindings for Arch
 command -v pacman >/dev/null &&

@@ -1,0 +1,14 @@
+{
+  "anthropic_buffered_request_timeout_seconds": 600,
+  "anthropic_pre_upstream_acquire_timeout_seconds": 15.0,
+  "anthropic_pre_upstream_memory_context_timeout_seconds": 2.0,
+  "connect_timeout_seconds": 10,
+  "min_evidence": 5,
+  "request_timeout": 300,
+  "retry_max_attempts": 3,
+  "rpm": 900,
+  "subscription_poll_interval": 300,
+  "upstream_tcp_keepalive_seconds": 30,
+  "write_timeout_seconds": 150,
+  "target_ratio": 0.3
+}

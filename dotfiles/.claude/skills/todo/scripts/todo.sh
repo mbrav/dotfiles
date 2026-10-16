@@ -3,14 +3,14 @@
 #
 # - Pins the global todo.txt (same defaults as _aliases), so the list never
 #   silently becomes ./todo.txt in whatever directory the agent happens to be in.
-# - `ctx [DIR]` prints the +project / @context / breadcrumbs derived from DIR.
-# - `add TEXT...` appends whatever +project, @context and breadcrumbs the text
-#   does not already carry, then calls `tuxedo add`.
+# - `ctx [DIR]` prints the +project / @context derived from DIR.
+# - `add TEXT...` appends whatever +project and @context the text does not
+#   already carry, then calls `tuxedo add`.
 # - Anything else is passed straight through to tuxedo.
 #
 # Usage:
 #   todo.sh ctx [DIR]
-#   todo.sh add [--no-meta|--bare] TEXT...
+#   todo.sh add [--bare] TEXT...
 #   todo.sh <tuxedo command> [args]   e.g. ls --json, do 3, pri 2 A
 set -euo pipefail
 
@@ -25,18 +25,6 @@ usage() {
 # todo.txt tags end at whitespace, so collapse anything outside a safe set
 sanitize() {
   printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '-' | sed 's/--*/-/g; s/^-//; s/-$//'
-}
-
-# Shorten $HOME to ~ and escape spaces so the path survives as one key:value
-short_path() {
-  local p="$1"
-  [[ "$p" == "$HOME" || "$p" == "$HOME/"* ]] && p="~${p#"$HOME"}"
-  printf '%s' "${p// /%20}"
-}
-
-# git@host:org/repo.git and https://host/org/repo.git -> host/org/repo
-normalize_remote() {
-  printf '%s' "$1" | sed -E 's#^[a-z+]+://##; s#^[^@/]+@##; s#:#/#; s#\.git$##'
 }
 
 # Walk up from $1 looking for an Obsidian vault marker; prints the vault root
@@ -65,15 +53,13 @@ is_trading_path() {
   return 1
 }
 
-# Sets globals: project context cwd_short repo
+# Sets globals: project context
 derive() {
   local dir top vault rel
   dir="$(cd "${1:-$PWD}" && pwd -P)"
   local home
   home="$(cd "$HOME" && pwd -P)"
   top="$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null || true)"
-  repo=""
-  [[ -n "$top" ]] && repo="$(normalize_remote "$(git -C "$dir" remote get-url origin 2>/dev/null || true)")"
 
   # Context: most specific rule first
   if vault="$(find_vault "$dir")" || [[ "$(printf '%s' "$dir" | tr '[:upper:]' '[:lower:]')" == *obsidian* ]]; then
@@ -102,27 +88,22 @@ derive() {
     project=""
   fi
   project="$(sanitize "$project")"
-  cwd_short="$(short_path "$dir")"
 }
 
 cmd_ctx() {
   derive "${1:-}"
-  local session="${CLAUDE_CODE_SESSION_ID:-}"
   echo "todo_file=$TODO_FILE"
   echo "project=$project"
   echo "context=$context"
-  echo "cwd=$cwd_short"
-  echo "repo=$repo"
-  echo "session=$session"
 }
 
 cmd_add() {
-  # --no-meta: tags but no breadcrumbs; --bare: append nothing at all
-  local meta=1 derived=1
-  case "${1:-}" in
-  --no-meta) meta=0 && shift ;;
-  --bare) meta=0 derived=0 && shift ;;
-  esac
+  # --bare: append nothing, the text already says everything
+  local derived=1
+  if [[ "${1:-}" == "--bare" ]]; then
+    derived=0
+    shift
+  fi
   [[ $# -gt 0 ]] || {
     echo "todo.sh add: missing task text" >&2
     exit 2
@@ -134,11 +115,6 @@ cmd_add() {
   if [[ $derived -eq 1 ]]; then
     [[ -n "$project" && ! "$text" =~ (^|[[:space:]])\+[^[:space:]]+ ]] && text+=" +$project"
     [[ ! "$text" =~ (^|[[:space:]])@[^[:space:]]+ ]] && text+=" @$context"
-  fi
-  if [[ $meta -eq 1 ]]; then
-    [[ "$text" != *" cwd:"* ]] && text+=" cwd:$cwd_short"
-    [[ -n "$repo" && "$text" != *" repo:"* ]] && text+=" repo:$repo"
-    [[ -n "${CLAUDE_CODE_SESSION_ID:-}" && "$text" != *" session:"* ]] && text+=" session:$CLAUDE_CODE_SESSION_ID"
   fi
   exec tuxedo add "$text"
 }

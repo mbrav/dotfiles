@@ -3,7 +3,10 @@
 # for examples
 
 # If not running interactively, don't do anything
-[ -z "$PS1" ] && return
+[[ $- == *i* ]] || return
+
+# Already being sourced further up the stack: Debian's ~/.profile sources recurse until the shell hangs.
+[[ " ${BASH_SOURCE[*]:1} " == *"/.bashrc "* ]] && return
 
 # don't put duplicate lines in the history. See bash(1) for more options
 # ... or force ignoredups and ignorespace
@@ -95,7 +98,7 @@ if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
 fi
 
 # Add local bin to path if it exists
-[[ -d $HOME/.local/bin ]] && PATH="$PATH:$HOME/.local/bin"
+[[ -d $HOME/.local/bin && ":$PATH:" != *":$HOME/.local/bin:"* ]] && PATH="$PATH:$HOME/.local/bin"
 
 # Add go bin to path if it exists
 [[ -d /usr/local/go/bin ]] && PATH="$PATH:/usr/local/go/bin"
@@ -106,13 +109,12 @@ fi
 # Cargo config
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
-# Go config
-[[ -d "$HOME/go/bin" ]] && PATH="$PATH:$HOME/go/bin"
-
 # Init custom scripts
 [[ -f "$HOME/.config/scripts/_aliases" ]] && source "$HOME/.config/scripts/_aliases"
 
-[[ -f "$HOME/.profile" ]] && source "$HOME/.profile"
+# Skipped when ~/.profile is already up the stack (a login shell's ~/.profile
+# sourced this file), so it runs once per shell.
+[[ -f "$HOME/.profile" && " ${BASH_SOURCE[*]:1} " != *"/.profile "* ]] && source "$HOME/.profile"
 
 # Load exceutable scripts and add to PATH
 [[ -d "$HOME/.config/scripts" ]] && PATH="$PATH:$HOME/.config/scripts"

@@ -1,5 +1,4 @@
 {
-  "model": "opus",
   "skillOverrides": {
     "anthropic-skills:pdf": "off",
     "anthropic-skills:xlsx": "off",
@@ -43,5 +42,6 @@
     "claude-opus-5": {
       "effortLevel": "high"
     }
-  }
+  },
+  "model": "opus"
 }

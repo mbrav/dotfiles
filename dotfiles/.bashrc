@@ -151,3 +151,6 @@ command -v netbird >/dev/null && eval "$(netbird completion bash)"
 
 # Source herdr function
 [[ -f "$HOME/.config/scripts/start_herdr" ]] && source "$HOME/.config/scripts/start_herdr"
+
+# Source claude function (Headroom proxy routing)
+[[ -f "$HOME/.config/scripts/_claude" ]] && source "$HOME/.config/scripts/_claude"

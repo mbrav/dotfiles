@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# _claude
+#
+# Function: claude
+# Description: Claude Code through the Headroom proxy, with per-project attribution.
+#              Bash version of ~/.config/fish/functions/claude.fish; keep the two in sync.
+#              - headroom CLI on PATH: local proxy, started by the SessionStart hook
+#              - no CLI but HEADROOM_HOST set: remote proxy, direct if its /health fails
+#              - neither: plain claude
+#
+# HEADROOM_HOST / HEADROOM_PORT / HEADROOM_PROXY_TOKEN come from ~/.profile.
+#
+# Usage: source this file, then run claude as usual
+#
+
+claude() {
+    local base port="${HEADROOM_PORT:-8787}"
+
+    if command -v headroom >/dev/null 2>&1; then
+        base="http://${HEADROOM_HOST:-localhost}:$port"
+    elif [[ -n "${HEADROOM_HOST:-}" ]]; then
+        # Nothing would start a remote proxy, so check it is up rather than fail every request
+        base="http://$HEADROOM_HOST:$port"
+        if ! curl -sf -m 1 "$base/health" >/dev/null 2>&1; then
+            echo "claude: Headroom proxy at $base is down, running direct" >&2
+            command claude "$@"
+            return
+        fi
+    else
+        command claude "$@"
+        return
+    fi
+
+    # Git repo name if inside one (stable from subfolders), else the current folder
+    local root headers
+    root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    headers="X-Headroom-Project: ${root##*/}"
+    # Remote proxies are token-gated; Claude's own Authorization still reaches Anthropic
+    [[ -n "${HEADROOM_PROXY_TOKEN:-}" ]] && headers+=$'\n'"X-Headroom-Proxy-Token: $HEADROOM_PROXY_TOKEN"
+    [[ -n "${ANTHROPIC_CUSTOM_HEADERS:-}" ]] && headers="$ANTHROPIC_CUSTOM_HEADERS"$'\n'"$headers"
+
+    ANTHROPIC_BASE_URL="$base" ANTHROPIC_CUSTOM_HEADERS="$headers" command claude "$@"
+}

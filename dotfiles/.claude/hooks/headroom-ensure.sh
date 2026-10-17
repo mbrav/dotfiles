@@ -43,7 +43,11 @@ export HEADROOM_STRIP_INTERNAL_HEADERS HEADROOM_PROXY_STRIP_INTERNAL_HEADERS
 
 healthy() { curl -sf -m 2 "http://$host:$port/health" >/dev/null 2>&1; }
 
-command -v headroom >/dev/null || exit 0
+if ! command -v headroom >/dev/null; then
+  # Remote proxy (HEADROOM_HOST set, no CLI here): nothing to start, only report
+  [ -n "${HEADROOM_HOST:-}" ] && ! healthy && echo "Remote Headroom proxy at $host:$port is unhealthy"
+  exit 0
+fi
 healthy && exit 0
 
 # Port already taken: either still starting up, or wedged. Give it a few seconds

@@ -3,47 +3,51 @@
 set -euo pipefail
 
 script_id="mbrav/dotfiles installer"
+force="${force:-}"
 script_dir="$(dirname "$(realpath "$0")")"
 dot_dir="$(realpath "${script_dir}/../../../")"
 
 # Source util functions
 source "${script_dir}/_util"
 
-function dotfiles_symlink() {
-  # List conf files in .config
-  local dir_ls=($(ls -A "$dot_dir/dotfiles/.config"))
+# Symlink $1 (repo item) to $2 (target in $HOME)
+function link_item() {
+  local item_path="$1" target="$2"
 
-  # Loop through contents
-  for item in "${dir_ls[@]}"; do
-    # Check item full path
-    local item_path="$dot_dir/dotfiles/.config/$item"
-    if [[ -e "$item_path" && -z "$force" ]]; then
-      info_msg "Item $item_path exists"
-      yes_no_prompt "${GREEN}Replace $item_path with new symlink?${YELLOW}" &&
-        rm -rfv "$HOME/.config/$item" &&
-        ln -sv "$item_path" "$HOME/.config/$item"
-    else
-      info_msg "Symlinking file $item_path to $HOME/.config/$item"
-      rm -rfv "$HOME/.config/$item"
-      ln -sv "$item_path" "$HOME/.config/$item"
+  # Already linked from an earlier run, nothing to replace
+  [[ -L "$target" && "$(readlink "$target")" == "$item_path" ]] && return 0
+
+  # -L as well: a dangling symlink fails -e but still blocks ln
+  if [[ (-e "$target" || -L "$target") && -z "$force" ]]; then
+    info_msg "Item $target exists"
+    # if, not &&: answering "n" to the last item would otherwise become the
+    # function's exit status and report the whole install as failed
+    if yes_no_prompt "${GREEN}Replace $target with new symlink?${YELLOW}"; then
+      rm -rfv "$target" && ln -sv "$item_path" "$target"
     fi
+  else
+    info_msg "Symlinking file $item_path to $target"
+    rm -rfv "$target"
+    ln -sv "$item_path" "$target"
+  fi
+}
+
+function dotfiles_symlink() {
+  # Globs instead of parsing ls; dotglob for hidden entries, nullglob so an
+  # empty dir loops zero times instead of over the literal pattern
+  shopt -s dotglob nullglob
+  local item_path
+
+  # Every entry in .config, folders included
+  mkdir -p "$HOME/.config"
+  for item_path in "$dot_dir/dotfiles/.config/"*; do
+    link_item "$item_path" "$HOME/.config/${item_path##*/}"
   done
 
-  # List conf files in home without folders
-  local dir_ls=($(ls -Ap "$dot_dir/dotfiles" | grep -v /))
-
-  for item in "${dir_ls[@]}"; do
-    local item_path="$dot_dir/dotfiles/$item"
-    if [[ -e "$item_path" && -z "$force" ]]; then
-      info_msg "Item $item_path exists"
-      yes_no_prompt "${GREEN}Replace $item_path with new symlink?${YELLOW}" &&
-        rm -fv "$HOME/$item" &&
-        ln -sv "$item_path" "$HOME/$item"
-    else
-      info_msg "Symlinking file $item_path to $HOME/$item"
-      rm -fv "$HOME/$item"
-      ln -sv "$item_path" "$HOME/$item"
-    fi
+  # Top-level files only, .config is handled above
+  for item_path in "$dot_dir/dotfiles/"*; do
+    [[ -d "$item_path" ]] && continue
+    link_item "$item_path" "$HOME/${item_path##*/}"
   done
 }
 

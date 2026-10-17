@@ -10,6 +10,19 @@ dot_dir="$(realpath "${script_dir}/../../../")"
 # Source util functions
 source "${script_dir}/_util"
 
+# Remove $1 so a symlink can take its place. A real directory is moved to
+# $1.bak instead: ~/.claude holds credentials and history that rm -rf would lose
+function clear_target() {
+  local target="$1" bak="$1.bak"
+  if [[ -d "$target" && ! -L "$target" ]]; then
+    # mv into an existing dir would nest inside it, so never reuse a .bak
+    [[ -e "$bak" || -L "$bak" ]] && bak="$bak-$(date +%Y%m%d%H%M%S)"
+    mv -v "$target" "$bak"
+  else
+    rm -fv "$target"
+  fi
+}
+
 # Symlink $1 (repo item) to $2 (target in $HOME)
 function link_item() {
   local item_path="$1" target="$2"
@@ -23,11 +36,11 @@ function link_item() {
     # if, not &&: answering "n" to the last item would otherwise become the
     # function's exit status and report the whole install as failed
     if yes_no_prompt "${GREEN}Replace $target with new symlink?${YELLOW}"; then
-      rm -rfv "$target" && ln -sv "$item_path" "$target"
+      clear_target "$target" && ln -sv "$item_path" "$target"
     fi
   else
     info_msg "Symlinking file $item_path to $target"
-    rm -rfv "$target"
+    clear_target "$target"
     ln -sv "$item_path" "$target"
   fi
 }
@@ -44,9 +57,10 @@ function dotfiles_symlink() {
     link_item "$item_path" "$HOME/.config/${item_path##*/}"
   done
 
-  # Top-level files only, .config is handled above
+  # Everything else at the top level, folders like .claude included. .config
+  # itself stays a real dir, its entries are linked above
   for item_path in "$dot_dir/dotfiles/"*; do
-    [[ -d "$item_path" ]] && continue
+    [[ "${item_path##*/}" == .config ]] && continue
     link_item "$item_path" "$HOME/${item_path##*/}"
   done
 }

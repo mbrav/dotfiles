@@ -47,6 +47,8 @@ When adding a shell-wide alias or env var, put it in `_aliases` (not in `config.
 
 **Skills** (`skills/`) — Claude Code skills (`tmux-subagents-claude`, `tmux-agents-codex`) for orchestrating agents in tmux panes. The `tmux-subagents-claude` skill is backed by a standalone Go program (see below), not a script in `scripts/`. `tmux-agents-claude` is a thin documentation-only wrapper on top of it for the "manager of managers" layer — a session that manages agents which themselves manage subagents (the agent tree/forest).
 
+User-level skills live in `dotfiles/.claude/skills/` (reached through the `~/.claude` symlink): `herdr`, `todo`, `semver-commit`, `herdr-teams` and others. They are layered: a composite skill like `herdr-teams` names the base skills it builds on (`herdr`, `todo`, `semver-commit`), uses only their documented interface, and states its own overrides. Base skills stay unaware of their callers, because the user also runs them directly; put caller-specific usage in the composite skill, never in the base one.
+
 **Go programs** (`go/`) — `module github.com/mbrav/dotfiles/go`, stdlib-only. `go/tmux-subagents-claude/` is the orchestrator CLI behind the `tmux-subagents-claude` skill; install with `go install github.com/mbrav/dotfiles/go/tmux-subagents-claude@latest` (lands in `~/go/bin`, which is on `PATH`). Build/test: `cd go && go test ./... && go vet ./...`. Validate before committing with `gofmt -l`, `go vet`, and `go test`.
 
 ## Security

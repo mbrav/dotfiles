@@ -146,6 +146,9 @@ command -v hubble >/dev/null && eval "$(hubble completion bash)"
 # init netbird
 command -v netbird >/dev/null && eval "$(netbird completion bash)"
 
+# init herdr
+command -v herdr >/dev/null && eval "$(herdr completion bash)"
+
 # Source tmux function
 # [[ -f "$HOME/.config/scripts/start_tmux" ]] && source "$HOME/.config/scripts/start_tmux"
 

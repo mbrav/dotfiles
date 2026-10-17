@@ -42,4 +42,9 @@ if status is-interactive
         hubble completion fish | source
     end
 
+    # init herdr
+    if command -q herdr
+        herdr completion fish | source
+    end
+
 end

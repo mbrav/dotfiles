@@ -83,8 +83,14 @@ Only the CTO edits the roster (or Michael). Leads ask the CTO.
    ```
 
    `agent_not_ready` means it is blocked at startup (trust dialog, login): read it and ask Michael before answering.
-5. **Record session ids** in the roster.
-6. **Brief the lead** (see below) and add the brief to the backlog. The lead briefs its own team; the CTO does not reach past it.
+5. **Color it by role** (colors in roles.md) so a pane's role shows at a glance. `/color` is a local command that starts no turn, so send it without `--wait`, which would stall:
+
+   ```bash
+   herdr agent prompt anselm-dev "/color green"
+   ```
+
+6. **Record session ids** in the roster.
+7. **Brief the lead** (see below) and add the brief to the backlog. The lead briefs its own team; the CTO does not reach past it.
 
 ## Resume a team
 
@@ -94,6 +100,8 @@ For each roster line of the project: find a free shell pane (or lay one out as a
 herdr agent start anselm-dev --kind claude --pane <pane-id> -- \
   --resume <session-id> --append-system-prompt "<role brief>"
 ```
+
+Then set its role color again, as in spawn step 5.
 
 No session id, or the transcript is gone (`~/.claude/projects/-home-deploy-dev-<project>/<id>.jsonl` missing): start fresh and give it a catch-up brief instead. Before stopping an agent, record its session id.
 

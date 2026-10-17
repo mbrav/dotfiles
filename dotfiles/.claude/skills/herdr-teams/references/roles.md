@@ -10,6 +10,21 @@
 
 A project moves between tiers when its stakes change. Promote by adding the missing roles to the roster and spawning them; demote by stopping the extra agents after recording their session ids, and keep their roster lines with a `(parked)` suffix on the persona.
 
+## Colors
+
+Each role has a fixed Claude Code `/color`, the same in every project, so a glance at a pane tells you the role:
+
+| Role | Color |
+| --- | --- |
+| cto | purple |
+| lead | blue |
+| dev | green |
+| rev | yellow |
+| test | orange |
+| ops | red |
+
+`pink` and `cyan` are free for a new role.
+
 ## Role briefs
 
 Fill the placeholders and pass the result as `--append-system-prompt`. `{persona}` is the roster's persona field verbatim.

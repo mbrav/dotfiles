@@ -8,13 +8,17 @@
 #
 # Always exits 0 - a proxy problem should not stop the session from starting.
 
-set -uo pipefail
+set -o pipefail
 
-# Same environment the shells get: HOST/PORT from ~/.profile, dirs from _aliases
+# Same environment the shells get: HOST/PORT from ~/.profile, dirs from _aliases.
+# Sourced before `set -u`: on Debian ~/.profile pulls in ~/.bashrc, whose
+# `[ -z "$PS1" ]` guard aborts under nounset in a non-interactive shell.
 # shellcheck source=/dev/null
 [ -f "$HOME/.profile" ] && . "$HOME/.profile"
 # shellcheck source=/dev/null
 [ -f "$HOME/.config/scripts/_aliases" ] && . "$HOME/.config/scripts/_aliases"
+
+set -u
 
 # Hooks do not inherit the interactive PATH
 PATH="$HOME/.local/bin:$PATH"

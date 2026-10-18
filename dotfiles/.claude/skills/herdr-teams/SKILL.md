@@ -10,7 +10,7 @@ One overseer and one team per project, each agent a Claude Code session in its o
 
 ```
 CEO (you)
-  └─ cto                       ~/dev                    (workspace "cto")
+  └─ cto                       ~/dev                    (workspace "management")
        ├─ anselm-lead          ~/dev/anselm             (workspace "anselm", Tier 1)
        │    ├─ anselm-dev
        │    ├─ anselm-rev
@@ -67,11 +67,28 @@ Projects: anselm = Tier 1 (lead, dev, rev, test, ops)
 
 Only the CTO edits the roster (or the CEO). Leads ask the CTO.
 
+## The CTO's workspace
+
+The CTO runs in a workspace of its own, labelled `management` to match its roster line, with cwd `~/dev` and one tab named `cto`. Never put a team agent in it, and never start the CTO in a project workspace. If it doesn't exist yet (first start, or after Herdr restarts), create it before starting or resuming the CTO:
+
+```bash
+herdr workspace create --cwd ~/dev --label management --no-focus   # root tab → cto
+herdr tab rename <root-tab-id> cto
+```
+
 ## Spawn a team
 
 1. **Pick the tier** with the CEO if not stated. Add the `Projects:` entry and one roster line per role (session id blank for now).
 2. **Check the repo.** Tier 1 and 2 work on branches, so `git -C ~/dev/<project> rev-parse --git-dir` must succeed. If it doesn't, ask the CEO before running `git init`, and whether there is a remote. Tier 3 may work without git. Then `mkdir -p ~/dev/.team/<project>` for reports.
-3. **Lay out panes.** One workspace per project, cwd `~/dev/<project>`. Its root pane is the lead's (or the Tier 3 dev's); split the rest off it with `--cwd ~/dev/<project> --no-focus`. Five panes don't fit one tab legibly: lead+dev in the first tab, rev/test/ops in a second (`herdr tab create`).
+3. **Lay out tabs.** Use one workspace per project, labelled `<project>`, with cwd `~/dev/<project>`. Each agent gets a tab of its own; don't split panes. Name each tab by its bare role (`lead`, `dev`, `rev`, `test`, `ops`), with no project prefix, since the workspace already names the project. The workspace's root tab is the lead's (or the Tier 3 dev's), so rename it. Create the rest in role order, because Herdr can't reorder tabs:
+
+   ```bash
+   herdr workspace create --cwd ~/dev/anselm --label anselm --no-focus   # root tab → lead
+   herdr tab rename <root-tab-id> lead
+   herdr tab create --workspace <ws-id> --cwd ~/dev/anselm --label dev --no-focus   # then rev, test, ops
+   ```
+
+   Each tab's pane id is `.result.root_pane.pane_id`. To fix a layout without stopping agents, run `herdr pane move <pane-id> --new-tab --workspace <ws-id> --label <role> --no-focus`. It appends the tab at the end, so move them in role order.
 4. **Start each agent** in its pane with its role brief appended to the system prompt:
 
    ```bash
@@ -88,7 +105,7 @@ Only the CTO edits the roster (or the CEO). Leads ask the CTO.
 
 ## Resume a team
 
-For each roster line of the project: find a free shell pane (or lay one out as above), then start the agent on its recorded session with the same brief — `--resume` restores the conversation, not the appended system prompt:
+For each roster line of the project: find the free shell pane in its role's tab (or lay the tabs out as above), then start the agent on its recorded session with the same brief — `--resume` restores the conversation, not the appended system prompt:
 
 ```bash
 herdr agent start anselm-dev --kind claude --pane <pane-id> -- \

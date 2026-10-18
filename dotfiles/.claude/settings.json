@@ -28,7 +28,8 @@
       "Bash(~/.claude/skills/todo/scripts/todo.sh:*)",
       "Bash(~/.claude/skills/semver-commit/scripts/predict_bump.sh:*)",
       "Edit(~/dev/**)",
-      "Write(~/dev/**)"
+      "Write(~/dev/**)",
+      "Bash(docker:*)"
     ],
     "defaultMode": "auto",
     "ask": [
@@ -37,7 +38,15 @@
       "Edit(~/.claude/hooks/**)",
       "Write(~/.claude/hooks/**)",
       "Edit(~/.claude/skills/**)",
-      "Write(~/.claude/skills/**)"
+      "Write(~/.claude/skills/**)",
+      "Bash(docker stop*)",
+      "Bash(docker kill*)",
+      "Bash(docker rm*)",
+      "Bash(docker container rm*)",
+      "Bash(docker container stop*)",
+      "Bash(docker compose*down*)",
+      "Bash(docker compose*rm*)",
+      "Bash(docker compose*stop*)"
     ],
     "deny": [
       "Bash(git *push*--force*)",
@@ -45,7 +54,19 @@
       "Bash(git *push* +*)",
       "Bash(git *push*--delete*)",
       "Bash(git *push*--mirror*)",
-      "Bash(herdr server stop*)"
+      "Bash(herdr server stop*)",
+      "Bash(docker system prune*)",
+      "Bash(docker volume rm*)",
+      "Bash(docker volume prune*)",
+      "Bash(docker image prune*)",
+      "Bash(docker builder prune*)",
+      "Bash(docker compose*down*-v*)",
+      "Bash(docker compose*down*--volumes*)",
+      "Bash(docker*--privileged*)",
+      "Bash(docker*-v /:/*)",
+      "Bash(docker*--volume /:/*)",
+      "Bash(docker*--pid=host*)",
+      "Bash(docker*--pid host*)"
     ]
   },
   "model": "opus",

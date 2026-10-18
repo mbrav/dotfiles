@@ -1,4 +1,8 @@
 {
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "model": "opus",
   "skillOverrides": {
     "anthropic-skills:pdf": "off",
     "anthropic-skills:xlsx": "off",
@@ -27,6 +31,11 @@
       }
     ]
   },
+  "worktree": {
+    "baseRef": "fresh"
+  },
+  "enableArtifact": false,
+  "workflowKeywordTriggerEnabled": false,
   "statusLine": {
     "type": "command",
     "command": "bash \"$HOME/.claude/statusline-command.sh\"",
@@ -35,6 +44,7 @@
   "enabledPlugins": {
     "cc-plugin-sec-default@builtin": false
   },
+  "feedbackDrafts": "off",
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "high"
@@ -43,5 +53,19 @@
       "effortLevel": "high"
     }
   },
-  "model": "opus"
+  "promptSuggestionEnabled": false,
+  "timeFormat": "24-hour-utc",
+  "theme": "dark",
+  "editorMode": "vim",
+  "preferredNotifChannel": "auto",
+  "crossSessionInbound": "accept",
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true,
+  "pluginConfigs": {
+    "cc-plugin-agents-md@builtin": {
+      "options": {
+        "instructionFiles": "claude-md-or-agents-md"
+      }
+    }
+  }
 }

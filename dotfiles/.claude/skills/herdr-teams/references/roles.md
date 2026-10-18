@@ -12,7 +12,7 @@ A project moves between tiers when its stakes change. Promote by adding the miss
 
 ## Role briefs
 
-Fill the placeholders and pass the result as `--append-system-prompt`. `{persona}` is the roster's persona field verbatim.
+Fill the placeholders, write the result to `~/dev/.team/briefs/<name>.md`, and pass it with `--append-system-prompt-file`. `{persona}` is the roster's persona field verbatim.
 
 ### cto
 

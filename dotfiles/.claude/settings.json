@@ -1,6 +1,52 @@
 {
   "permissions": {
-    "defaultMode": "auto"
+    "allow": [
+      "Bash(git -C /tmp/claude-*)",
+      "Bash(git -C /private/tmp/claude-*)",
+      "Bash(cargo:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git worktree:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge --ff-only:*)",
+      "Bash(git tag:*)",
+      "Bash(git push origin feat/*)",
+      "Bash(git push -u origin feat/*)",
+      "Bash(herdr agent:*)",
+      "Bash(herdr pane:*)",
+      "Bash(herdr tab:*)",
+      "Bash(herdr workspace:*)",
+      "Bash(~/.claude/skills/todo/scripts/todo.sh:*)",
+      "Bash(~/.claude/skills/semver-commit/scripts/predict_bump.sh:*)",
+      "Edit(~/dev/**)",
+      "Write(~/dev/**)"
+    ],
+    "defaultMode": "auto",
+    "ask": [
+      "Edit(~/.claude/settings*.json)",
+      "Write(~/.claude/settings*.json)",
+      "Edit(~/.claude/hooks/**)",
+      "Write(~/.claude/hooks/**)",
+      "Edit(~/.claude/skills/**)",
+      "Write(~/.claude/skills/**)"
+    ],
+    "deny": [
+      "Bash(git *push*--force*)",
+      "Bash(git *push* -f*)",
+      "Bash(git *push* +*)",
+      "Bash(git *push*--delete*)",
+      "Bash(git *push*--mirror*)",
+      "Bash(herdr server stop*)"
+    ]
   },
   "model": "opus",
   "skillOverrides": {
@@ -29,6 +75,17 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/herdr-push-allow.sh\""
+          }
+        ]
+      }
     ]
   },
   "worktree": {
@@ -47,25 +104,58 @@
   "feedbackDrafts": "off",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "high"
+      "effortLevel": "medium"
     },
     "claude-opus-5": {
-      "effortLevel": "high"
+      "effortLevel": "medium"
     }
   },
   "promptSuggestionEnabled": false,
-  "timeFormat": "24-hour-utc",
-  "theme": "dark",
-  "editorMode": "vim",
-  "preferredNotifChannel": "auto",
-  "crossSessionInbound": "accept",
-  "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
   "pluginConfigs": {
     "cc-plugin-agents-md@builtin": {
       "options": {
         "instructionFiles": "claude-md-or-agents-md"
       }
     }
+  },
+  "timeFormat": "24-hour-utc",
+  "theme": "dark",
+  "editorMode": "normal",
+  "preferredNotifChannel": "auto",
+  "crossSessionInbound": "accept",
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true,
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured",
+      "**Cloud provider(s)**: Hetzner",
+      "**Repository visibility**: Private",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: None configured",
+      "**Default / protected branches**: No protected branches",
+      "**CI/CD deploy targets**: None configured",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+      "**Source control**: Git",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: None configured",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; share only with audiences cleared at the [named+specifics] bar",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development",
+      "**Trusted repo**: /home/deploy/dev (working directory) — Everything here is trusted and can be worked on, deployed, changes, etc",
+      "**Org-specific CLIs**: None configured",
+      "routine under /home/deploy/dev/ prefix: local file reads, builds, and git operations scoped to this directory",
+      "**Herdr agent teams**: Claude sessions named cto and <project>-<role> run in Herdr panes on rag as deploy and coordinate through `herdr agent`/`herdr pane` commands. Restarting an idle agent (send-keys ctrl+c, then `herdr agent start --resume <id> --append-system-prompt-file <brief>`) is routine team upkeep, not evasion",
+      "**Release and review worktrees**: git worktrees under /home/deploy/dev/.worktrees/ are part of the trusted repo; edits, cargo builds and local git operations there are routine",
+      "**Delegated pushes**: fast-forward pushes to dev, main, feat/* and v* tags of repos under /home/deploy/dev are delegated to the cto and *-lead agents in their brief files; force pushes and branch or tag deletes are not",
+      "**Agent config**: ~/.claude settings, hooks and skills change only through the CEO, who approves each edit at a prompt or commits it to the dotfiles repo; an agent proposing such a change is expected, applying it silently is not"
+    ]
   }
 }

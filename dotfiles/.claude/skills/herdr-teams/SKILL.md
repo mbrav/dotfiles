@@ -180,15 +180,26 @@ The CTO owns todo.txt for team work, as it owns the roster. Leads may read their
 
 - Tag every task explicitly `+<project> @team`; the CTO works from `~/dev`, where derived tags would be wrong.
 - One task per CTO→lead brief, its text the brief's Goal.
-- Out-of-scope proposals and items a report leaves open become their own tasks, unprioritized.
-- Anything waiting on the CEO (base-branch merge, shared infra, deletes, money) is `(A) … needs CEO`; clear the priority once the CEO decides.
-- Complete a task when the lead's report meets the brief's Done line. A merge that needs the CEO stays its own `(A)` task.
+- Out-of-scope proposals and items a report leaves open become their own tasks.
+- Anything waiting on the CEO (base-branch merge, shared infra, deletes, money, a product decision) also gets `+ceo`, so `$T ls --json +ceo` is the CEO's queue. Drop the tag once the CEO decides. A merge that needs the CEO stays its own task.
+- Complete a task when the lead's report meets the brief's Done line.
+
+Priority says how much the work matters, not who it waits on:
+
+| Priority | Meaning |
+| --- | --- |
+| `(A)` | Urgent: production or users affected, or a team is stopped until it's done |
+| `(B)` | Next up: the work that moves the project now |
+| `(C)` | Worth doing, nobody waiting: proposals, follow-ups, small fixes |
+| none | Not triaged yet |
+
+Set a priority on every task you add, using the todo skill's `(X)` prefix. The CEO reprioritizes in the TUI and that wins: never undo a priority you didn't just set. Re-triage when a task's situation changes (an incident makes it urgent, a merged fix makes a follow-up optional).
 
 ### Handing a project off
 
 Once a project runs steadily, the CTO hands it to its lead so the CTO can take on other projects. Write a handoff to `~/dev/.team/<project>/cto-<date>-handoff.md` covering everything the CTO was doing for that project: picking the next work, the project's backlog tasks, releases and deploys under the standing delegations, team upkeep (restarts, `/compact`, names), what to escalate, and the facts the lead needs but only the CTO knew. Update the lead's brief file to point at it, and brief the lead with it once it's `idle` or `done`.
 
-After a handoff the lead picks its own next work and owns its project's `+<project> @team` tasks, and only those. The lead keeps `~/dev/.team/<project>/status.md` current (now, last done, needs cto, next). The CTO keeps the roster, priorities between projects and everything for the CEO. On check-ins it reads `status.md` instead of prompting the lead, and prompts only when it has something for the lead or the file shows a problem.
+After a handoff the lead picks its own next work by priority, the same way the CTO does, and owns its project's `+<project> @team` tasks, and only those. The lead keeps `~/dev/.team/<project>/status.md` current (now, last done, needs cto, next). The CTO keeps the roster, priorities between projects and everything for the CEO. On check-ins it reads `status.md` instead of prompting the lead, and prompts only when it has something for the lead or the file shows a problem.
 
 ## Supervision (CTO)
 
@@ -202,7 +213,8 @@ $T ls --json @team
 - `blocked` anywhere → read it, unblock or escalate.
 - A team idle with open tasks → ask its lead for status.
 - A handed-off team → read its `status.md`; act only on "Needs cto" or a stale or wrong file.
-- A team not yet handed off, idle with nothing in flight → brief its lead on the next unprioritized task for that project that needs no CEO decision (proposals, follow-ups, small fixes), one brief at a time. Leave `(A)` tasks alone until the CEO decides. Nothing left → let it rest.
+- A team not yet handed off, idle with nothing in flight → brief its lead on the project's highest-priority open task without `+ceo`: `(A)`, then `(B)`, then `(C)`, oldest first within a priority, one brief at a time. Untriaged tasks get a priority first. Leave `+ceo` tasks until the CEO decides. Nothing left → let it rest.
+- Open `(A)` tasks anywhere → the CEO hears about them in the next summary, `+ceo` ones first.
 - An agent idle past 280k context → `/compact` it (herdr skill).
 - Roster names, Herdr names and status-line names must match; fix with `herdr agent rename`.
 

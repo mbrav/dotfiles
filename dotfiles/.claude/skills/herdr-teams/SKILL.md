@@ -9,7 +9,7 @@ compatibility: "Runs inside a Herdr pane (HERDR_ENV=1) on rag as deploy. Project
 One overseer and one team per project, each agent a Claude Code session in its own Herdr pane. The **CTO** plans across projects and talks only to team leads. Each **team** is sized by tier and staffed with fixed roles. The roster records who exists and the session to resume them from; todo.txt records what they owe.
 
 ```
-Michael
+CEO (you)
   └─ cto                       ~/dev                    (workspace "cto")
        ├─ anselm-lead          ~/dev/anselm             (workspace "anselm", Tier 1)
        │    ├─ anselm-dev
@@ -65,12 +65,12 @@ Projects: anselm = Tier 1 (lead, dev, rev, test, ops)
   herdr agent get anselm-dev | jq -r .result.agent.agent_session.value
   ```
 
-Only the CTO edits the roster (or Michael). Leads ask the CTO.
+Only the CTO edits the roster (or the CEO). Leads ask the CTO.
 
 ## Spawn a team
 
-1. **Pick the tier** with Michael if not stated. Add the `Projects:` entry and one roster line per role (session id blank for now).
-2. **Check the repo.** Tier 1 and 2 work on branches, so `git -C ~/dev/<project> rev-parse --git-dir` must succeed. If it doesn't, ask Michael before running `git init`, and whether there is a remote. Tier 3 may work without git. Then `mkdir -p ~/dev/.team/<project>` for reports.
+1. **Pick the tier** with the CEO if not stated. Add the `Projects:` entry and one roster line per role (session id blank for now).
+2. **Check the repo.** Tier 1 and 2 work on branches, so `git -C ~/dev/<project> rev-parse --git-dir` must succeed. If it doesn't, ask the CEO before running `git init`, and whether there is a remote. Tier 3 may work without git. Then `mkdir -p ~/dev/.team/<project>` for reports.
 3. **Lay out panes.** One workspace per project, cwd `~/dev/<project>`. Its root pane is the lead's (or the Tier 3 dev's); split the rest off it with `--cwd ~/dev/<project> --no-focus`. Five panes don't fit one tab legibly: lead+dev in the first tab, rev/test/ops in a second (`herdr tab create`).
 4. **Start each agent** in its pane with its role brief appended to the system prompt:
 
@@ -82,7 +82,7 @@ Only the CTO edits the roster (or Michael). Leads ask the CTO.
    )"
    ```
 
-   `agent_not_ready` means it is blocked at startup (trust dialog, login): read it and ask Michael before answering.
+   `agent_not_ready` means it is blocked at startup (trust dialog, login): read it and ask the CEO before answering.
 5. **Record session ids** in the roster.
 6. **Brief the lead** (see below) and add the brief to the backlog. The lead briefs its own team; the CTO does not reach past it.
 
@@ -99,7 +99,7 @@ No session id, or the transcript is gone (`~/.claude/projects/-home-deploy-dev-<
 
 ## Chain of command
 
-- **Michael ↔ cto.** Michael can talk to anyone, but work enters through the CTO.
+- **CEO ↔ cto.** The CEO can talk to anyone, but work enters through the CTO.
 - **cto ↔ leads.** The CTO sets goals, priorities and cross-project calls. It never prompts a team member directly, except a Tier 3 dev, which has no lead.
 - **lead ↔ its team.** The lead splits work, briefs members, gates on review and test, and reports up.
 - **Members never prompt upward.** They finish the turn with their report; the superior collects it. A member that needs a decision ends its turn with the question, and its lead sees it on the next read.
@@ -113,7 +113,7 @@ herdr agent wait   anselm-dev --timeout 3600000
 herdr agent read   anselm-dev --source recent-unwrapped --lines 200
 ```
 
-A `blocked` agent you can't decide for goes up the chain to Michael.
+A `blocked` agent you can't decide for goes up the chain to the CEO.
 
 Have agents write anything longer than a screen to `~/dev/.team/<project>/<name>-<YYYY-MM-DD>-<slug>.md` and reply with only the path.
 
@@ -140,8 +140,8 @@ The CTO owns todo.txt for team work, as it owns the roster. Leads may read their
 - Tag every task explicitly `+<project> @team`; the CTO works from `~/dev`, where derived tags would be wrong.
 - One task per CTO→lead brief, its text the brief's Goal.
 - Out-of-scope proposals and items a report leaves open become their own tasks, unprioritized.
-- Anything waiting on Michael (base-branch merge, shared infra, deletes, money) is `(A) … needs Michael`; clear the priority once Michael decides.
-- Complete a task when the lead's report meets the brief's Done line. A merge that needs Michael stays its own `(A)` task.
+- Anything waiting on the CEO (base-branch merge, shared infra, deletes, money) is `(A) … needs CEO`; clear the priority once the CEO decides.
+- Complete a task when the lead's report meets the brief's Done line. A merge that needs the CEO stays its own `(A)` task.
 
 ## Supervision (CTO)
 
@@ -158,7 +158,7 @@ $T ls --json @team
 
 ## Never
 
-- `herdr server stop`, killing the Herdr process, or closing workspaces/panes another agent or Michael created.
-- Pushing or merging to a project's base branch, deleting data, or changing shared infra (anything on another host, any shared database, NetBird, DNS) without Michael's go-ahead. ops prepares the change and the exact commands; Michael approves.
+- `herdr server stop`, killing the Herdr process, or closing workspaces/panes another agent or the CEO created.
+- Pushing or merging to a project's base branch, deleting data, or changing shared infra (anything on another host, any shared database, NetBird, DNS) without the CEO's go-ahead. ops prepares the change and the exact commands; the CEO approves.
 - Committing outside `/semver-commit`; it is what keeps AI attribution out of the history.
 - Putting secrets in briefs, reports, the roster or todo.txt. Agents read them from the project's own `.env`.

@@ -1,13 +1,4 @@
 #!/usr/bin/env bash
-# SessionStart hook: make sure the Headroom proxy is up before Claude routes through it.
-#
-# No-op when the proxy is already healthy. Deliberately never kills anything: the
-# proxy's worker processes all share the cmdline ".../bin/headroom", so a pkill
-# pattern cannot tell a wedged proxy from a busy one serving another session.
-# Use "$HEADROOM_WORKSPACE_DIR/restart-proxy.sh" for a forced restart.
-#
-# Always exits 0 - a proxy problem should not stop the session from starting.
-
 set -o pipefail
 
 # Same environment the shells get: HOST/PORT from ~/.profile, dirs from _aliases.

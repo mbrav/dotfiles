@@ -144,7 +144,7 @@ herdr agent read   <project>-dev --source recent-unwrapped --lines 200
 
 A `blocked` agent you can't decide for goes up the chain to the CEO.
 
-If Claude Code's auto-mode classifier denies an action that is in the brief, the agent doesn't route around it. It does every step it can without that action, then ends its turn with the exact command that was denied. The superior answers a permission dialog only for actions its own brief covers; anything else goes up. Plain `git push` from `cto` and `*-lead` is allowed by the `PreToolUse` hook `~/.claude/hooks/herdr-push-allow.sh`; force pushes and deletes still prompt.
+If Claude Code's auto-mode classifier denies an action that is in the brief, the agent doesn't route around it. It does every step it can without that action, then ends its turn with the exact command that was denied. The superior answers a permission dialog only for actions its own brief covers; anything else goes up. Plain `git push` from `cto` and `*-lead` is allowed by statement `LeadsPushPlain` in `~/.claude/policy.sh.json`, the IAM-style policy the `~/.claude/hooks/policy.py` hook enforces; force pushes and deletes still prompt. Rules that hang on who an agent is go there, not into `settings.json`.
 
 ### Working inside auto mode
 
@@ -190,7 +190,9 @@ Priority says how much the work matters, not who it waits on:
 | --- | --- |
 | `(A)` | Urgent: production or users affected, or a team is stopped until it's done |
 | `(B)` | Next up: the work that moves the project now |
-| `(C)` | Worth doing, nobody waiting: proposals, follow-ups, small fixes |
+| `(C)` | Planned: queued behind `(B)`, nobody blocked |
+| `(D)` | Worth doing, nobody waiting: proposals, follow-ups, small fixes |
+| `(E)` | Someday: ideas and nice-to-haves, only when nothing else is open |
 | none | Not triaged yet |
 
 Set a priority on every task you add, using the todo skill's `(X)` prefix. The CEO reprioritizes in the TUI and that wins: never undo a priority you didn't just set. Re-triage when a task's situation changes (an incident makes it urgent, a merged fix makes a follow-up optional).
@@ -213,7 +215,7 @@ $T ls --json @team
 - `blocked` anywhere → read it, unblock or escalate.
 - A team idle with open tasks → ask its lead for status.
 - A handed-off team → read its `status.md`; act only on "Needs cto" or a stale or wrong file.
-- A team not yet handed off, idle with nothing in flight → brief its lead on the project's highest-priority open task without `+ceo`: `(A)`, then `(B)`, then `(C)`, oldest first within a priority, one brief at a time. Untriaged tasks get a priority first. Leave `+ceo` tasks until the CEO decides. Nothing left → let it rest.
+- A team not yet handed off, idle with nothing in flight → brief its lead on the project's highest-priority open task without `+ceo`: `(A)` through `(E)` in order, oldest first within a priority, one brief at a time. Untriaged tasks get a priority first. Leave `+ceo` tasks until the CEO decides. Nothing left → let it rest.
 - Open `(A)` tasks anywhere → the CEO hears about them in the next summary, `+ceo` ones first.
 - An agent idle past 280k context → `/compact` it (herdr skill).
 - Roster names, Herdr names and status-line names must match; fix with `herdr agent rename`.

@@ -47,7 +47,7 @@ Directory isn't the whole story. The user wants trading-related tasks under `@tr
 ## Adding tasks
 
 1. Write the task as a short imperative line the user would recognize in a month without this conversation: "Rotate the staging DB password", not "do the thing we discussed". Pull in the specific file, ticket or error if it's what makes the task findable later.
-2. Priority only when the user signals it — "urgent", "blocker", "first thing" → `(A)`, "important"/"soon" → `(B)`, "someday"/"low priority" → `(C)` or none. Put it at the very start: `(A) Fix …`. Unprioritized is the normal case; don't inflate.
+2. Priority only when the user signals it — "urgent", "blocker", "first thing" → `(A)`, "important" → `(B)`, "soon"/"next" → `(C)`, "when there's time"/"nice to have" → `(D)`, "someday"/"low priority" → `(E)` or none. Put it at the very start: `(A) Fix …`. Unprioritized is the normal case; don't inflate.
 3. Due dates: resolve them yourself to `due:YYYY-MM-DD` (you know today's date; on macOS `date -v+1d +%F`; `date -v+fri +%F` is *today* when today is Friday, so "next Friday" needs thought). tuxedo only converts some prose ("due tomorrow") and stores shorthands like `due:fri` verbatim, which breaks date sorting.
 4. Keep it short. The line is read in a TUI next to a dozen others, so one sentence with the file name in parentheses is plenty; leave the reasoning in the conversation.
 5. Avoid `word:` anywhere in the text (`mr-patrol-context: add…`, `image:`, `remote:`). todo.txt parses any `key:value` token as metadata, so the TUI dims it and filters treat it as a field. Write `mr-patrol-context - add…` instead, and rephrase `image:` as "image refs".

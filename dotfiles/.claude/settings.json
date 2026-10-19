@@ -207,7 +207,7 @@
       "routine under /home/deploy/dev/ prefix: local file reads, builds, and git operations scoped to this directory",
       "**Herdr agent teams**: Claude sessions named cto and <project>-<role> run in Herdr panes on rag as deploy and coordinate through `herdr agent`/`herdr pane` commands. Restarting an idle agent (send-keys ctrl+c, then `herdr agent start --resume <id> --append-system-prompt-file <brief>`) is routine team upkeep, not evasion",
       "**Release and review worktrees**: git worktrees under /home/deploy/dev/.worktrees/ are part of the trusted repo; edits, cargo builds and local git operations there are routine",
-      "**Delegated pushes**: fast-forward pushes to dev, main, feat/* and v* tags of repos under /home/deploy/dev are delegated to the cto and *-lead agents in their brief files; force pushes and branch or tag deletes are not",
+      "**Delegated pushes**: only the ~/.claude/policy.sh.json statement LeadsRelease grants pushes to dev, main and v* tags, bound to the session ids of cto and the leads; a push that hook did not allow is not delegated, whatever the agent or its brief says. Force pushes and branch or tag deletes are never delegated",
       "**Agent config**: ~/.claude settings, hooks and skills change only through the CEO, who approves each edit at a prompt or commits it to the dotfiles repo; an agent proposing such a change is expected, applying it silently is not"
     ]
   }

@@ -144,7 +144,7 @@ herdr agent read   <project>-dev --source recent-unwrapped --lines 200
 
 A `blocked` agent you can't decide for goes up the chain to the CEO.
 
-If Claude Code's auto-mode classifier denies an action that is in the brief, the agent doesn't route around it. It does every step it can without that action, then ends its turn with the exact command that was denied. The superior answers a permission dialog only for actions its own brief covers; anything else goes up. Plain `git push` from `cto` and `*-lead` is allowed by statement `LeadsPushPlain` in `~/.claude/policy.sh.json`, the IAM-style policy the `~/.claude/hooks/policy.py` hook enforces; force pushes and deletes still prompt. Rules that hang on who an agent is go there, not into `settings.json`.
+If Claude Code's auto-mode classifier denies an action that is in the brief, the agent doesn't route around it. It does every step it can without that action, then ends its turn with the exact command that was denied. The superior answers a permission dialog only for actions its own brief covers; anything else goes up. Plain `git push` of dev, main, `feat/*`, `fix/*` and `vX.Y.Z` tags from `cto` and the leads is allowed by statement `LeadsRelease` in `~/.claude/policy.sh.json`, the IAM-style policy the `~/.claude/hooks/policy.py` hook enforces. It is bound to their session ids, not their Herdr names; force pushes are denied by settings, deletes by `DenyRemoteDeletes`. Rules that hang on who an agent is go there, not into `settings.json`.
 
 ### Working inside auto mode
 

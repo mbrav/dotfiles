@@ -61,9 +61,9 @@ speaker() {
   printf '%s' "$name"
 }
 
-(
-  who="$(speaker)"
-  say -v "$voice" -- "${who:+$who: }$text"
-) </dev/null >/dev/null 2>&1 &
+# (
+#   who="$(speaker)"
+#   say -v "$voice" -- "${who:+$who: }$text"
+# ) </dev/null >/dev/null 2>&1 &
 disown
 exit 0

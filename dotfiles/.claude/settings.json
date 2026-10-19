@@ -113,7 +113,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/say-action.sh\"",
+            "command": "python3 \"$HOME/.claude/hooks/kokoro.py\"",
             "timeout": 5
           }
         ]
@@ -124,7 +124,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/say-action.sh\"",
+            "command": "python3 \"$HOME/.claude/hooks/kokoro.py\"",
             "timeout": 5
           }
         ]
@@ -135,7 +135,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/say-action.sh\"",
+            "command": "python3 \"$HOME/.claude/hooks/kokoro.py\"",
             "timeout": 5
           }
         ]

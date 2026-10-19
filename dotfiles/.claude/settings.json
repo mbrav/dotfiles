@@ -3,6 +3,12 @@
     "allow": [
       "Bash(git -C /tmp/claude-*)",
       "Bash(git -C /private/tmp/claude-*)",
+      "Bash(cd /tmp/claude-*)",
+      "Bash(cd /private/tmp/claude-*)",
+      "Read(//tmp/claude-*/**)",
+      "Read(//private/tmp/claude-*/**)",
+      "Edit(//tmp/claude-*/**)",
+      "Edit(//private/tmp/claude-*/**)",
       "Bash(cargo:*)",
       "Bash(git status:*)",
       "Bash(git log:*)",

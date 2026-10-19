@@ -35,14 +35,7 @@
       "Edit(~/.claude/settings*.json)",
       "Edit(~/.claude/hooks/**)",
       "Edit(~/.claude/skills/**)",
-      "Bash(docker stop*)",
-      "Bash(docker kill*)",
-      "Bash(docker rm*)",
-      "Bash(docker container rm*)",
-      "Bash(docker container stop*)",
-      "Bash(docker compose*down*)",
-      "Bash(docker compose*rm*)",
-      "Bash(docker compose*stop*)"
+      "Edit(~/.claude/policy*.json)"
     ],
     "deny": [
       "Bash(git *push*--force*)",

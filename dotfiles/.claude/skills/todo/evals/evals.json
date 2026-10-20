@@ -1,32 +1,55 @@
 {
-  "skill_name": "todo",
-  "evals": [
-    {
-      "id": 1,
-      "prompt": "add a todo to backtest the mean-reversion strategy on BTC/USDT before next friday, its important",
-      "expected_output": "One new task: priority (A) or (B), ISO due:2026-10-23, +iac @trading, no cwd/repo/session fields; existing tasks untouched.",
-      "files": [
-        "evals/seed-todo.txt"
-      ],
-      "cwd": "~/dev/github.com/mbrav/iac/trading"
-    },
-    {
-      "id": 2,
-      "prompt": "whats on my plate for this project? also the ingress cert one is done",
-      "expected_output": "Lists the two +k8s tasks (ingress cert flagged overdue), marks only the ingress TLS cert task done, cert-manager task stays open.",
-      "files": [
-        "evals/seed-todo.txt"
-      ],
-      "cwd": "~/dev/git.sib.team/devops/k8s"
-    },
-    {
-      "id": 3,
-      "prompt": "note for later: webhook url is hardcoded in config.py, should come from env. and also whats overdue across all my stuff?",
-      "expected_output": "Adds a short findable task tagged +payreq-bot @experiment with no key:value noise; reports the two overdue tasks (ingress cert 10-10, crypto rebalance 10-14) across all contexts.",
-      "files": [
-        "evals/seed-todo.txt"
-      ],
-      "cwd": "~/dev/tmp/payreq-bot"
-    }
-  ]
+ "skill_name": "todo",
+ "evals": [
+  {
+   "id": 1,
+   "prompt": "add a todo to backtest the mean-reversion strategy on BTC/USDT before next friday, its important",
+   "expected_output": "One new task: priority (A) or (B), ISO due:2026-10-23, +iac, the next id id:7 (done.txt holds id:6) added by the wrapper, exactly one kanban category (@backlog or @ready), no @trading or other non-kanban context; existing tasks untouched.",
+   "files": [
+    "evals/seed-todo.txt",
+    "evals/seed-done.txt"
+   ],
+   "cwd": "~/dev/github.com/mbrav/iac/trading"
+  },
+  {
+   "id": 2,
+   "prompt": "whats on my plate for this project? also the ingress cert one is done",
+   "expected_output": "Lists the two +k8s tasks by id (#1 ingress cert flagged overdue, #2 cert-manager) with their categories, completes only id:1 so it reads 'x ...' and moves to @done; id:2 stays open in @backlog.",
+   "files": [
+    "evals/seed-todo.txt",
+    "evals/seed-done.txt"
+   ],
+   "cwd": "~/dev/git.sib.team/devops/k8s"
+  },
+  {
+   "id": 3,
+   "prompt": "note for later: webhook url is hardcoded in config.py, should come from env. and also whats overdue across all my stuff?",
+   "expected_output": "Adds a short findable task as id:7 tagged +payreq-bot with exactly one kanban category (@triage or @backlog), no key:value noise besides id; reports the two overdue open tasks (#1 ingress cert 10-10, #3 crypto rebalance 10-14).",
+   "files": [
+    "evals/seed-todo.txt",
+    "evals/seed-done.txt"
+   ],
+   "cwd": "~/dev/tmp/payreq-bot"
+  },
+  {
+   "id": 4,
+   "prompt": "i started on the duckdb thing, and show me the board",
+   "expected_output": "Moves id:5 from @triage to @doing with the wrapper's move (no other edits), then shows the open tasks grouped by kanban category in board order with ids.",
+   "files": [
+    "evals/seed-todo.txt",
+    "evals/seed-done.txt"
+   ],
+   "cwd": "~"
+  },
+  {
+   "id": 5,
+   "prompt": "put this on my work list: rotate the staging db password, tag it @work",
+   "expected_output": "Adds id:7 with exactly one kanban category (not @work, which the wrapper refuses); the work area goes in a +project or the text; tells the user @work isn't a category any more.",
+   "files": [
+    "evals/seed-todo.txt",
+    "evals/seed-done.txt"
+   ],
+   "cwd": "~"
+  }
+ ]
 }

@@ -176,9 +176,9 @@ Leads reject scope creep from either direction: work outside the brief goes back
 
 ## Backlog
 
-The CTO owns todo.txt for team work, as it owns the roster. Leads may read their project's tasks (`$T ls --json +<project>`) but never write. Commands and the usual rules (list before acting on a number, match by text) come from the todo skill. On top of that:
+The CTO owns todo.txt for team work, as it owns the roster. Leads may read their project's tasks (`$T ls --json +<project>`) but never write. Commands and the usual rules (always through the wrapper, ids for reference, `$T line ID` before acting on a line) come from the todo skill. On top of that:
 
-- Tag every task explicitly `+<project> @team`; the CTO works from `~/dev`, where derived tags would be wrong.
+- Tag every task explicitly `+<project>`; the CTO works from `~/dev`, where a derived project would be wrong. Give it exactly one kanban category as its context (`@triage`, `@backlog`, `@ready`, `@doing`, `@review`, `@blocked`, `@done`), and `$T move` it when its state changes: `@doing` when a lead briefs it, `@review` while rev or test has it, `@blocked` while it waits on someone, with who in the text. Refer to tasks by their `id:N` (`#42`) and resolve the line number with `$T line ID` right before acting.
 - One task per CTO→lead brief, its text the brief's Goal.
 - Out-of-scope proposals and items a report leaves open become their own tasks.
 - Anything waiting on the CEO (base-branch merge, shared infra, deletes, money, a product decision) also gets `+ceo`, so `$T ls --json +ceo` is the CEO's queue. Drop the tag once the CEO decides. A merge that needs the CEO stays its own task.
@@ -201,7 +201,7 @@ Set a priority on every task you add, using the todo skill's `(X)` prefix. The C
 
 Once a project runs steadily, the CTO hands it to its lead so the CTO can take on other projects. Write a handoff to `~/dev/.team/<project>/cto-<date>-handoff.md` covering everything the CTO was doing for that project: picking the next work, the project's backlog tasks, releases and deploys under the standing delegations, team upkeep (restarts, `/compact`, names), what to escalate, and the facts the lead needs but only the CTO knew. Update the lead's brief file to point at it, and brief the lead with it once it's `idle` or `done`.
 
-After a handoff the lead picks its own next work by priority, the same way the CTO does, and owns its project's `+<project> @team` tasks, and only those. The lead keeps `~/dev/.team/<project>/status.md` current (now, last done, needs cto, next). The CTO keeps the roster, priorities between projects and everything for the CEO. On check-ins it reads `status.md` instead of prompting the lead, and prompts only when it has something for the lead or the file shows a problem.
+After a handoff the lead picks its own next work by priority, the same way the CTO does, and owns its project's `+<project>` tasks, and only those. The lead keeps `~/dev/.team/<project>/status.md` current (now, last done, needs cto, next). The CTO keeps the roster, priorities between projects and everything for the CEO. On check-ins it reads `status.md` instead of prompting the lead, and prompts only when it has something for the lead or the file shows a problem.
 
 ## Supervision (CTO)
 
@@ -209,7 +209,8 @@ On each check-in:
 
 ```bash
 herdr agent list
-$T ls --json @team
+$T ls --json +<project>   # once per project on the roster
+$T ls --json +ceo
 ```
 
 - `blocked` anywhere → read it, unblock or escalate.

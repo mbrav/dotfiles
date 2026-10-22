@@ -29,8 +29,12 @@ import sys
 import time
 
 IDLE_EXIT = 1800
-SOCKET = os.path.join(os.environ.get("TMPDIR", "/tmp"), f"claude-kokoro-{os.getuid()}.sock")
-MODEL_DIR = os.environ.get("KOKORO_MODEL_DIR", os.path.expanduser("~/.local/share/kokoro-tts"))
+SOCKET = os.path.join(
+    os.environ.get("TMPDIR", "/tmp"), f"claude-kokoro-{os.getuid()}.sock"
+)
+MODEL_DIR = os.environ.get(
+    "KOKORO_MODEL_DIR", os.path.expanduser("~/.local/share/kokoro-tts")
+)
 
 TOOL_PHRASES = {
     "Read": "Reading {file}",
@@ -66,7 +70,9 @@ def phrase(event: dict) -> str:
     if tool.startswith("mcp__"):
         return f"Calling tool {tool.rsplit('__', 1)[-1]}"
     if tool in TOOL_PHRASES:
-        path = args.get("file_path") or args.get("notebook_path") or args.get("path") or ""
+        path = (
+            args.get("file_path") or args.get("notebook_path") or args.get("path") or ""
+        )
         return TOOL_PHRASES[tool].format(file=os.path.basename(path) or "a file")
     return f"Running {tool}"
 
@@ -75,7 +81,10 @@ def speaker(event: dict) -> str:
     """The project (git repo or folder name), plus the subagent type when a subagent made the call."""
     cwd = event.get("cwd") or os.getcwd()
     root = subprocess.run(
-        ["git", "-C", cwd, "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
+        ["git", "-C", cwd, "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=False,
     ).stdout.strip()
     name = os.path.basename(root or cwd.rstrip("/"))
     if agent := event.get("agent_type"):
@@ -108,20 +117,24 @@ def hook() -> int:
     os.setsid()
 
     who = speaker(event)
-    message = json.dumps({
-        "text": f"{who}: {phrase(event)}" if who else phrase(event),
-        "voice": os.environ.get("CLAUDE_KOKORO_VOICE", "af_heart"),
-        "speed": float(os.environ.get("CLAUDE_KOKORO_SPEED", "1.0")),
-        "volume": float(os.environ.get("CLAUDE_KOKORO_VOLUME", "0.5")),
-        "interrupt": event.get("hook_event_name") in INTERRUPTING,
-    }).encode()
+    message = json.dumps(
+        {
+            "text": f"{who}: {phrase(event)}" if who else phrase(event),
+            "voice": os.environ.get("CLAUDE_KOKORO_VOICE", "af_heart"),
+            "speed": float(os.environ.get("CLAUDE_KOKORO_SPEED", "1.0")),
+            "volume": float(os.environ.get("CLAUDE_KOKORO_VOLUME", "0.5")),
+            "interrupt": event.get("hook_event_name") in INTERRUPTING,
+        }
+    ).encode()
 
     if not send(message):
         # The tool's own interpreter sits next to its entry point
         python = os.path.join(os.path.dirname(os.path.realpath(kokoro_tts)), "python")
         subprocess.Popen(
             [python, os.path.realpath(__file__), "--daemon"],
-            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
         for _ in range(60):
@@ -155,7 +168,10 @@ def daemon() -> int:
     import sounddevice as sd
     from kokoro_onnx import Kokoro
 
-    kokoro = Kokoro(os.path.join(MODEL_DIR, "kokoro-v1.0.onnx"), os.path.join(MODEL_DIR, "voices-v1.0.bin"))
+    kokoro = Kokoro(
+        os.path.join(MODEL_DIR, "kokoro-v1.0.onnx"),
+        os.path.join(MODEL_DIR, "voices-v1.0.bin"),
+    )
 
     playing_until = 0.0
     try:

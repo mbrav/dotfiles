@@ -1,0 +1,39 @@
+# Read by ripgrep and fd as a parent .ignore for everything under $HOME
+# (rg --no-ignore-parent / fd --no-ignore-parent, or -u, to bypass).
+# Same syntax as .gitignore. Only build output and dependency trees:
+# things never worth searching and always large.
+
+# Rust
+target/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tox/
+.nox/
+*.egg-info/
+
+# JavaScript / TypeScript
+node_modules/
+.next/
+.nuxt/
+.svelte-kit/
+.turbo/
+.parcel-cache/
+coverage/
+
+# Go, Java, other builds
+vendor/
+.gradle/
+.terraform/
+.terragrunt-cache/
+
+# Minified and lock noise
+*.min.js
+*.min.css
+*.map

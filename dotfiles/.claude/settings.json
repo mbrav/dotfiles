@@ -1,4 +1,8 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "permissions": {
     "allow": [
       "Bash(git -C /tmp/claude-*)",
@@ -36,13 +40,6 @@
       "Edit(~/dev/**)",
       "Bash(docker:*)"
     ],
-    "defaultMode": "auto",
-    "ask": [
-      "Edit(~/.claude/settings*.json)",
-      "Edit(~/.claude/hooks/**)",
-      "Edit(~/.claude/skills/**)",
-      "Edit(~/.claude/policy*.json)"
-    ],
     "deny": [
       "Bash(git *push*--force*)",
       "Bash(git *push* -f*)",
@@ -62,9 +59,15 @@
       "Bash(docker*--volume /:/*)",
       "Bash(docker*--pid=host*)",
       "Bash(docker*--pid host*)"
-    ]
+    ],
+    "ask": [
+      "Edit(~/.claude/settings*.json)",
+      "Edit(~/.claude/hooks/**)",
+      "Edit(~/.claude/skills/**)",
+      "Edit(~/.claude/policy*.json)"
+    ],
+    "defaultMode": "auto"
   },
-  "model": "opus",
   "skillOverrides": {
     "anthropic-skills:pdf": "off",
     "anthropic-skills:xlsx": "off",
@@ -73,10 +76,6 @@
     "anthropic-skills:morning": "off",
     "anthropic-skills:google-workspace": "off",
     "anthropic-skills:docs": "off"
-  },
-  "attribution": {
-    "commit": "",
-    "pr": ""
   },
   "hooks": {
     "SessionStart": [

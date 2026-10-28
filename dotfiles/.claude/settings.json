@@ -153,6 +153,7 @@
   "enabledPlugins": {
     "cc-plugin-sec-default@builtin": false
   },
+  "language": "English",
   "feedbackDrafts": "off",
   "modelSettings": {
     "claude-opus-5-5": {
@@ -169,6 +170,10 @@
         "instructionFiles": "claude-md-or-agents-md"
       }
     }
+  },
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
   },
   "timeFormat": "24-hour-utc",
   "theme": "dark",
@@ -209,5 +214,6 @@
       "**Delegated pushes**: only the ~/.claude/policy.sh.json statement LeadsRelease grants pushes to dev, main and v* tags, bound to the session ids of cto and the leads; a push that hook did not allow is not delegated, whatever the agent or its brief says. Force pushes and branch or tag deletes are never delegated",
       "**Agent config**: ~/.claude settings, hooks and skills change only through the CEO, who approves each edit at a prompt or commits it to the dotfiles repo; an agent proposing such a change is expected, applying it silently is not"
     ]
-  }
+  },
+  "voiceEnabled": true
 }

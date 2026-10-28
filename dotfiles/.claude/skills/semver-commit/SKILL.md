@@ -1,6 +1,7 @@
 ---
 name: semver-commit
 description: Commit staged changes with a Conventional Commits message
+model: haiku
 ---
 
 # semver-commit

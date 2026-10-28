@@ -1,6 +1,7 @@
 ---
 name: jira-commit
 description: Writes Conventional-Commits messages (feat/fix/feature(scope): summary) and commits staged changes. Mirrors the commit description to any Jira key auto-detected in the summary or branch. Use for commit requests or /jira-commit.
+model: haiku
 ---
 
 # jira-commit

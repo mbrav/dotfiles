@@ -1,6 +1,7 @@
 ---
 name: todo
 description: Manage the user's global todo.txt task list through the tuxedo CLI — add, list, filter, prioritize, complete, append to and archive tasks. Every task carries a stable id:N and exactly one kanban category as its @context (@triage, @backlog, @ready, @doing, @review, @blocked, @done), plus a +project derived from the current directory. Use this skill whenever the user mentions todos, tasks, a todo list, todo.txt or tuxedo, says "add a todo", "remind me to", "note this for later", "put that on my list", "what's on my plate", "what's left", "mark X done", or asks to track a follow-up, tech debt or an action item from the current session — even if they never say "todo".
+model: haiku
 ---
 
 # todo

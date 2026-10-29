@@ -167,10 +167,17 @@ BIN_KIND[tuxedo]=tgz
 BIN_PATH[tuxedo]='tuxedo-{v}-{arch}-unknown-linux-gnu/tuxedo'
 BIN_FLAGS[tuxedo]='linux'
 
+# Assets use x64/arm64, not uname's x86_64/aarch64, so the asset name is fixed to x64 (hence the x86 flag).
+BIN_REPO[hunk]=modem-dev/hunk
+BIN_ASSET[hunk]='hunkdiff-linux-x64.tar.gz'
+BIN_KIND[hunk]=tgz
+BIN_PATH[hunk]='hunkdiff-linux-x64/hunk'
+BIN_FLAGS[hunk]='linux x86'
+
 # Ordered install list for `all` and help output
 binaries=(
   docker-compose k9s eza bat starship atuin herdr fzf jq jqp htmlq yq fd upx gum
-  bottom btop oha sops lazygit tuxedo
+  bottom btop oha sops lazygit tuxedo hunk
 )
 
 bin_list="${binaries[*]}"

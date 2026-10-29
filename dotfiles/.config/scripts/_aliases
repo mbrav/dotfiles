@@ -169,6 +169,7 @@ alias mi-display-fix='xrandr --output HDMI-0 --mode 3440x1440 --rate 60'
 
 # Git aliases
 alias g='git'
+command -v hunk >/dev/null && alias hdiff='hunk diff'
 
 ## Useful aliases
 # Replace ls with eza

@@ -271,3 +271,5 @@
 
 [pager]
 	log = false
+[log]
+	date = iso

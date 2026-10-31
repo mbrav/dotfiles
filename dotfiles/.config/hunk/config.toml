@@ -1,4 +1,4 @@
-theme = "github-dark-default"
+theme = "nord"
 mode = "auto"
 line_numbers = true
 wrap_lines = false

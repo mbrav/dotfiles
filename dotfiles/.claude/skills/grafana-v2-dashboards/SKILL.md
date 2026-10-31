@@ -34,7 +34,10 @@ project already has a dashboard in that style, read it first and copy its struct
    (`queryType: "instant"`); heatmap queries too, since only the result's presence matters.
    A result = OK. `EMPTY` is fine only for `> 0`-filtered drop/error panels; anything else empty means a
    wrong metric or label. Loki panels: same check with `query_loki_logs` / `query_loki_stats`.
-   Several independent queries go out as parallel tool calls in one turn.
+   Several independent queries go out as parallel tool calls in one turn. For 50+ queries, batch ~20 into one
+   instant query: `label_replace(count(<q1>), "k", "<key1>", "", "") or label_replace(count(<q2>), "k", "<key2>", "", "") or ...`;
+   keys missing from the result are the empty ones. Check metric existence first with one
+   `count by(__name__) ({__name__=~"a|b|c"})`.
 5. **Save as small patches.** `diff_ops.py` turns old/new JSON into leaf-level patch ops plus one `$.layout`
    replace. Send elements and layout as two `update_dashboard` calls with a commit `message`.
    A full-body save of a ~120 KB dashboard is expensive; patches cut it to about a third.
@@ -86,6 +89,16 @@ project already has a dashboard in that style, read it first and copy its struct
   ```
 
   Minimal options are enough; Grafana fills in the defaults.
+- **VictoriaMetrics `vmrange` histograms** (`*_bucket{vmrange="lo...hi"}`, non-cumulative, no `le`) scraped into plain
+  Prometheus: `histogram_quantile` returns nothing (that needs MetricsQL). For the heatmap, map the upper bound to `le` and
+  skip the heatmap format, because the buckets are already per-range:
+  `sum by(le) (label_replace(rate(m_bucket[$__rate_interval]), "le", "$1", "vmrange", ".*[.][.][.](.*)"))`, query
+  format time_series, legend `{{le}}`, options `calculate:false, rowsFrame:{layout:"le"}`. For the timeseries
+  use the mean `rate(m_sum)/rate(m_count)` instead of a percentile.
+- **Converting a classic dashboard that is too big for one call:** delete it, create the v2 body with only the Overview
+  elements and an Overview-only layout, then `add` `$.elements.<key>` ops one section at a time (orphan elements are
+  accepted), and finish with one `$.layout` replace. Keep panel ids that alert annotations link to; numeric
+  `viewPanel=<id>` deeplinks still resolve in v2.
 - Limits are drawn as a second query `vector(<limit>)` with legend `limit...`, plus an override `byRegexp "limit.*"`
   that sets it dashed, red and with no fill. In a per-entity repeat row, a gauge works well:
   `max_over_time(sum(rate(x[$__rate_interval]))[$__range:]) / <limit>`, `percentunit`, green/orange 0.7/red 0.9.

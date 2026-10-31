@@ -68,6 +68,7 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "sonnet",
   "skillOverrides": {
     "anthropic-skills:pdf": "off",
     "anthropic-skills:xlsx": "off",
@@ -157,9 +158,12 @@
   "feedbackDrafts": "off",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "medium"
+      "effortLevel": "low"
     },
     "claude-opus-5": {
+      "effortLevel": "low"
+    },
+    "claude-haiku-5-5": {
       "effortLevel": "medium"
     }
   },

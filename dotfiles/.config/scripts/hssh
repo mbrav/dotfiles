@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# Pick a remote herdr session, workspace (project), tab and pane with fzf,
+# then attach this terminal to that pane over SSH.
+#
+# Usage: hssh <ssh-target>          e.g. hssh deploy@rag.hd.sib.local
+#        hssh --preview <ssh-target> <session> <pane-id>   (used by fzf preview)
+#
+# Agent panes attach to the agent terminal. Plain shell panes open a login
+# shell in the pane's working directory (herdr has no remote attach for them).
+
+set -euo pipefail
+script_dir="$(dirname "$(realpath "$0")")"
+source "${script_dir}/_util"
+
+# Short ControlPath: macOS TMPDIR is too long for a unix socket path
+ssh_opts=(-o ControlMaster=auto -o "ControlPath=/tmp/hssh-%C" -o ControlPersist=10m)
+
+# Run a command on the remote host, non-interactive (used for lookups and previews)
+remote() {
+  local target="$1"
+  shift
+  ssh "${ssh_opts[@]}" -o BatchMode=yes "$target" "$@"
+}
+
+# Fetch the structured herdr snapshot for a session
+snapshot() {
+  remote "$1" "herdr --session $(printf %q "$2") api snapshot"
+}
+
+# fzf preview: show the last visible screen of a pane (ANSI colours kept)
+if [[ "${1:-}" == "--preview" ]]; then
+  remote "$2" "herdr --session $(printf %q "$3") pane read $(printf %q "$4") --source visible --format ansi"
+  exit 0
+fi
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || -z "${1:-}" ]]; then
+  echo "Usage: hssh <ssh-target>"
+  echo "  Pick a remote herdr session > workspace > tab > pane with fzf and attach to it."
+  echo "  Example: hssh deploy@rag.hd.sib.local"
+  [[ -n "${1:-}" ]] && exit 0 || exit 1
+fi
+
+target="$1"
+
+command -v jq >/dev/null || error_msg "Please install jq JSON parsing utility" 1
+command -v fzf >/dev/null || error_msg "Please install fzf utility" 1
+
+# 1. Session: auto-pick when exactly one session is running
+mapfile -t sessions < <(remote "$target" "herdr session list --json" | jq -r '.sessions[] | select(.running) | .name')
+[[ ${#sessions[@]} -gt 0 ]] || error_msg "No running herdr session on ${target}" 1
+
+if [[ ${#sessions[@]} -eq 1 ]]; then
+  session="${sessions[0]}"
+else
+  session="$(printf '%s\n' "${sessions[@]}" | fzf --header "Select herdr session" --height 40% --reverse)" || true
+  [[ -n "$session" ]] || {
+    warning_msg "No session selected, aborting."
+    exit 0
+  }
+fi
+
+# Keep one snapshot for the whole selection
+snap="$(snapshot "$target" "$session")"
+
+workspace="$(jq -r '.result.snapshot.workspaces[] | [.workspace_id, .label, (.tab_count|tostring) + " tabs", .agent_status] | @tsv' <<<"$snap" |
+  fzf --header "Select project (workspace)" --delimiter $'\t' --with-nth 2.. --reverse --height 60% |
+  cut -f 1)" || true
+[[ -n "$workspace" ]] || {
+  warning_msg "No workspace selected, aborting."
+  exit 0
+}
+
+tab="$(jq -r --arg ws "$workspace" '.result.snapshot.tabs[] | select(.workspace_id == $ws) | [.tab_id, .label, (.pane_count|tostring) + " panes", .agent_status] | @tsv' <<<"$snap" |
+  fzf --header "Select tab" --delimiter $'\t' --with-nth 2.. --reverse --height 60% |
+  cut -f 1)" || true
+[[ -n "$tab" ]] || {
+  warning_msg "No tab selected, aborting."
+  exit 0
+}
+
+pane_rows="$(jq -r --arg tab "$tab" '.result.snapshot.panes[] | select(.tab_id == $tab) | [.pane_id, (.terminal_title_stripped // .terminal_title // ""), (.foreground_cwd // .cwd // ""), (.agent // "shell")] | @tsv' <<<"$snap")"
+
+if [[ "$(grep -c . <<<"$pane_rows")" -eq 1 ]]; then
+  # Single pane: skip the picker, show its screen, then attach
+  pane="$(cut -f 1 <<<"$pane_rows")"
+  info_msg "Only one pane in this tab: ${pane}"
+  "${script_dir}/hssh" --preview "$target" "$session" "$pane" || true
+  echo
+else
+  pane="$(fzf --header "Select pane" --delimiter $'\t' --with-nth 2.. --reverse --height 90% \
+    --preview "$(printf %q "${script_dir}/hssh") --preview $(printf %q "$target") $(printf %q "$session") {1}" \
+    --preview-window "right:60%:wrap" --preview-label "Pane screen" <<<"$pane_rows" |
+    cut -f 1)" || true
+fi
+[[ -n "$pane" ]] || {
+  warning_msg "No pane selected, aborting."
+  exit 0
+}
+
+pane_json="$(jq -c --arg id "$pane" '.result.snapshot.panes[] | select(.pane_id == $id)' <<<"$snap")"
+agent="$(jq -r '.agent // empty' <<<"$pane_json")"
+cwd="$(jq -r '.foreground_cwd // .cwd // "~"' <<<"$pane_json")"
+
+# Close the local herdr pane this script runs in, but only after a clean exit
+# (ssh status 0). Failures keep the pane open so the error stays visible.
+# Only HERDR_PANE_ID, the pane hssh was started in, is ever closed.
+close_local_pane() {
+  [[ "$1" -eq 0 && -n "${HERDR_PANE_ID:-}" ]] || return 0
+  herdr pane close "$HERDR_PANE_ID" >/dev/null 2>&1 || true
+}
+
+rc=0
+if [[ -n "$agent" ]]; then
+  info_msg "Attaching to ${BOLD}${agent}${CLEAR} agent in pane ${pane} (${session})"
+  ssh -t "${ssh_opts[@]}" "$target" "herdr --session $(printf %q "$session") agent attach $(printf %q "$pane")" || rc=$?
+else
+  warning_msg "Pane ${pane} is not an agent: opening a shell in ${cwd}"
+  ssh -t "${ssh_opts[@]}" "$target" "cd $(printf %q "$cwd") && exec \"\${SHELL:-/bin/sh}\" -l" || rc=$?
+fi
+
+close_local_pane "$rc"
+exit "$rc"

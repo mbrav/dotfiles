@@ -149,11 +149,12 @@ command -v netbird >/dev/null && eval "$(netbird completion bash)"
 # init herdr
 command -v herdr >/dev/null && eval "$(herdr completion bash)"
 
-# Source tmux function
-# [[ -f "$HOME/.config/scripts/start_tmux" ]] && source "$HOME/.config/scripts/start_tmux"
-
-# Source herdr function
-[[ -f "$HOME/.config/scripts/start_herdr" ]] && source "$HOME/.config/scripts/start_herdr"
+# Start herdr if installed, otherwise tmux
+if command -v herdr >/dev/null 2>&1; then
+  [[ -f "$HOME/.config/scripts/start_herdr" ]] && source "$HOME/.config/scripts/start_herdr" && start_herdr
+else
+  [[ -f "$HOME/.config/scripts/start_tmux" ]] && source "$HOME/.config/scripts/start_tmux" && start_tmux
+fi
 
 # Source claude function (Headroom proxy routing)
 [[ -f "$HOME/.config/scripts/_claude" ]] && source "$HOME/.config/scripts/_claude"

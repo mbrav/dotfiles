@@ -156,5 +156,11 @@ else
   [[ -f "$HOME/.config/scripts/start_tmux" ]] && source "$HOME/.config/scripts/start_tmux" && start_tmux
 fi
 
+# init nvm (guarded: no-op where it isn't installed)
+[[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
 # Source claude function (Headroom proxy routing)
 [[ -f "$HOME/.config/scripts/_claude" ]] && source "$HOME/.config/scripts/_claude"

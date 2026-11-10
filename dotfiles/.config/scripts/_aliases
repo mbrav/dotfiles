@@ -199,7 +199,7 @@ command -v k9s >/dev/null &&
 
 # Bindings for headroom
 command -v headroom >/dev/null &&
-  export HEADROOM_WORKERS=2 &&
+  export HEADROOM_WORKERS=1 &&
   export HEADROOM_WORKSPACE_DIR="$HOME/.config/headroom" &&
   export HEADROOM_CONFIG_DIR="$HOME/.config/headroom/config"
 

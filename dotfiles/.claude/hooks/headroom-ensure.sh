@@ -52,7 +52,10 @@ if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
   exit 0
 fi
 
-# Atomic guard so parallel sessions do not race to spawn duplicate proxies
+# Atomic guard so parallel sessions do not race to spawn duplicate proxies.
+# The workspace may not exist yet on a fresh machine; without it the lock
+# mkdir fails and the hook would silently treat that as "already starting".
+mkdir -p "$workspace"
 mkdir "$lock" 2>/dev/null || exit 0
 trap 'rmdir "$lock" 2>/dev/null' EXIT
 

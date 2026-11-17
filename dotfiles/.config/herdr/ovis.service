@@ -1,0 +1,51 @@
+# ovis -- the herdr web UI (https://github.com/devswha/ovis) for this user's
+# herdr session, served at https://herdr.svc.mbrav.tech through the NetBird
+# private reverse proxy (iac: pulumi/netbird/src/reverseProxy.yaml).
+#
+# Install (once, as the user -- nothing here needs root):
+#   curl -fsSL https://bun.sh/install | bash        # bun >= 1.4 in ~/.bun
+#   git clone --depth 1 --branch v0.5.4 https://github.com/devswha/ovis ~/.local/share/ovis/app
+#   cd ~/.local/share/ovis/app && bun install --frozen-lockfile && bun run build
+#   install -Dm600 /dev/null ~/.local/state/ovis/ovis.env   # then add OVIS_TOKEN=...
+#   systemctl --user link ~/.config/herdr/ovis.service
+#   systemctl --user enable --now ovis.service
+#
+# OVIS_TOKEN must equal the proxy's Bearer (pulumi config get herdrWebToken in
+# pulumi/netbird). The env file is deliberately outside this repo.
+#
+# Upgrade: git -C ~/.local/share/ovis/app fetch --depth 1 origin tag vX.Y.Z,
+# checkout it, rebuild, systemctl --user restart ovis.
+#
+# Needs herdr >= 0.9.0 on the *running* server (herdr status).
+
+[Unit]
+Description=ovis, herdr web UI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/ovis/app
+EnvironmentFile=%h/.local/state/ovis/ovis.env
+# NetBird IP only: not the LAN, not 0.0.0.0. Bind fails until wt0 is up,
+# which Restart= below rides out.
+Environment=HOST=100.120.0.83
+Environment=PORT=7317
+Environment=HERDR_SOCKET=%h/.config/herdr/herdr.sock
+Environment=OVIS_HERDR_BIN=/usr/local/bin/herdr
+Environment=OVIS_TELEMETRY=0
+Environment=OVIS_NO_OPEN=1
+# Voice input: whisper.cpp on rag, over NetBird (exmachina is in the
+# 🤖Inference group, policy allows :8090). ovis POSTs to
+# ${base}/audio/transcriptions; the trailing `?` turns that suffix into a
+# query string, so the request lands on whisper-server's /inference -- the
+# same trick rag's own ovis uses. whisper needs no key; ovis needs one set.
+Environment=OVIS_OPENAI_API_KEY=local
+Environment="OVIS_OPENAI_BASE_URL=http://rag-2-120.nb.mbrav.tech:8090/inference?"
+Environment=PATH=%h/.bun/bin:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.bun/bin/bun run server/index.ts
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

@@ -162,5 +162,8 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
-# Source claude function (Headroom proxy routing)
-[[ -f "$HOME/.config/scripts/_claude" ]] && source "$HOME/.config/scripts/_claude"
+# bun (guarded: no-op where it isn't installed)
+if [[ -d "$HOME/.bun" ]]; then
+    export BUN_INSTALL="$HOME/.bun"
+    export PATH="$BUN_INSTALL/bin:$PATH"
+fi

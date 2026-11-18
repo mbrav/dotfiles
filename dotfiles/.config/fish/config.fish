@@ -35,3 +35,9 @@ if command -q herdr
 else
     start_tmux
 end
+
+# bun (guarded: no-op where it isn't installed)
+if test -d "$HOME/.bun"
+    set --export BUN_INSTALL "$HOME/.bun"
+    fish_add_path --global $BUN_INSTALL/bin
+end

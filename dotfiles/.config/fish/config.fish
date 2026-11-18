@@ -36,6 +36,12 @@ else
     start_tmux
 end
 
+# Wayland clipboard
+if not set -q WAYLAND_DISPLAY; and test -S "/run/user/"(id -u)"/wayland-1"
+    set -q XDG_RUNTIME_DIR; or set -gx XDG_RUNTIME_DIR "/run/user/"(id -u)
+    set -gx WAYLAND_DISPLAY wayland-1
+end
+
 # bun (guarded: no-op where it isn't installed)
 if test -d "$HOME/.bun"
     set --export BUN_INSTALL "$HOME/.bun"

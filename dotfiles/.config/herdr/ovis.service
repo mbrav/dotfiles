@@ -13,8 +13,9 @@
 # OVIS_TOKEN must equal the proxy's Bearer (pulumi config get herdrWebToken in
 # pulumi/netbird). The env file is deliberately outside this repo.
 #
-# Upgrade: git -C ~/.local/share/ovis/app fetch --depth 1 origin tag vX.Y.Z,
-# checkout it, rebuild, systemctl --user restart ovis.
+# Upgrade: automatic. ExecStartPre runs ovisup, which moves the checkout to the
+# newest vX.Y.Z tag and rebuilds, so `systemctl --user restart ovis` updates it.
+# Offline or a failed build is ignored (the `-` prefix) and the old build runs.
 #
 # Needs herdr >= 0.9.0 on the *running* server (herdr status).
 
@@ -43,6 +44,9 @@ Environment=OVIS_NO_OPEN=1
 Environment=OVIS_OPENAI_API_KEY=local
 Environment="OVIS_OPENAI_BASE_URL=http://rag-2-120.nb.mbrav.tech:8090/inference?"
 Environment=PATH=%h/.bun/bin:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+# Generous: a release means bun install + build before the server starts
+TimeoutStartSec=600
+ExecStartPre=-%h/.config/scripts/ovisup
 ExecStart=%h/.bun/bin/bun run server/index.ts
 Restart=always
 RestartSec=10

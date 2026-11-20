@@ -176,13 +176,13 @@ Leads reject scope creep from either direction: work outside the brief goes back
 
 ## Backlog
 
-The CTO owns todo.txt for team work, as it owns the roster. Leads may read their project's tasks (`$T ls --json +<project>`) but never write. Commands and the usual rules (always through the wrapper, ids for reference, `$T line ID` before acting on a line) come from the todo skill. On top of that:
+The CTO owns todo.txt for team work, as it owns the roster. Leads (and Tier 3 agents) read their project's tasks (`$T ls --json +<project>`) and close their own (below), but write nothing else. Commands and the usual rules (always through the wrapper, ids for reference, `$T line ID` before acting on a line) come from the todo skill. On top of that:
 
 - Tag every task explicitly `+<project>`; the CTO works from `~/dev`, where a derived project would be wrong. Give it exactly one kanban category as its context (`@triage`, `@backlog`, `@ready`, `@doing`, `@review`, `@blocked`, `@done`), and `$T move` it when its state changes: `@doing` when a lead briefs it, `@review` while rev or test has it, `@blocked` while it waits on someone, with who in the text. Refer to tasks by their `id:N` (`#42`) and resolve the line number with `$T line ID` right before acting.
 - One task per CTO→lead brief, its text the brief's Goal.
 - Out-of-scope proposals and items a report leaves open become their own tasks.
 - Anything waiting on the CEO (base-branch merge, shared infra, deletes, money, a product decision) also gets `+ceo`, so `$T ls --json +ceo` is the CEO's queue. Drop the tag once the CEO decides. A merge that needs the CEO stays its own task.
-- Complete a task when the lead's report meets the brief's Done line.
+- **Agents close their own tasks.** When a task of its project meets the brief's Done line (reviewed, merged, applied as the brief asks), the lead appends the outcome and report path (`$T app N ...`) and completes it (`$T do N`), then mentions the id in its report. Leads don't add, reprioritize, move or delete tasks; that stays with the CTO, who also closes any finished task a lead missed.
 
 Priority says how much the work matters, not who it waits on:
 

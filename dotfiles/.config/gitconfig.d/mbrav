@@ -1,7 +1,7 @@
 ## Cred config
 [user]
-  email = mbrav@protonmail.com
-  name = mbrav
+  email = mbrav@users.noreply.github.com
+  name = Michael
 	signingkey = ~/.ssh/id_github_2025.pub
 [core]
   editor = vim

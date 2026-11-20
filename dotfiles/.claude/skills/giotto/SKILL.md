@@ -5,7 +5,7 @@ description: Draw and update diagrams the user watches live in the Giotto canvas
 
 # Giotto
 
-Giotto's canvas runs at http://localhost:4321. It shows every diagram in a sidebar and redraws live as you edit. Giotto never opens a browser itself: **after you create or change a diagram, give the user its link** (tool results include it, like `http://localhost:4321/#<id>`). The user can move and resize shapes and rename labels by hand, so always read before you change.
+Giotto's canvas runs at <http://localhost:4321>. It shows every diagram in a sidebar and redraws live as you edit. Giotto never opens a browser itself: **after you create or change a diagram, give the user its link** (tool results include it, like `http://localhost:4321/#<id>`). The user can move and resize shapes and rename labels by hand, so always read before you change.
 
 ## First time: install Giotto
 
@@ -32,6 +32,7 @@ Every change returns what was stored plus **warnings**: overlapping shapes, text
 ## Pages: images in HTML
 
 When the picture isn't boxes and arrows (a results card, a poster, a bar chart, a slide), make a **page** instead: you write the HTML, Giotto shows it live, versions it, and exports it.
+
 - `create_page(title, html, width?, height?)`: `html` is the body's content plus your own `<style>`. Static HTML + CSS (inline SVG is fine), no scripts. The page is exactly width × height px (default 1200 × 1500); anything outside is cut off.
 - `edit_page(id, html? | replace?: [{find, with}], title?, width?, height?)`: each `find` must appear exactly once.
 - Colors and fonts come from the active style as CSS variables: `--g-background`, `--g-text`, `--g-muted`, `--g-accent`, `--g-font`, and `--g-tone-<name>` / `-fill` / `-text`. Use them, so pages match the diagrams and dark mode works. Other fonts: `@import` a Google Fonts URL in your `<style>`.
@@ -55,7 +56,7 @@ When the picture isn't boxes and arrows (a results card, a poster, a bar chart, 
 ```
 
 - **Let Giotto do the layout.** Put things in a `group` with `layout` (`row`, `column` or `grid`, plus `gap`, `columns`, `align`) instead of computing x/y. Leave out `width`/`height` and boxes fit their content. Groups wrap their children, draw behind them, and can nest.
-- **What goes in a box:** a `label` (`{"text"}`, or `{"title", "lines": [...], "align"}`; lines starting with `- ` are bullets), plus `tags` (pills). For richer boxes use `content` blocks: `title`, `subtitle`, `text`, `list` (`items`, `ordered`), `chips` (`items`), `chat` (`turns` of `{who, text}`), `code`, `divider`, `rows` (tagged lines: `{tag, tone, text, meta, mark}`), `graph` (`nodes`, `links`, `lit`), `chart` (performance plots, below). Any text understands `**bold**`, `` `code` `` and blank lines.
+- **What goes in a box:** a `label` (`{"text"}`, or `{"title", "lines": [...], "align"}`; lines starting with `-` are bullets), plus `tags` (pills). For richer boxes use `content` blocks: `title`, `subtitle`, `text`, `list` (`items`, `ordered`), `chips` (`items`), `chat` (`turns` of `{who, text}`), `code`, `divider`, `rows` (tagged lines: `{tag, tone, text, meta, mark}`), `graph` (`nodes`, `links`, `lit`), `chart` (performance plots, below). Any text understands `**bold**`, `` `code` `` and blank lines.
 - **Charts:** a `chart` block draws a plot in a box. `kind`: `hbar` (comparisons with names, e.g. us vs others), `bar` (grouped bars over versions or categories), `line` (a metric over time), `hist` (a distribution: give the raw samples in `values`, Giotto bins them). Data is `labels` + `values`, or `series: [{name, tone?, values}]` for several. `unit` (`"ms"`, `"%"`, `"x"`) goes on every number; `lit: ["Giotto"]` keeps those bars bright and fades the rest; `marks` add dashed reference lines: `{at, label, tone}` (a target, an SLO) or `"p50"`, `"p99"`, `"mean"` (computed from the data). Put the chart's title in a `title` block above it.
   `{"type": "chart", "kind": "hbar", "labels": ["Giotto", "Mermaid"], "values": [12400, 5300], "unit": "req/s", "lit": ["Giotto"]}`
 - **Notes** with `attachTo` sit beside their shape and move with it.

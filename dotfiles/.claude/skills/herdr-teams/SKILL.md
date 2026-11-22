@@ -182,7 +182,7 @@ The CTO owns todo.txt for team work, as it owns the roster. Leads (and Tier 3 ag
 - One task per CTO→lead brief, its text the brief's Goal.
 - Out-of-scope proposals and items a report leaves open become their own tasks.
 - Anything waiting on the CEO (base-branch merge, shared infra, deletes, money, a product decision) also gets `+ceo`, so `$T ls --json +ceo` is the CEO's queue. Drop the tag once the CEO decides. A merge that needs the CEO stays its own task.
-- **Agents close their own tasks.** When a task of its project meets the brief's Done line (reviewed, merged, applied as the brief asks), the lead appends the outcome and report path (`$T app N ...`) and completes it (`$T do N`), then mentions the id in its report. Leads don't add, reprioritize, move or delete tasks; that stays with the CTO, who also closes any finished task a lead missed.
+- **Agents close their own tasks.** When a task of its project meets the brief's Done line (reviewed, merged, applied as the brief asks), the lead appends the outcome and report path (`$T app N ...`) and completes it (`$T do N`), then mentions the id in its report. N is a line number, not the id: get it with `N=$($T line ID)` right before each command. Leads don't add, reprioritize, move or delete tasks; that stays with the CTO, who also closes any finished task a lead missed.
 
 Priority says how much the work matters, not who it waits on:
 

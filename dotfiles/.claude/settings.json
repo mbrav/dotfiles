@@ -68,7 +68,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus",
+  "model": "sonnet",
   "skillOverrides": {
     "anthropic-skills:pdf": "off",
     "anthropic-skills:xlsx": "off",
@@ -85,13 +85,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" session",
+            "command": "$HOME/.claude/hooks/herdr-agent-state.sh session",
             "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/headroom-ensure.sh\"",
-            "timeout": 15
           }
         ]
       }
@@ -102,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME/.claude/hooks/policy.py\"",
+            "command": "$HOME/.claude/hooks/policy.py",
             "timeout": 10
           }
         ]
@@ -112,7 +107,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME/.claude/hooks/kokoro.py\"",
+            "command": "$HOME/.claude/hooks/kokoro.py",
             "timeout": 5
           }
         ]
@@ -123,7 +118,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME/.claude/hooks/kokoro.py\"",
+            "command": "$HOME/.claude/hooks/kokoro.py",
             "timeout": 5
           }
         ]
@@ -134,7 +129,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME/.claude/hooks/kokoro.py\"",
+            "command": "$HOME/.claude/hooks/kokoro.py",
             "timeout": 5
           }
         ]
@@ -148,22 +143,23 @@
   "workflowKeywordTriggerEnabled": false,
   "statusLine": {
     "type": "command",
-    "command": "bash \"$HOME/.claude/statusline-command.sh\"",
+    "command": "$HOME/.claude/herdr-statusline/statusline-tee.sh",
     "padding": 0
   },
   "enabledPlugins": {
-    "cc-plugin-sec-default@builtin": false
+    "cc-plugin-sec-default@builtin": false,
+    "rust-analyzer-lsp@claude-plugins-official": true
   },
   "language": "English",
   "feedbackDrafts": "off",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "low"
-    },
-    "claude-opus-5": {
-      "effortLevel": "low"
+      "effortLevel": "medium"
     },
     "claude-haiku-5-5": {
+      "effortLevel": "medium"
+    },
+    "claude-sonnet-5-5": {
       "effortLevel": "medium"
     }
   },
@@ -183,6 +179,8 @@
   "theme": "dark",
   "editorMode": "normal",
   "preferredNotifChannel": "auto",
+  "autoCompactEnabled": true,
+  "switchModelsOnFlag": true,
   "crossSessionInbound": "accept",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,

@@ -24,17 +24,8 @@ dir="${root}/${profile}"
 
 # These outrank CLAUDE_CODE_OAUTH_TOKEN, so they would defeat the profile.
 unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN CLAUDE_CODE_OAUTH_TOKEN
-# A base-URL override hides /usage limits; use the forward proxy below instead.
+# A base-URL override hides /usage limits; claude-proxy (forward proxy) is used instead.
 unset ANTHROPIC_BASE_URL
-
-# Forward proxy (e.g. tinyproxy on the router), configured in ~/.profile:
-#   CLAUDE_PROFILE_PROXY=host:port   CLAUDE_PROFILE_NO_PROXY=a,b,.domain
-# Used only when set AND answering, so Claude still works off the LAN.
-if [[ -n "${CLAUDE_PROFILE_PROXY:-}" ]] &&
-  timeout 1 bash -c ": >/dev/tcp/${CLAUDE_PROFILE_PROXY%:*}/${CLAUDE_PROFILE_PROXY##*:}" 2>/dev/null; then
-  export HTTPS_PROXY="http://${CLAUDE_PROFILE_PROXY}" HTTP_PROXY="http://${CLAUDE_PROFILE_PROXY}"
-  [[ -z "${CLAUDE_PROFILE_NO_PROXY:-}" ]] || export NO_PROXY="${CLAUDE_PROFILE_NO_PROXY}"
-fi
 
 # A stored /login (.credentials.json) wins: unlike the token it exposes /usage.
 # The token is only a fallback for profiles that have not logged in.
@@ -44,4 +35,4 @@ if [[ ! -s "${dir}/.credentials.json" && -n "${!tok_var:-}" ]]; then
 fi
 
 export CLAUDE_CONFIG_DIR="${dir}"
-exec claude "$@"
+exec claude-proxy "$@"

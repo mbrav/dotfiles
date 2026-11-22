@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Run claude through a forward proxy (e.g. tinyproxy on the router) when one is
+# configured and answering; otherwise run it directly. Configure in ~/.profile:
+#   CLAUDE_PROFILE_PROXY=host:port   CLAUDE_PROFILE_NO_PROXY=a,b,.domain
+# Used by claude-profile (claude-one / claude-two); plain `claude` is not wrapped.
+set -euo pipefail
+
+if [[ -n "${CLAUDE_PROFILE_PROXY:-}" ]] &&
+  timeout 1 bash -c ": >/dev/tcp/${CLAUDE_PROFILE_PROXY%:*}/${CLAUDE_PROFILE_PROXY##*:}" 2>/dev/null; then
+  export HTTPS_PROXY="http://${CLAUDE_PROFILE_PROXY}" HTTP_PROXY="http://${CLAUDE_PROFILE_PROXY}"
+  [[ -z "${CLAUDE_PROFILE_NO_PROXY:-}" ]] || export NO_PROXY="${CLAUDE_PROFILE_NO_PROXY}"
+fi
+
+exec claude "$@"

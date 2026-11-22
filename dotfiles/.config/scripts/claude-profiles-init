@@ -14,9 +14,10 @@ shared=(settings.json CLAUDE.md RTK.md skills hooks statusline-command.sh herdr-
   cache plugins session-env shell-snapshots paste-cache downloads)
 # Per-profile instead of shared, so /usage and its breakdown (built from local
 # transcripts) show one account only. Profile one keeps the existing history in
-# ~/.claude; the listed profiles get their own real dirs. Cost: no cross-profile /resume.
+# ~/.claude; profiles listed in split_profiles get their own real dirs (none now), at the
+# cost of cross-profile /resume.
 split=(projects file-history)
-split_profiles=(two)
+split_profiles=()
 
 usage() {
   cat <<USAGE

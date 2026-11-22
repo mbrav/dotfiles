@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Run Claude Code under a named profile. Invoked through a symlink named
+# claude-<profile> (claude-one, claude-two); the profile is the symlink's name.
+#   CLAUDE_CODE_OAUTH_TOKEN_<PROFILE> (from ~/.profile) -> CLAUDE_CODE_OAUTH_TOKEN
+set -euo pipefail
+
+profile="$(basename "$0")"
+profile="${profile#claude-}"
+
+case "${profile}" in
+  one | two) ;;
+  *)
+    echo "claude-profile: run via a claude-one / claude-two symlink" >&2
+    exit 1
+    ;;
+esac
+
+root="${CLAUDE_PROFILES_DIR:-${HOME}/.local/share/claude-profiles}"
+dir="${root}/${profile}"
+[[ -d "${dir}" ]] || {
+  echo "claude-profile: ${dir} missing; run claude-profiles-init" >&2
+  exit 1
+}
+
+# These outrank CLAUDE_CODE_OAUTH_TOKEN, so they would defeat the profile.
+unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN CLAUDE_CODE_OAUTH_TOKEN
+# A base-URL override hides /usage limits; use the forward proxy below instead.
+unset ANTHROPIC_BASE_URL
+
+# Forward proxy (e.g. tinyproxy on the router), configured in ~/.profile:
+#   CLAUDE_PROFILE_PROXY=host:port   CLAUDE_PROFILE_NO_PROXY=a,b,.domain
+# Used only when set AND answering, so Claude still works off the LAN.
+if [[ -n "${CLAUDE_PROFILE_PROXY:-}" ]] &&
+  timeout 1 bash -c ": >/dev/tcp/${CLAUDE_PROFILE_PROXY%:*}/${CLAUDE_PROFILE_PROXY##*:}" 2>/dev/null; then
+  export HTTPS_PROXY="http://${CLAUDE_PROFILE_PROXY}" HTTP_PROXY="http://${CLAUDE_PROFILE_PROXY}"
+  [[ -z "${CLAUDE_PROFILE_NO_PROXY:-}" ]] || export NO_PROXY="${CLAUDE_PROFILE_NO_PROXY}"
+fi
+
+# A stored /login (.credentials.json) wins: unlike the token it exposes /usage.
+# The token is only a fallback for profiles that have not logged in.
+tok_var="CLAUDE_CODE_OAUTH_TOKEN_${profile^^}"
+if [[ ! -s "${dir}/.credentials.json" && -n "${!tok_var:-}" ]]; then
+  export CLAUDE_CODE_OAUTH_TOKEN="${!tok_var}"
+fi
+
+export CLAUDE_CONFIG_DIR="${dir}"
+exec claude "$@"

@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Create the Claude Code profile dirs (one, two) outside the repo, link the
+# shared config and projects/ from ~/.claude into each. Idempotent. See -h.
+
+set -euo pipefail
+
+script_dir="$(dirname "$(realpath "$0")")"
+source "${script_dir}/_util"
+
+root="${CLAUDE_PROFILES_DIR:-${HOME}/.local/share/claude-profiles}"
+src="${HOME}/.claude"
+profiles=(one two)
+shared=(settings.json CLAUDE.md RTK.md skills hooks statusline-command.sh herdr-statusline projects file-history plans
+  cache plugins session-env shell-snapshots paste-cache downloads)
+# Per-profile instead of shared, so /usage and its breakdown (built from local
+# transcripts) show one account only. Profile one keeps the existing history in
+# ~/.claude; the listed profiles get their own real dirs. Cost: no cross-profile /resume.
+split=(projects file-history)
+split_profiles=(two)
+
+usage() {
+  cat <<USAGE
+Usage: claude-profiles-init [-h]
+
+Creates ${root}/{one,two} and symlinks shared config and projects/ from
+${src} into each profile. Also links claude-one / claude-two to
+claude-profile next to this script.
+
+  -h  show this help
+USAGE
+}
+
+for arg in "$@"; do
+  case "${arg}" in
+    -h | --help) usage; exit 0 ;;
+    *) usage >&2; exit 1 ;;
+  esac
+done
+
+mkdir -p "${root}"
+chmod 700 "${root}"
+
+for p in "${profiles[@]}"; do
+  dir="${root}/${p}"
+  mkdir -p "${dir}"
+  chmod 700 "${dir}"
+
+  for f in "${shared[@]}"; do
+    if [[ " ${split[*]} " == *" ${f} "* && " ${split_profiles[*]} " == *" ${p} "* ]]; then
+      [[ -L "${dir}/${f}" ]] && rm "${dir}/${f}"
+      mkdir -p "${dir}/${f}"
+      continue
+    fi
+    if [[ -e "${src}/${f}" ]]; then
+      # A real dir here would be replaced by a nested link; refuse instead.
+      if [[ -d "${dir}/${f}" && ! -L "${dir}/${f}" ]]; then
+        error_msg "${dir}/${f} is a real dir; move it away first" 1
+      fi
+      ln -sfn "${src}/${f}" "${dir}/${f}"
+    fi
+  done
+
+  success_msg "profile ${p}: ${dir}"
+done
+
+for p in "${profiles[@]}"; do
+  ln -sfn claude-profile "${script_dir}/claude-${p}"
+done
+info_msg "wrappers: claude-one claude-two"

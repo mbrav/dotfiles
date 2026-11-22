@@ -7,23 +7,45 @@ script_dir="$(cd "$(dirname "$(realpath "$0")")" && pwd)"
 # shellcheck source=_util
 source "${script_dir}/_util"
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  echo "Usage: claudeman [-a]"
+usage() {
+  echo "Usage: claudeman [-a] [-p one|two]"
   echo "  Lists Claude Code sessions for the current directory in fzf."
   echo "  -a  show sessions from all projects"
+  echo "  -p  use a profile (see claude-profiles-init); resume runs claude-<profile>"
+  echo "      default: \$CLAUDE_CONFIG_DIR if set, else ~/.claude"
   echo "  -h  show help"
   echo "  Actions: resume | delete | rename"
-  exit 0
-fi
+}
+
+SHOW_ALL=0
+PROFILE=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  -h | --help) usage; exit 0 ;;
+  -a | --all) SHOW_ALL=1 ;;
+  -p | --profile)
+    [[ -n "${2:-}" ]] || error_msg "-p needs a profile name" 1
+    PROFILE="$2"; shift ;;
+  *) usage >&2; exit 1 ;;
+  esac
+  shift
+done
 
 for dep in fzf jq rg; do
   command -v "$dep" >/dev/null || error_msg "Missing dependency: $dep" 1
 done
 
-SHOW_ALL=0
-[[ "${1:-}" == "-a" || "${1:-}" == "--all" ]] && SHOW_ALL=1
-
-CLAUDE_DIR="${HOME}/.claude"
+PROFILES_ROOT="${CLAUDE_PROFILES_DIR:-${HOME}/.local/share/claude-profiles}"
+if [[ -n "$PROFILE" ]]; then
+  [[ -d "${PROFILES_ROOT}/${PROFILE}" ]] || error_msg "No such profile: ${PROFILE}" 1
+  CLAUDE_DIR="${PROFILES_ROOT}/${PROFILE}"
+else
+  CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+  # Inside a claude-<profile> session: resume with the same wrapper.
+  [[ "$CLAUDE_DIR" == "${PROFILES_ROOT}/"* ]] && PROFILE="$(basename "$CLAUDE_DIR")"
+fi
+CLAUDE_CMD=claude
+[[ -n "$PROFILE" ]] && CLAUDE_CMD="claude-${PROFILE}"
 SESSIONS_DIR="${CLAUDE_DIR}/sessions"
 PROJECTS_DIR="${CLAUDE_DIR}/projects"
 
@@ -40,7 +62,9 @@ if [[ $SHOW_ALL -eq 0 && ! -d "$project_dir" ]]; then
 fi
 
 # ── Live-session index (live = a running `claude` PID) ────────────────────────
-# Populated by index_live_sessions from ~/.claude/sessions/<pid>.json.
+# Populated by index_live_sessions from <config dir>/sessions/<pid>.json, for the
+# default dir and every profile (profiles can share projects/, so a session may
+# be running under a profile other than the one being browsed).
 declare -A LIVE     # sessionId  -> name US status US session_file US cwd
 declare -A LIVE_REC # cwd-slug   -> sessionId US name US status US session_file US cwd
 declare -A LIVE_AT  # cwd-slug   -> startedAt (keeps the newest session per project)
@@ -53,7 +77,7 @@ index_live_sessions() {
   local -a fields
   LIVE=() LIVE_REC=() LIVE_AT=() LIVE_BG=()
 
-  for f in "${SESSIONS_DIR}"/*.json; do
+  for f in "${SESSIONS_DIR}"/*.json "${HOME}/.claude/sessions"/*.json "${PROFILES_ROOT}"/*/sessions/*.json; do
     [[ -f "$f" ]] || continue
     pid=$(basename "$f" .json)
     kill -0 "$pid" 2>/dev/null || continue
@@ -223,7 +247,7 @@ while true; do
     else
       info_msg "Resuming: ${name} (${sid})"
     fi
-    exec claude --resume "$sid"
+    exec "$CLAUDE_CMD" --resume "$sid"
     ;;
 
   delete)

@@ -24,7 +24,7 @@ dir="${root}/${profile}"
 
 # These outrank CLAUDE_CODE_OAUTH_TOKEN, so they would defeat the profile.
 unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN CLAUDE_CODE_OAUTH_TOKEN
-# A base-URL override hides /usage limits; claude-proxy (forward proxy) is used instead.
+# A base-URL override hides /usage limits, so never pass one through.
 unset ANTHROPIC_BASE_URL
 
 # A stored /login (.credentials.json) wins: unlike the token it exposes /usage.
@@ -35,4 +35,4 @@ if [[ ! -s "${dir}/.credentials.json" && -n "${!tok_var:-}" ]]; then
 fi
 
 export CLAUDE_CONFIG_DIR="${dir}"
-exec claude-proxy "$@"
+exec claude "$@"

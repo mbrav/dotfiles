@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Droid Cam
+GenericName=Phone webcam
+Comment=Use the Android phone camera as a virtual webcam for OBS
+Exec=sh -c "exec uvx --from ~/dev/github.com/mbrav/dotfiles/droid_cam droid-cam"
+Icon=camera-web
+Terminal=false
+Categories=AudioVideo;Video;
+Keywords=webcam;phone;camera;obs;scrcpy;
+StartupWMClass=droid-cam

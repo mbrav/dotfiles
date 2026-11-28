@@ -1,0 +1,43 @@
+[project]
+name = "droid-cam"
+version = "0.1.0"
+description = "Use an Android phone camera as a virtual webcam (scrcpy + v4l2loopback) for OBS"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = ["PySide6-Essentials>=6.8"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.17", "ty>=0.0.90"]
+
+[project.scripts]
+droid-cam = "droid_cam.main:main" # Define scripts here
+
+[build-system]
+requires = ["uv_build>=0.13.4,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
+
+[tool.uv]
+required-version = ">=0.13.4"
+preview-features = ["format-command", "check-command", "audit-command"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "D", "ASYNC", "N", "UP"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "UP"]
+
+[tool.ty.rules]
+possibly-unresolved-reference = "error"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
